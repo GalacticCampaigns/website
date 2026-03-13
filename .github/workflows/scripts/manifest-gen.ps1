@@ -53,30 +53,43 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
             $primaryID = if ($firstMsg.thread -and $firstMsg.thread.parent_id) { [string]$firstMsg.thread.parent_id } else { [string]$firstMsg.channel_id }
             $foundChannelIDs += $primaryID
 
-            # 2. Find or Create the Log Entry in the manifest
+            # 2. Find or Create the Log Entry
+            # We use .PSObject.Properties to ensure we can see and edit the properties
             $logEntry = $camp.logs | Where-Object { $_.channelID -eq $primaryID }
+            
             if (-not $logEntry) {
                 Write-Host "    + New Chapter detected! ID: $primaryID"
                 $logEntry = [PSCustomObject]@{ 
-                    channelID = $primaryID
+                    channelID = [string]$primaryID
                     title = ($f.name -replace '\.json$', '' -replace '_', ' ').ToUpper()
+                    fileName = [string]$f.name # Initialize here
                     isActive = $true
                     isNSFW = $false
                     threads = @()
                     preview = ""
+                    messageCount = 0
+                    lastMessageTimestamp = ""
+                    order = 0
                 }
-                $camp.logs += $logEntry
+                # Add to the campaign logs array
+                if ($null -eq $camp.logs) { $camp.logs = @($logEntry) }
+                else { $camp.logs += $logEntry }
             }
 
             # 3. Update Dynamic Metadata
-            $logEntry.fileName = $f.name
+            # Explicitly set properties using the reference
+            $logEntry.fileName = [string]$f.name
             $logEntry.isActive = $true
             
-            # Sort messages to find the true last timestamp
             $sortedMsgs = $messages | Sort-Object timestamp
-            $logEntry.lastMessageTimestamp = $sortedMsgs[-1].timestamp
-            $logEntry.order = if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 }
-
+            $logEntry.lastMessageTimestamp = [string]$sortedMsgs[-1].timestamp
+            
+            if ($f.name -match '(\d+)') { 
+                $logEntry.order = [int]$matches[1] 
+            } else { 
+                $logEntry.order = 0 
+            }
+            
             # 4. Accurate Message Counting (Includes Threads, Excludes System Noise)
             # Filter: Content must not be empty, Type must be Default (0) or null
             $validMsgs = $messages | Where-Object { 
@@ -132,4 +145,5 @@ if ($droppedItems.Count -gt 0) {
     $report = "DROPPED IDs DETECTED:`n" + ($droppedItems -join "`n")
     Write-Host "##[warning]$report"
     $report | Out-File "dropped_report.txt" -Encoding UTF8
+
 }
