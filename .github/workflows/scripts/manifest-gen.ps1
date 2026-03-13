@@ -44,22 +44,31 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
             Write-Host "  > Processing $($f.name)..."
             $jsonData = Invoke-RestMethod -Uri $f.download_url
             
-            # Extract messages (handle different export formats)
+            # Extract messages
             $messages = if ($jsonData.PSObject.Properties.Name -contains 'messages') { $jsonData.messages } else { $jsonData }
             if (-not $messages) { continue }
 
-            # 1. Identify Primary Channel ID (Forced to String for reliable matching)
+            # --- CRITICAL FIX: Primary Channel ID Resolution ---
             $firstMsg = $messages | Select-Object -First 1
-            $primaryID = if ($firstMsg.thread -and $firstMsg.thread.parent_id) { [string]$firstMsg.thread.parent_id } else { [string]$firstMsg.channel_id }
+            
+            # Default to the channel ID of the first message
+            $primaryID = [string]$firstMsg.channel_id
+
+            # Only use parent_id if it's a valid Snowflake (longer than 10 chars) 
+            # This prevents picking up "1" or "0" as the Chapter ID.
+            if ($firstMsg.thread -and $firstMsg.thread.parent_id -and [string]$firstMsg.thread.parent_id.Length -gt 10) {
+                $primaryID = [string]$firstMsg.thread.parent_id
+            }
+            
             $foundChannelIDs += $primaryID
 
-            # 2. Find or Create the Log Entry (Forced string matching to prevent duplicates)
+            # --- MATCHING LOGIC ---
             $logEntry = $camp.logs | Where-Object { [string]$_.channelID -eq $primaryID }
             
             if (-not $logEntry) {
                 Write-Host "    + New Chapter detected! ID: $primaryID (File: $($f.name))"
                 $logEntry = [PSCustomObject]@{ 
-                    channelID = $primaryID
+                    channelID = [string]$primaryID
                     title = ($f.name -replace '\.json$', '' -replace '_', ' ').ToUpper()
                     fileName = [string]$f.name
                     isActive = $true
@@ -70,12 +79,11 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
                     lastMessageTimestamp = ""
                     order = 0
                 }
-                # Initialize the logs array if it's currently null
                 if ($null -eq $camp.logs) { $camp.logs = @() }
                 $camp.logs += $logEntry
             }
 
-            # 3. Update Dynamic Metadata (Using Add-Member -Force to override Frozen Object schemas)
+            # --- UPDATE METADATA ---
             $logEntry | Add-Member -NotePropertyName "fileName" -NotePropertyValue ([string]$f.name) -Force
             $logEntry | Add-Member -NotePropertyName "isActive" -NotePropertyValue $true -Force
             
@@ -85,14 +93,13 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
             $orderVal = if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 }
             $logEntry | Add-Member -NotePropertyName "order" -NotePropertyValue $orderVal -Force
 
-            # 4. Message Counting (Excludes System Noise)
+            # Message Counting
             $validMsgs = $messages | Where-Object { 
-                $_.content -ne "" -and 
-                ($_.type -eq "Default" -or $_.type -eq 0 -or -not $_.type) 
+                $_.content -ne "" -and ($_.type -eq "Default" -or $_.type -eq 0 -or -not $_.type) 
             }
             $logEntry | Add-Member -NotePropertyName "messageCount" -NotePropertyValue $validMsgs.Count -Force
 
-            # 5. Thread Inventory
+            # --- THREAD INVENTORY ---
             $foundThreadIDs = @()
             $threadGroups = $messages | Where-Object { $_.thread -and $_.thread.id } | Group-Object { $_.thread.id }
             
@@ -117,7 +124,7 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
                 $threadEntry | Add-Member -NotePropertyName "messageCount" -NotePropertyValue ($group.Count) -Force
             }
 
-            # Mark missing threads as inactive within this log
+            # Mark missing threads as inactive
             foreach ($t in $logEntry.threads) {
                 if ($foundThreadIDs -notcontains [string]$t.threadID) { 
                     $t | Add-Member -NotePropertyName "isActive" -NotePropertyValue $false -Force 
@@ -126,7 +133,7 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
         }
     }
 
-    # 6. Global Cleanup: Match found IDs against manifest IDs (Both as Strings)
+    # --- GLOBAL CLEANUP ---
     foreach ($log in $camp.logs) {
         $currentLogID = [string]$log.channelID
         if ($foundChannelIDs -notcontains $currentLogID) {
@@ -136,7 +143,7 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
     }
 }
 
-# --- Final Step: Save and Report ---
+# Save with Depth to preserve nested objects
 $manifest | ConvertTo-Json -Depth 10 | Out-File $manifestPath -Encoding UTF8
 Write-Host "--- Hydration Complete ---"
 

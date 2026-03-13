@@ -48,12 +48,17 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
+          
+          # Stage the specific registry file
           git add assets/campaign-registry.json
           
-          # Only commit and push if there are actual changes to the registry
+          # Check if there are changes staged
           if ! git diff --cached --quiet; then
             git commit -m "Auto-hydrate campaign registry [skip ci]"
-            git push origin main
+            
+            # Use --set-upstream to fix the refspec/matching issue
+            # This explicitly links your local 'main' to the remote 'origin/main'
+            git push --set-upstream origin main
           else
             echo "No changes to registry detected. Skipping push."
           fi
