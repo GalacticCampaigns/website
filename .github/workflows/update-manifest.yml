@@ -4,9 +4,9 @@ on:
     branches:
       - main
     paths:
-      - 'assets/campaign-registry.json' # Triggers when you manually add a new "Seed" campaign
+      - 'assets/campaign-registry.json'
   repository_dispatch:
-    types: [update-logs] # Allows remote campaign repos to "ping" this repo to update
+    types: [update-logs]
   workflow_dispatch:
     inputs:
       force_refresh:
@@ -22,7 +22,9 @@ jobs:
       - name: Checkout Website
         uses: actions/checkout@v4
         with:
+          # This ensures we are on the correct branch and have history
           ref: main
+          fetch-depth: 0 
 
       - name: Run Campaign Hydrator
         shell: pwsh
@@ -40,7 +42,6 @@ jobs:
           if [ -f "dropped_report.txt" ]; then
             echo "::error title=Dropped IDs Detected::The following logs/threads were marked as inactive. Check the logs for details."
             cat dropped_report.txt
-            # Optional: exit 1 # Uncomment if you want the build to "fail" so you get an email
           fi
 
       - name: Commit and Push
@@ -48,4 +49,11 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add assets/campaign-registry.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-hydrate campaign registry [skip ci]" && git push origin main)
+          
+          # Only commit and push if there are actual changes to the registry
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto-hydrate campaign registry [skip ci]"
+            git push origin main
+          else
+            echo "No changes to registry detected. Skipping push."
+          fi
