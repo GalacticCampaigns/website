@@ -121,13 +121,6 @@
           "preview": "",
           "isNSFW": false,
           "threads": [
-            {
-              "threadID": "1381783775301734441",
-              "displayName": "Prelude: The Static on the Line (Dryzan)",
-              "isNSFW": false,
-              "isActive": true,
-              "messageCount": 1
-            }
           ],
           "fileName": "FO_BB_Prelude-Dryzan.json",
           "isActive": true,
@@ -142,13 +135,6 @@
           "preview": "",
           "isNSFW": false,
           "threads": [
-            {
-              "threadID": "1386794250947264743",
-              "displayName": "Prelude: The Sunken Star of Xylos (Iyola)",
-              "isNSFW": false,
-              "isActive": true,
-              "messageCount": 1
-            }
           ],
           "fileName": "FO_BB_Prelude-Iyola.json",
           "isActive": true,
@@ -163,13 +149,6 @@
           "preview": "",
           "isNSFW": false,
           "threads": [
-            {
-              "threadID": "1382803271185469562",
-              "displayName": "Prelude: The Stray Fortune (Krynn)",
-              "isNSFW": false,
-              "isActive": true,
-              "messageCount": 1
-            }
           ],
           "fileName": "FO_BB_Prelude-Krynn.json",
           "isActive": true,
@@ -184,13 +163,6 @@
           "preview": "",
           "isNSFW": false,
           "threads": [
-            {
-              "threadID": "1385685912834277456",
-              "displayName": "Prelude: Ghost of the *Devastation* (Vearos)",
-              "isNSFW": false,
-              "isActive": true,
-              "messageCount": 1
-            }
           ],
           "fileName": "FO_BB_Prelude-Vaeros.json",
           "isActive": true,
@@ -205,13 +177,6 @@
           "preview": "",
           "isNSFW": false,
           "threads": [
-            {
-              "threadID": "1381784157688037396",
-              "displayName": "Prelude: The Price of a Vision (Varda)",
-              "isNSFW": false,
-              "isActive": true,
-              "messageCount": 1
-            }
           ],
           "fileName": "FO_BB_Prelude-Varda.json",
           "isActive": true,
@@ -238,18 +203,6 @@
           "isActive": true,
           "lastMessageTimestamp": "06/12/2025 01:37:02",
           "order": 0,
-          "messageCount": 1
-        },
-        {
-          "channelID": "",
-          "title": "FO CH1 AWAKENING",
-          "isNSFW": false,
-          "threads": [],
-          "preview": "",
-          "fileName": "FO_Ch3_beneath-the-glare.json",
-          "isActive": true,
-          "lastMessageTimestamp": "",
-          "order": 3,
           "messageCount": 1
         }
       ]
