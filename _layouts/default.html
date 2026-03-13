@@ -68,7 +68,7 @@
 
     async function initNavigation() {
         try {
-            const res = await fetch("{{ '/assets/galactic-registry.json' | relative_url }}");
+            const res = await fetch("{{ '/assets/campaign-registry.json' | relative_url }}");
             registryData = await res.json();
             
             const dropdown = document.getElementById('campaign-dropdown');

@@ -132,7 +132,7 @@ layout: default
      */
     async function init() {
         try {
-            const res = await fetch("{{ '/assets/galactic-registry.json' | relative_url }}");
+            const res = await fetch("{{ '/assets/campaign-registry.json' | relative_url }}");
             registry = await res.json();
             
             // Get Campaign from URL ?c=slug

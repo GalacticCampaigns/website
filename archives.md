@@ -107,7 +107,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     try {
-        const response = await fetch("{{ '/assets/galactic-registry.json' | relative_url }}?t=" + Date.now());
+        const response = await fetch("{{ '/assets/campaign-registry.json' | relative_url }}?t=" + Date.now());
         if (!response.ok) throw new Error("Registry offline.");
         
         const registry = await response.json();

@@ -121,7 +121,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     }
 
     try {
-        const res = await fetch("{{ '/assets/galactic-registry.json' | relative_url }}");
+        const res = await fetch("{{ '/assets/campaign-registry.json' | relative_url }}");
         const registry = await res.json();
         const campaign = registry.campaigns[slug];
 
