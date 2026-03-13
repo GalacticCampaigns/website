@@ -54,15 +54,13 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
             $foundChannelIDs += $primaryID
 
             # 2. Find or Create the Log Entry
-            # We use .PSObject.Properties to ensure we can see and edit the properties
             $logEntry = $camp.logs | Where-Object { $_.channelID -eq $primaryID }
-            
             if (-not $logEntry) {
                 Write-Host "    + New Chapter detected! ID: $primaryID"
                 $logEntry = [PSCustomObject]@{ 
                     channelID = [string]$primaryID
                     title = ($f.name -replace '\.json$', '' -replace '_', ' ').ToUpper()
-                    fileName = [string]$f.name # Initialize here
+                    fileName = [string]$f.name
                     isActive = $true
                     isNSFW = $false
                     threads = @()
@@ -71,30 +69,20 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
                     lastMessageTimestamp = ""
                     order = 0
                 }
-                # Add to the campaign logs array
-                if ($null -eq $camp.logs) { $camp.logs = @($logEntry) }
-                else { $camp.logs += $logEntry }
+                $camp.logs += $logEntry
             }
 
-            # 3. Update Dynamic Metadata
-            # Explicitly set properties using the reference
-            $logEntry.fileName = [string]$f.name
-            $logEntry.isActive = $true
+            # 3. Update Dynamic Metadata (Force properties to exist)
+            $logEntry | Add-Member -MemberType NoteProperty -Name "fileName" -Value ([string]$f.name) -Force
+            $logEntry | Add-Member -MemberType NoteProperty -Name "isActive" -Value $true -Force
             
             $sortedMsgs = $messages | Sort-Object timestamp
             $logEntry.lastMessageTimestamp = [string]$sortedMsgs[-1].timestamp
-            
-            if ($f.name -match '(\d+)') { 
-                $logEntry.order = [int]$matches[1] 
-            } else { 
-                $logEntry.order = 0 
-            }
-            
-            # 4. Accurate Message Counting (Includes Threads, Excludes System Noise)
-            # Filter: Content must not be empty, Type must be Default (0) or null
+            $logEntry.order = if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 }
+
+            # 4. Accurate Message Counting
             $validMsgs = $messages | Where-Object { 
-                $_.content -ne "" -and 
-                ($_.type -eq "Default" -or $_.type -eq 0 -or -not $_.type) 
+                $_.content -ne "" -and ($_.type -eq "Default" -or $_.type -eq 0 -or -not $_.type) 
             }
             $logEntry.messageCount = $validMsgs.Count
 
@@ -110,20 +98,17 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
                 if (-not $threadEntry) {
                     $threadEntry = [PSCustomObject]@{ 
                         threadID = $tID
-                        displayName = $group.Group[0].thread.name
+                        displayName = [string]$group.Group[0].thread.name
                         isNSFW = $false
+                        isActive = $true # Initialize here
+                        messageCount = 0
                     }
                     $logEntry.threads += $threadEntry
                 }
                 
-                $threadEntry.isActive = $true
-                # Count valid messages inside this specific thread
+                # Use Add-Member to bypass the "Property not found" error for threads
+                $threadEntry | Add-Member -MemberType NoteProperty -Name "isActive" -Value $true -Force
                 $threadEntry.messageCount = ($group.Group | Where-Object { $_.content -ne "" -and ($_.type -eq "Default" -or $_.type -eq 0) }).Count
-            }
-
-            # Mark missing threads as inactive
-            foreach ($t in $logEntry.threads) {
-                if ($foundThreadIDs -notcontains $t.threadID) { $t.isActive = $false }
             }
         }
     }
@@ -147,3 +132,4 @@ if ($droppedItems.Count -gt 0) {
     $report | Out-File "dropped_report.txt" -Encoding UTF8
 
 }
+
