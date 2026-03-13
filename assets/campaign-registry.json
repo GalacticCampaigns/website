@@ -16,15 +16,67 @@
       },
       "logs": [
         {
-          "lastMessageTimestamp": "2026-03-08T15:48:52.182+00:00",
           "title": "CHAPTER 4: RESONANCE FREQUENCY",
-          "order": 4,
           "channelID": "1463269257151254540",
           "file": "FO_Ch4-Resonance-Frequency.json",
-          "messageCount": 474,
           "preview": "***A long time ago in a galaxy far, far away....*** # **STAR WARS** ## **FORGOTTEN ONES** ### **Episode IV: The Resonan...",
           "isNSFW": false,
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1463304534892871844",
+              "displayName": "Awakening: The Wayward Vigil",
+              "isNSFW": false,
+              "isActive": true,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1463321256370634967",
+              "displayName": "Intro: The Static Heart (Lis)",
+              "isNSFW": false,
+              "isActive": true,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1463328960468357184",
+              "displayName": "Intro: The Muted Echo (Ciara)",
+              "isNSFW": false,
+              "isActive": true,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1463337940141867232",
+              "displayName": "Intro: The Hollow Vigil (Cajar)",
+              "isNSFW": false,
+              "isActive": true,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1466947514015023268",
+              "displayName": "Venture - Medbay",
+              "isNSFW": false,
+              "isActive": true,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1467270244383854787",
+              "displayName": "Search for the Wrangler",
+              "isNSFW": false,
+              "isActive": true,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1472757955500970066",
+              "displayName": "Venture - Bridge",
+              "isNSFW": false,
+              "isActive": true,
+              "messageCount": 1
+            }
+          ],
+          "fileName": "FO_Ch4-Resonance-Frequency.json",
+          "isActive": true,
+          "lastMessageTimestamp": "03/08/2026 15:48:52",
+          "order": 4,
+          "messageCount": 476
         },
         {
           "lastMessageTimestamp": "2026-01-20T23:45:34.598+00:00",
@@ -35,7 +87,8 @@
           "messageCount": 230,
           "preview": "Following their arrival at Cloud City, the crew of the Venture formally enters the employ of Ghurn Skirata as \"special assets\" for Kando's Coursers...",
           "isNSFW": false,
-          "threads": []
+          "threads": [],
+          "isActive": false
         },
         {
           "lastMessageTimestamp": "2025-11-06T13:58:18.492+00:00",
@@ -46,7 +99,8 @@
           "messageCount": 665,
           "preview": "As the crew recovers from the physical toll of stasis in the remote Kinooine system...",
           "isNSFW": false,
-          "threads": []
+          "threads": [],
+          "isActive": false
         },
         {
           "lastMessageTimestamp": "2025-08-01T12:39:15.84+00:00",
@@ -57,73 +111,146 @@
           "messageCount": 299,
           "preview": "The crew awakens to a hostile breach in an unknown system...",
           "isNSFW": false,
-          "threads": []
+          "threads": [],
+          "isActive": false
         },
         {
-          "lastMessageTimestamp": "2025-07-25T01:02:40.602+00:00",
           "title": "PRELUDE: The Static on the Line (Dryzan)",
-          "order": 0,
           "channelID": "1381783775301734441",
           "file": "FO_BB_Prelude-Dryzan.json",
-          "messageCount": 176,
           "preview": "",
           "isNSFW": false,
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1381783775301734441",
+              "displayName": "Prelude: The Static on the Line (Dryzan)",
+              "isNSFW": false,
+              "isActive": true,
+              "messageCount": 1
+            }
+          ],
+          "fileName": "FO_BB_Prelude-Dryzan.json",
+          "isActive": true,
+          "lastMessageTimestamp": "07/25/2025 01:02:40",
+          "order": 0,
+          "messageCount": 176
         },
         {
-          "lastMessageTimestamp": "2025-07-25T00:03:06.396+00:00",
           "title": "PRELUDE: The Sunken Star of Xylos (Iyola)",
-          "order": 0,
           "channelID": "1386794250947264743",
           "file": "FO_BB_Prelude-Iyola.json",
-          "messageCount": 107,
           "preview": "",
           "isNSFW": false,
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1386794250947264743",
+              "displayName": "Prelude: The Sunken Star of Xylos (Iyola)",
+              "isNSFW": false,
+              "isActive": true,
+              "messageCount": 1
+            }
+          ],
+          "fileName": "FO_BB_Prelude-Iyola.json",
+          "isActive": true,
+          "lastMessageTimestamp": "07/25/2025 00:03:06",
+          "order": 0,
+          "messageCount": 107
         },
         {
-          "lastMessageTimestamp": "2025-06-12T19:27:19.913+00:00",
           "title": "PRELUDE: (KRYNN)",
-          "order": 0,
           "channelID": "1382803271185469562",
           "file": "FO_BB_Prelude-Krynn.json",
-          "messageCount": 1,
           "preview": "",
           "isNSFW": false,
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1382803271185469562",
+              "displayName": "Prelude: The Stray Fortune (Krynn)",
+              "isNSFW": false,
+              "isActive": true,
+              "messageCount": 1
+            }
+          ],
+          "fileName": "FO_BB_Prelude-Krynn.json",
+          "isActive": true,
+          "lastMessageTimestamp": "06/12/2025 19:27:19",
+          "order": 0,
+          "messageCount": 1
         },
         {
-          "lastMessageTimestamp": "2025-07-01T02:47:54.153+00:00",
           "title": "PRELUDE: Ghost of the <i>Devastation<i> (Vearos)",
-          "order": 0,
           "channelID": "1385685912834277456",
           "file": "FO_BB_Prelude-Vaeros.json",
-          "messageCount": 130,
           "preview": "",
           "isNSFW": false,
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1385685912834277456",
+              "displayName": "Prelude: Ghost of the *Devastation* (Vearos)",
+              "isNSFW": false,
+              "isActive": true,
+              "messageCount": 1
+            }
+          ],
+          "fileName": "FO_BB_Prelude-Vaeros.json",
+          "isActive": true,
+          "lastMessageTimestamp": "07/01/2025 02:47:54",
+          "order": 0,
+          "messageCount": 130
         },
         {
-          "lastMessageTimestamp": "2025-06-18T23:49:12.754+00:00",
           "title": "PRELUDE: The Price of a Vision (Varda)",
-          "order": 0,
           "channelID": "1381784157688037396",
           "file": "FO_BB_Prelude-Varda.json",
-          "messageCount": 135,
           "preview": "",
           "isNSFW": false,
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1381784157688037396",
+              "displayName": "Prelude: The Price of a Vision (Varda)",
+              "isNSFW": false,
+              "isActive": true,
+              "messageCount": 1
+            }
+          ],
+          "fileName": "FO_BB_Prelude-Varda.json",
+          "isActive": true,
+          "lastMessageTimestamp": "06/18/2025 23:49:12",
+          "order": 0,
+          "messageCount": 135
         },
         {
-          "lastMessageTimestamp": "2025-06-12T01:37:02.532+00:00",
           "title": "PRELUDE: (VENA)",
-          "order": 0,
           "channelID": "1381783926871298098",
           "file": "FO_BB_Prelude-Vena.json",
-          "messageCount": 1,
           "preview": "",
           "isNSFW": false,
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1381783926871298098",
+              "displayName": "Prelude: The Echo in the Stone (Vena)",
+              "isNSFW": false,
+              "isActive": true,
+              "messageCount": 1
+            }
+          ],
+          "fileName": "FO_BB_Prelude-Vena.json",
+          "isActive": true,
+          "lastMessageTimestamp": "06/12/2025 01:37:02",
+          "order": 0,
+          "messageCount": 1
+        },
+        {
+          "channelID": "",
+          "title": "FO CH1 AWAKENING",
+          "isNSFW": false,
+          "threads": [],
+          "preview": "",
+          "fileName": "FO_Ch3_beneath-the-glare.json",
+          "isActive": true,
+          "lastMessageTimestamp": "",
+          "order": 3,
+          "messageCount": 1
         }
       ]
     }
