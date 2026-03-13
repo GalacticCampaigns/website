@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page.title }} | SW: Forgotten Ones</title>
+    <link rel="stylesheet" href="{{ '/assets/style.css' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}"> 
+</head>
+<body>
+
+<nav class="site-nav">
+    <div class="nav-inner">
+        <a href="{{ '/' | relative_url }}" class="nav-brand">Forgotten Ones</a>
+        <div class="nav-links">
+            <a href="{{ '/' | relative_url }}">Home</a>
+            <a href="{{ '/archives' | relative_url }}">Archives</a>
+            <a href="https://github.com/alicia86/SW_ForgottenOnes/wiki" target="_blank">Wiki</a>
+        </div>
+    </div>
+</nav>
+
+<header>
+    <div class="hero-section">
+        <img src="{{ '/assets/logo.png' | relative_url }}" alt="Forgotten Ones Logo" class="site-logo">
+        <p class="flavor-text">A long time ago, in a galaxy far, far away...</p>
+    </div>
+</header>
+
+<main> 
+    {{ content }}
+</main>
+
+<footer>
+    <hr>
+    <p>Campaign: <strong>Star Wars: Forgotten Ones</strong></p>
+    <p style="font-size: 0.8rem; color: #666;">
+        Last Updated: {{ site.time | date: "%Y-%m-%d %H:%M:%S" }} UTC
+    </p>
+</footer>
+
+</body>
+</html>

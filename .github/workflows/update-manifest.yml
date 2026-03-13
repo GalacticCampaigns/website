@@ -1,0 +1,51 @@
+name: Update Campaign Registry
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'assets/campaign-registry.json' # Triggers when you manually add a new "Seed" campaign
+  repository_dispatch:
+    types: [update-logs] # Allows remote campaign repos to "ping" this repo to update
+  workflow_dispatch:
+    inputs:
+      force_refresh:
+        description: 'Force re-scan of all titles'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  update-registry:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Website
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Run Campaign Hydrator
+        shell: pwsh
+        run: |
+          $force = "${{ github.event.inputs.force_refresh }}" -eq "true"
+          if ($force) {
+            ./.github/workflows/scripts/manifest-gen.ps1 -ForceUpdate
+          } else {
+            ./.github/workflows/scripts/manifest-gen.ps1
+          }
+
+      - name: Notify on Dropped IDs
+        shell: bash
+        run: |
+          if [ -f "dropped_report.txt" ]; then
+            echo "::error title=Dropped IDs Detected::The following logs/threads were marked as inactive. Check the logs for details."
+            cat dropped_report.txt
+            # Optional: exit 1 # Uncomment if you want the build to "fail" so you get an email
+          fi
+
+      - name: Commit and Push
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add assets/campaign-registry.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-hydrate campaign registry [skip ci]" && git push origin website)

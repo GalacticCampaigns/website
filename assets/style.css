@@ -1,0 +1,194 @@
+/* --- CORE VARIABLES --- */
+:root {
+    --gh-bg: #0d1117;
+    --gh-border: #30363d;
+    --gh-text: #c9d1d9;
+    --text-muted: #8b949e;
+    --sw-blue: #58a6ff;
+    --sw-yellow: #d29922;
+    --sw-glow: rgba(88, 166, 255, 0.15);
+    --panel-bg: #161b22;
+    --site-nav-height: 50px;
+    --log-nav-height: 70px;
+}
+
+/* --- GLOBAL RESET & STABILIZATION --- */
+* { box-sizing: border-box; }
+
+html {
+    scroll-behavior: smooth;
+    overflow-x: hidden; 
+    width: 100%;
+}
+
+body {
+    margin: 0; padding: 0; 
+    width: 100%;
+    background-color: var(--gh-bg);
+    color: var(--gh-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+main { 
+    display: block; 
+    width: 100%;
+    max-width: 900px; 
+    margin: 0 auto; 
+    padding: 0 15px;
+    /* Crucial for sticky children */
+    overflow: visible !important; 
+}
+
+/* --- 1. GLOBAL PERMANENT NAVIGATION --- */
+.site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 9000;
+    background: var(--gh-bg);
+    border-bottom: 1px solid var(--gh-border);
+    height: var(--site-nav-height);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.nav-brand {
+    font-weight: bold;
+    color: var(--sw-yellow) !important;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 0.9rem;
+}
+
+.nav-links {
+    margin-left: auto;
+    display: flex;
+    gap: 20px;
+}
+
+.nav-links a {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--gh-text);
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* --- 2. LOG-SPECIFIC STICKY NAVIGATION --- */
+.frozen-nav {
+    position: sticky;
+    top: var(--site-nav-height); /* Sticks under Global Nav */
+    z-index: 8000; 
+    background-color: var(--gh-bg); 
+    border-bottom: 1px solid var(--gh-border);
+    height: var(--log-nav-height);
+    width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.nav-inner {
+    display: flex;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    gap: 10px;
+    padding: 0 15px;
+    align-items: center;
+}
+
+
+/* --- REUSABLE UI COMPONENTS --- */
+.panel {
+    background: var(--panel-bg);
+    border: 1px solid var(--gh-border);
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.panel h3 {
+    margin: 0 0 15px 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--gh-border);
+    padding-bottom: 8px;
+    letter-spacing: 1px;
+}
+
+a { color: var(--sw-blue); text-decoration: none; transition: 0.2s; }
+a:hover { color: var(--sw-yellow); }
+
+/* --- BUTTON THEME (TOC, Freq, Nav) --- */
+.toc-open-btn, .freq-btn, .nav-btn {
+    background: #1c2128 !important;
+    color: var(--sw-blue) !important;
+    border: 1px solid var(--sw-blue) !important;
+    padding: 8px 16px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.2s;
+    white-space: nowrap;
+}
+
+.toc-open-btn:hover, .freq-btn:hover, .nav-btn:hover, .freq-btn.active {
+    background: var(--sw-blue) !important;
+    color: #000 !important;
+    box-shadow: 0 0 10px var(--sw-glow);
+}
+
+/* --- DISCORD & CONTENT FORMATTING --- */
+.hero-section { text-align: center; padding: 20px 0; }
+.site-logo { width: 60%; max-width: 475px; height: auto; margin-bottom: 10px; }
+.flavor-text { color: var(--sw-yellow); font-style: italic; opacity: 0.8; font-size: 0.9rem; }
+
+.timestamp { color: var(--text-muted); font-size: 0.8rem; font-family: monospace; }
+.subtext { display: block; font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+
+.spoiler {
+    background-color: #4f545c;
+    color: transparent;
+    border-radius: 3px;
+    padding: 0 2px;
+    cursor: help;
+}
+.spoiler:hover { background-color: rgba(255,255,255,0.1); color: var(--gh-text); }
+
+blockquote {
+    border-left: 4px solid #4f545c;
+    margin: 8px 0;
+    padding: 2px 15px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.emoji { height: 1.3em; vertical-align: middle; margin: 0 2px; }
+
+/* --- LISTS & ARCHIVES --- */
+.log-list, .archive-list { list-style: none; padding: 0; margin: 0; }
+.log-list li { padding: 12px 0; border-bottom: 1px solid var(--gh-border); }
+
+.view-all { display: block; margin-top: 15px; font-size: 0.8rem; font-weight: bold; text-align: right; }
+
+/* --- FOOTER --- */
+footer {
+    text-align: center;
+    padding: 60px 20px 40px;
+    border-top: 1px solid var(--gh-border);
+    margin-top: 100px;
+    font-size: 0.85rem;
+}
+
+/* --- RESPONSIVE DESIGN --- */
+@media (max-width: 800px) {
+    .dashboard-grid { grid-template-columns: 1fr !important; }
+    .nav-brand { font-size: 0.75rem; }
+    .nav-links { gap: 10px; }
+    .site-logo { width: 80%; }
+}
