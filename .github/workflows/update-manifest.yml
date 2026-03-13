@@ -27,9 +27,9 @@ jobs:
       - name: Run Hydrator
         shell: pwsh
         run: |
-          # Check if triggered by manual input or by remote ping
-          $id = "${{ github.event.inputs.campaign_id }}"
-          if ([string]::IsNullOrWhiteSpace($id)) { $id = "${{ github.event.client_payload.campaign_id }}" }
+          # Use client_payload if triggered by remote ping, else use manual input
+          $id = "${{ github.event.client_payload.campaign_id }}"
+          if ([string]::IsNullOrWhiteSpace($id)) { $id = "${{ github.event.inputs.campaign_id }}" }
           
           if (-not [string]::IsNullOrWhiteSpace($id)) {
              ./.github/workflows/scripts/manifest-gen.ps1 -CampaignId $id
@@ -44,4 +44,5 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m "Auto-hydrate [skip ci]"
             git push origin main
+
           fi
