@@ -9,56 +9,39 @@ on:
     types: [update-logs]
   workflow_dispatch:
     inputs:
-      force_refresh:
-        description: 'Force re-scan of all titles'
+      campaign_id:
+        description: 'Slug of campaign to update (e.g., forgotten_ones)'
         required: false
-        type: boolean
-        default: false
+        default: ''
 
 jobs:
   update-registry:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Website
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          # This ensures we are on the correct branch and have history
           ref: main
-          fetch-depth: 0 
+          fetch-depth: 0
 
-      - name: Run Campaign Hydrator
+      - name: Run Hydrator
         shell: pwsh
         run: |
-          $force = "${{ github.event.inputs.force_refresh }}" -eq "true"
-          if ($force) {
-            ./.github/workflows/scripts/manifest-gen.ps1 -ForceUpdate
+          # Check if triggered by manual input or by remote ping
+          $id = "${{ github.event.inputs.campaign_id }}"
+          if ([string]::IsNullOrWhiteSpace($id)) { $id = "${{ github.event.client_payload.campaign_id }}" }
+          
+          if (-not [string]::IsNullOrWhiteSpace($id)) {
+             ./.github/workflows/scripts/manifest-gen.ps1 -CampaignId $id
           } else {
-            ./.github/workflows/scripts/manifest-gen.ps1
+             ./.github/workflows/scripts/manifest-gen.ps1
           }
-
-      - name: Notify on Dropped IDs
-        shell: bash
-        run: |
-          if [ -f "dropped_report.txt" ]; then
-            echo "::error title=Dropped IDs Detected::The following logs/threads were marked as inactive. Check the logs for details."
-            cat dropped_report.txt
-          fi
-
       - name: Commit and Push
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          
-          # Stage the specific registry file
           git add assets/campaign-registry.json
-          
-          # Check if there are changes staged
           if ! git diff --cached --quiet; then
-            git commit -m "Auto-hydrate campaign registry [skip ci]"
-            
-            # Use --set-upstream to fix the refspec/matching issue
-            # This explicitly links your local 'main' to the remote 'origin/main'
-            git push --set-upstream origin main
-          else
-            echo "No changes to registry detected. Skipping push."
+            git commit -m "Auto-hydrate [skip ci]"
+            git push origin main
           fi
