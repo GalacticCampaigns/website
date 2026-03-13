@@ -7,10 +7,9 @@ $manifestPath = "assets/campaign-registry.json"
 $droppedItems = @()
 
 if (-not (Test-Path $manifestPath)) {
-    Write-Error "Registry not found at $manifestPath"; exit 1
+    Write-Error "Campaign Registry not found at $manifestPath"; exit 1
 }
 
-# Read manifest
 $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
 
 foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
@@ -30,7 +29,7 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
         }
 
         foreach ($f in $files | Where-Object { $_.name -like "*.json" }) {
-            # --- CRITICAL: Reset variables for every file to prevent data leakage ---
+            # --- CRITICAL FIX: Reset variables for every file to prevent "Chapter Smearing" ---
             $primaryID = $null
             $messages = $null
             $jsonData = $null
@@ -43,27 +42,36 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
                 Write-Warning "    ! Failed to download $($f.name)"; continue
             }
             
+            # Handle different JSON structures (wrapped in 'messages' key or a flat array)
             $messages = if ($jsonData.PSObject.Properties.Name -contains 'messages') { $jsonData.messages } else { $jsonData }
-            if (-not $messages -or $messages.Count -eq 0) { continue }
-
-            # --- ID RESOLUTION ---
-            $firstMsg = $messages | Select-Object -First 1
-            # Check for a valid Snowflake (Discord IDs are ~18 digits). 
-            # We ignore parent_id if it's "1" or too short.
-            if ($firstMsg.thread -and $firstMsg.thread.parent_id -and [string]$firstMsg.thread.parent_id.Length -gt 10) {
-                $primaryID = [string]$firstMsg.thread.parent_id
-            } else {
-                $primaryID = [string]$firstMsg.channel_id
+            if (-not $messages -or $messages.Count -eq 0) { 
+                Write-Warning "    ! No messages found in $($f.name)"; continue 
             }
 
-            # Safety: If we still don't have a valid ID, skip this file
-            if ([string]::IsNullOrWhiteSpace($primaryID) -or $primaryID -eq "0") {
+            # --- ROBUST ID RESOLUTION ---
+            # Instead of just the first message, find the first message that has a valid ID
+            foreach ($msg in $messages) {
+                $candidateID = $null
+                # If it's a thread, the parent_id is the Chapter ID we want
+                if ($msg.thread -and $msg.thread.parent_id -and [string]$msg.thread.parent_id.Length -gt 10) {
+                    $candidateID = [string]$msg.thread.parent_id
+                } elseif ($msg.channel_id -and [string]$msg.channel_id.Length -gt 10) {
+                    $candidateID = [string]$msg.channel_id
+                }
+
+                if ($candidateID) {
+                    $primaryID = $candidateID
+                    break # Stop looking, we found the ID for this file
+                }
+            }
+
+            if (-not $primaryID) {
                 Write-Warning "    ! Could not resolve a valid Channel ID for $($f.name). Skipping."; continue
             }
 
             $foundChannelIDs += $primaryID
 
-            # --- MATCHING ---
+            # --- MATCHING LOGIC ---
             $logEntry = $camp.logs | Where-Object { [string]$_.channelID -eq $primaryID }
 
             if (-not $logEntry) {
@@ -84,7 +92,7 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
                 $camp.logs += $logEntry
             }
 
-            # --- UPDATE DATA (Force Property creation) ---
+            # --- UPDATE DATA (Force Property creation to avoid Exception setting errors) ---
             $logEntry | Add-Member -NotePropertyName "fileName" -NotePropertyValue ([string]$f.name) -Force
             $logEntry | Add-Member -NotePropertyName "isActive" -NotePropertyValue $true -Force
             
@@ -94,16 +102,17 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
             $orderVal = if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 }
             $logEntry | Add-Member -NotePropertyName "order" -NotePropertyValue $orderVal -Force
 
-            # Count valid narrative messages
+            # Accurate count: Excludes system messages and blanks
             $validMsgs = $messages | Where-Object { $_.content -ne "" -and ($_.type -eq "Default" -or $_.type -eq 0) }
             $logEntry | Add-Member -NotePropertyName "messageCount" -NotePropertyValue $validMsgs.Count -Force
 
-            # --- THREADS ---
+            # --- THREAD INVENTORY ---
             $foundThreadIDs = @()
-            # Filter: only valid threads, excluding the main parent channel itself
+            # 1. Filter out messages that are just the "Thread Starter" notification (Thread ID == Primary ID)
             $actualThreads = $messages | Where-Object { $_.thread -and $_.thread.id -and [string]$_.thread.id -ne $primaryID }
             
             if ($actualThreads) {
+                # 2. Group by thread ID to count correctly
                 $threadGroups = $actualThreads | Group-Object { [string]$_.thread.id }
                 foreach ($group in $threadGroups) {
                     $tID = [string]$group.Name
@@ -120,15 +129,14 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
                         $logEntry.threads += $threadEntry
                     }
                     
-                    # Update thread stats
                     $threadEntry | Add-Member -NotePropertyName "isActive" -NotePropertyValue $true -Force
-                    # Count valid messages inside this specific thread group
+                    # 3. Count messages inside the thread group, excluding non-narrative posts
                     $tMsgCount = ($group.Group | Where-Object { $_.content -ne "" -and ($_.type -eq "Default" -or $_.type -eq 0) }).Count
                     $threadEntry | Add-Member -NotePropertyName "messageCount" -NotePropertyValue $tMsgCount -Force
                 }
             }
 
-            # Mark inactive threads
+            # Cleanup inactive threads in this file
             foreach ($t in $logEntry.threads) {
                 if ($foundThreadIDs -notcontains [string]$t.threadID) { 
                     $t | Add-Member -NotePropertyName "isActive" -NotePropertyValue $false -Force 
@@ -137,16 +145,15 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
         }
     }
 
-    # --- ORPHAN CLEANUP ---
+    # --- GLOBAL CLEANUP ---
     foreach ($log in $camp.logs) {
         $idStr = [string]$log.channelID
-        if ($foundChannelIDs -notcontains $idStr) {
+        if ($idStr -and $foundChannelIDs -notcontains $idStr) {
             $log | Add-Member -NotePropertyName "isActive" -NotePropertyValue $false -Force
             $droppedItems += "Campaign: $($camp.name) | Log: $($log.title) (ID: $idStr)"
         }
     }
 }
 
-# Save with Depth 10 to ensure nested threads aren't lost
 $manifest | ConvertTo-Json -Depth 10 | Out-File $manifestPath -Encoding UTF8
 Write-Host "--- Hydration Complete ---"
