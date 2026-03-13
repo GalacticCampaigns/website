@@ -12,19 +12,17 @@ layout: default
         overflow: visible !important; 
     }
 
-    /* --- 3. SECONDARY FREQUENCY BAR --- */
+    /* --- 2. SECONDARY FREQUENCY BAR --- */
     .frequency-nav-bar { 
-    position: sticky; 
-    /* Sticks under Global (50px) + Log (70px) */
-    top: calc(var(--site-nav-height) + var(--log-nav-height)); 
-    z-index: 7000; 
-    background: var(--panel-bg);
-    border-bottom: 1px solid var(--gh-border);
-    padding: 12px 0;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-    display: none;
+        position: sticky; 
+        top: calc(var(--site-nav-height) + var(--log-nav-height)); 
+        z-index: 7000; 
+        background: var(--secondary-bg);
+        border-bottom: 1px solid var(--gh-border);
+        padding: 12px 0;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+        display: none;
     }
-
 
     .freq-container {
         display: flex;
@@ -76,14 +74,14 @@ layout: default
     .avatar.loaded { opacity: 1; }
 
     .msg-body { flex-grow: 1; min-width: 0; }
-    .username { color: var(--sw-blue); font-weight: bold; margin-right: 10px; }
+    .username { color: var(--accent-blue); font-weight: bold; margin-right: 10px; }
 
     /* 4. TRANSITIONS & HIGHLIGHTS */
     .channel-transition { 
         display: flex; align-items: center; justify-content: center; 
         margin: 40px 0 20px; padding: 15px; 
-        background: rgba(88,166,255,0.05); border: 1px dashed var(--sw-blue); 
-        color: var(--sw-blue); font-family: monospace; font-size: 0.75rem; 
+        background: rgba(88,166,255,0.05); border: 1px dashed var(--accent-blue); 
+        color: var(--accent-blue); font-family: monospace; font-size: 0.75rem; 
         letter-spacing: 2px; text-transform: uppercase; cursor: pointer; 
     }
 
@@ -97,13 +95,13 @@ layout: default
         .log-container-json { padding: 5px; }
         .username { font-size: 0.95rem; }
         .timestamp { font-size: 0.7rem; display: block; margin-top: 2px; }
-        .frequency-nav-bar { top: var(--header-height); }
+        .frequency-nav-bar { top: calc(var(--site-nav-height) + 120px); } /* Adjust for stacked nav on mobile */
     }
 </style>
 
 <header class="frozen-nav">
     <div class="nav-inner">
-        <a href="{{ '/archives' | relative_url }}" class="toc-open-btn" style="text-decoration: none;">⇠</a>
+        <a href="javascript:void(0)" id="back-to-archives" class="toc-open-btn" style="text-decoration: none;">⇠</a>
         
         <select id="chapter-picker" class="toc-open-btn" onchange="onPickerChange(this.value)" style="background: #1c2128; flex-grow: 1; min-width: 0;">
             <option value="">-- LOADING DATAPAD --</option>
@@ -122,28 +120,38 @@ layout: default
 </div>
 
 <script>
+    let registry = null;
+    let activeCampaign = null;
     let fullData = [];
-    let manifestData = [];
     let channelMap = {}; 
     let mainChannelId = null;
-    const DEFAULT_AVATAR = "{{ '/Chapter_Logs/avatars/default.png' | relative_url }}";
+    let remoteBase = "";
 
     /**
-     * INITIALIZATION: Fetch Manifest and Handle Routing
+     * INITIALIZATION: Fetch Registry and Resolve Campaign
      */
     async function init() {
         try {
-            const cacheBuster = `?v=${new Date().getTime()}`;
-            const response = await fetch("{{ '/assets/log-manifest.json' | relative_url }}" + cacheBuster);
-            if (!response.ok) throw new Error("Manifest sequence offline.");
-            manifestData = await response.json();
+            const res = await fetch("{{ '/assets/galactic-registry.json' | relative_url }}");
+            registry = await res.json();
             
+            // Get Campaign from URL ?c=slug
+            const params = new URLSearchParams(window.location.search);
+            const slug = params.get('c') || registry.activeCampaign;
+            activeCampaign = registry.campaigns[slug];
+
+            if (!activeCampaign) throw new Error("Unknown Campaign ID.");
+
+            // Set Remote Paths
+            remoteBase = `https://raw.githubusercontent.com/${activeCampaign.repository}/${activeCampaign.branch}/${activeCampaign.dataPath}`;
+            document.getElementById('back-to-archives').href = `{{ '/archives' | relative_url }}?c=${slug}`;
+
             const picker = document.getElementById('chapter-picker');
             picker.innerHTML = ""; 
 
-            manifestData.forEach(item => {
+            activeCampaign.logs.forEach(item => {
                 const opt = document.createElement('option');
-                opt.value = item.channelID; // Store ID for routing
+                opt.value = item.channelID;
                 opt.textContent = item.title; 
                 picker.appendChild(opt);
             });
@@ -153,18 +161,18 @@ layout: default
             const [chanId, msgId] = hash.split(':');
 
             if (chanId) {
-                const entry = manifestData.find(m => m.channelID === chanId);
+                const entry = activeCampaign.logs.find(m => m.channelID === chanId);
                 if (entry) {
                     picker.value = chanId;
-                    await loadChapter(entry.file, msgId);
+                    await loadChapter(chanId, msgId);
                     return;
                 }
             }
 
-            // Fallback: Latest Chapter
-            if (manifestData.length > 0) {
-                picker.value = manifestData[0].channelID;
-                loadChapter(manifestData[0].file);
+            // Fallback: Load first log
+            if (activeCampaign.logs.length > 0) {
+                picker.value = activeCampaign.logs[0].channelID;
+                loadChapter(activeCampaign.logs[0].channelID);
             }
         } catch (e) {
             console.error("Init Error:", e);
@@ -173,51 +181,23 @@ layout: default
     }
 
     /**
-     * HASH LISTENER: Handles browser Back/Forward navigation
-     */
-    window.addEventListener('hashchange', () => {
-        const hash = window.location.hash.substring(1);
-        const [chanId, msgId] = hash.split(':');
-        const entry = manifestData.find(m => m.channelID === chanId);
-        
-        if (entry) {
-            const picker = document.getElementById('chapter-picker');
-            if (picker.value !== chanId) {
-                picker.value = chanId;
-                loadChapter(entry.file, msgId);
-            } else if (msgId) {
-                jumpToMessage(msgId);
-            }
-        }
-    });
-
-    /**
      * CHAPTER LOADING
      */
-    async function loadChapter(jsonFile, targetMsg = null) {
-        if (!jsonFile) return;
+    async function loadChapter(channelID, targetMsg = null) {
+        const logEntry = activeCampaign.logs.find(l => l.channelID === channelID);
+        if (!logEntry) return;
 
-        // Sync Hash with loaded file
-        const entry = manifestData.find(m => m.file === jsonFile);
-        if (entry) {
-            const newHash = `${entry.channelID}${targetMsg ? ':' + targetMsg : ''}`;
-            if (window.location.hash !== '#' + newHash) {
-                window.location.hash = newHash;
-            }
-        }
-
+        const jsonUrl = `${remoteBase}${activeCampaign.paths.json}${logEntry.fileName}`;
         const output = document.getElementById('viewer-output');
         output.innerHTML = "<em>Decrypting Data Stream...</em>";
 
         try {
-            const response = await fetch("{{ '/Chapter_Logs/JSON/' | relative_url }}" + jsonFile);
+            const response = await fetch(jsonUrl);
             const data = await response.json();
             fullData = Array.isArray(data) ? data : (data.messages || []);
 
-            // Chronological Sort
             fullData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-            // Pre-scan logic
             channelMap = {};
             let parentCounts = {};
             fullData.forEach(m => {
@@ -246,16 +226,12 @@ layout: default
     }
 
     /**
-     * FEED RENDERING
+     * FEED RENDERING & AVATARS
      */
     function renderFeed(filterId) {
         const output = document.getElementById('viewer-output');
         output.innerHTML = "";
         let lastChannelId = null;
-
-        document.querySelectorAll('.freq-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.getAttribute('data-id') === filterId);
-        });
 
         const messages = filterId === 'all' ? fullData : fullData.filter(m => m.channel_id === filterId || (m.thread && m.thread.id === filterId));
 
@@ -287,14 +263,13 @@ layout: default
             group.className = 'message-group';
             group.id = `msg-${msg.id}`;
 
-            let avatarPath = DEFAULT_AVATAR;
-            if (msg.author && msg.author.id && msg.author.avatar) {
-                avatarPath = `{{ '/Chapter_Logs/avatars/' | relative_url }}${msg.author.id}/${msg.author.avatar}.png`;
-            }
+            const avatarUrl = msg.author.avatar 
+                ? `${remoteBase}${activeCampaign.paths.avatars}${msg.author.id}/${msg.author.avatar}.png` 
+                : `${remoteBase}${activeCampaign.paths.avatars}default.png`;
 
             group.innerHTML = `
                 <div class="avatar-container">
-                    <img src="${DEFAULT_AVATAR}" data-src="${avatarPath}" class="avatar lazy-load">
+                    <img src="" data-src="${avatarUrl}" class="avatar lazy-load">
                 </div>
                 <div class="msg-body">
                     <div class="msg-header">
@@ -311,57 +286,49 @@ layout: default
     }
 
     /**
-     * MARKDOWN PARSER
+     * FULL DISCORD MARKDOWN PARSER
      */
     function parseMarkdown(text) {
         if (!text) return "";
         let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+        const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
+
         return html
+            // Emojis
             .replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (match, name, id) => {
                 const cleanName = name.replace(/:/g, '');
-                return `<img src="{{ '/Chapter_Logs/emojis/' | relative_url }}${cleanName}_${id}.png" class="emoji">`;
+                return `<img src="${emojiBase}${cleanName}_${id}.png" class="emoji" title="${cleanName}">`;
             })
+            // Links & Code
             .replace(/\[(.*?)\]\(&lt;?(https?:\/\/[^\s&gt;]+)&gt;?\)/g, '<a href="$2" target="_blank" class="external-link">$1</a>')
-            .replace(/https:\/\/discord\.com\/channels\/\d+\/(\d+)\/(\d+)/g, (match, chanId, msgId) => {
-                const entry = manifestData.find(m => m.channelID === chanId);
-                return entry ? `<a href="javascript:void(0)" onclick="jumpToMessage('msg-${msgId}', '${chanId}')" class="internal-link">GOTO FREQUENCY > 🔗</a>` : match;
-            })
-            .replace(/&lt;#(\d+)&gt;/g, (match, id) => {
-                const name = channelMap[id] || "Frequency";
-                return `<a href="javascript:void(0)" onclick="renderFeed('${id}')" class="internal-link"># ${name}</a>`;
-            })
+            .replace(/`(.*?)`/g, '<code>$1</code>')
+            // Blockquotes
+            .replace(/^&gt; (.*$)/gim, '<blockquote>$1</blockquote>')
+            // Headers
             .replace(/^# (.*$)/gim, '<h1>$1</h1>')
             .replace(/^## (.*$)/gim, '<h2>$1</h2>')
             .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-
-            .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
-            .replace(/^##### (.*$)/gim, '<h5>$1</h5>')
-            .replace(/^###### (.*$)/gim, '<h6>$1</h6>')
-
             .replace(/^-# (.*$)/gim, '<small class="subtext">$1</small>')
+            // Bold/Italic
             .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</strong></i>')
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<i>$1</i>')
+            // Spoilers
             .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler">$1</span>')
             .replace(/\n/g, '<br>');
     }
 
     /**
-     * HELPERS
+     * UI HELPERS
      */
     function onPickerChange(chanId) {
-        const entry = manifestData.find(m => m.channelID === chanId);
-        if (entry) loadChapter(entry.file);
+        loadChapter(chanId);
     }
 
     function toggleFrequencies() {
         const bar = document.getElementById('frequency-selector');
-        const btn = document.getElementById('thread-toggle');
-        const isHidden = (bar.style.display === 'none' || bar.style.display === '');
-        bar.style.display = isHidden ? 'block' : 'none';
-        btn.style.background = isHidden ? 'var(--sw-blue)' : '#1c2128';
-        btn.style.color = isHidden ? 'white' : 'var(--sw-blue)';
+        bar.style.display = (bar.style.display === 'none' || bar.style.display === '') ? 'block' : 'none';
     }
 
     function buildFrequencyBar() {
@@ -375,45 +342,26 @@ layout: default
         }
         
         toggleBtn.style.display = 'block';
-        bar.style.display = window.innerWidth > 1000 ? 'block' : 'none';
-
         let html = `<div class="comms-status">📡 Encrypted Frequencies Detected:</div>`;
-        html += `<button class="freq-btn active" data-id="all" onclick="renderFeed('all')">COMBINED FEED</button>`;
+        html += `<button class="freq-btn active" onclick="renderFeed('all')">COMBINED FEED</button>`;
         uniqueChannels.forEach(id => {
-            html += `<button class="freq-btn" data-id="${id}" onclick="renderFeed('${id}')">${channelMap[id] || "PRIMARY CHANNEL"}</button>`;
+            html += `<button class="freq-btn" onclick="renderFeed('${id}')">${channelMap[id] || "PRIMARY"}</button>`;
         });
         target.innerHTML = html;
     }
 
     function jumpToMessage(msgId, chanId = null) {
         if (chanId && chanId !== document.getElementById('chapter-picker').value) {
-            const entry = manifestData.find(m => m.channelID === chanId);
-            if (entry) {
-                document.getElementById('chapter-picker').value = chanId;
-                loadChapter(entry.file, msgId);
-                return;
-            }
+            document.getElementById('chapter-picker').value = chanId;
+            loadChapter(chanId, msgId);
+            return;
         }
-        
-        renderFeed('all'); 
-        setTimeout(() => {
-            const target = document.getElementById(msgId.startsWith('msg-') ? msgId : `msg-${msgId}`);
-            if (target) {
-                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                target.classList.add('highlight-flash');
-                setTimeout(() => target.classList.remove('highlight-flash'), 2000);
-            }
-        }, 200);
-    }
-
-    function copyMsgLink(e, id) {
-        const chanId = document.getElementById('chapter-picker').value;
-        const url = `${window.location.origin}${window.location.pathname}#${chanId}:msg-${id}`;
-        navigator.clipboard.writeText(url).then(() => {
-            const el = document.getElementById("msg-" + id);
-            el.classList.add('highlight-flash');
-            setTimeout(() => el.classList.remove('highlight-flash'), 1000);
-        });
+        const target = document.getElementById(msgId.startsWith('msg-') ? msgId : `msg-${msgId}`);
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.classList.add('highlight-flash');
+            setTimeout(() => target.classList.remove('highlight-flash'), 2000);
+        }
     }
 
     function silentLoadAvatars() {
@@ -422,7 +370,7 @@ layout: default
             const probe = new Image();
             probe.src = realSrc;
             probe.onload = () => { img.src = realSrc; img.classList.add('loaded'); };
-            probe.onerror = () => { img.src = DEFAULT_AVATAR; img.classList.add('loaded'); };
+            probe.onerror = () => { img.src = `${remoteBase}${activeCampaign.paths.avatars}default.png`; img.classList.add('loaded'); };
         });
     }
 

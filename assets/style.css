@@ -1,13 +1,16 @@
 /* --- CORE VARIABLES --- */
+/* Merged with Galactic Campaigns Color Palette */
 :root {
-    --gh-bg: #0d1117;
-    --gh-border: #30363d;
-    --gh-text: #c9d1d9;
-    --text-muted: #8b949e;
-    --sw-blue: #58a6ff;
-    --sw-yellow: #d29922;
-    --sw-glow: rgba(88, 166, 255, 0.15);
-    --panel-bg: #161b22;
+    --primary-bg: #1a202c;         /* GC Body BG */
+    --secondary-bg: #282c34;       /* GC Panel/Nav BG */
+    --gh-border: #4a4f57;          /* GC Border Color */
+    --gh-text: #e0e0e0;            /* GC Light Text */
+    --text-muted: #c0c0c0;         /* GC Darker Text */
+    --accent-blue: #61dafb;        /* GC Vibrant Blue Accent */
+    --accent-blue-hover: #4fa3d1;
+    --sw-yellow: #FFC107;          /* GC Loading Yellow / SW Warning */
+    
+    /* Layout Constants */
     --site-nav-height: 50px;
     --log-nav-height: 70px;
 }
@@ -24,9 +27,10 @@ html {
 body {
     margin: 0; padding: 0; 
     width: 100%;
-    background-color: var(--gh-bg);
+    background-color: var(--primary-bg);
     color: var(--gh-text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-family: 'Open Sans', Arial, sans-serif; /* GC Standard Font */
+    line-height: 1.6;
 }
 
 main { 
@@ -35,26 +39,29 @@ main {
     max-width: 900px; 
     margin: 0 auto; 
     padding: 0 15px;
-    /* Crucial for sticky children */
-    overflow: visible !important; 
+    overflow: visible !important; /* Required for sticky children */
 }
 
-/* --- 1. GLOBAL PERMANENT NAVIGATION --- */
+/* --- NAVIGATION HIERARCHY --- */
+
+/* 1. Global Permanent Navigation */
 .site-nav {
     position: sticky;
     top: 0;
     z-index: 9000;
-    background: var(--gh-bg);
-    border-bottom: 1px solid var(--gh-border);
+    background: var(--secondary-bg);
+    border-bottom: 2px solid var(--accent-blue); /* GC Accent Style */
     height: var(--site-nav-height);
     display: flex;
     align-items: center;
     padding: 0 20px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
 
 .nav-brand {
+    font-family: 'Montserrat', sans-serif;
     font-weight: bold;
-    color: var(--sw-yellow) !important;
+    color: var(--accent-blue) !important;
     text-transform: uppercase;
     letter-spacing: 2px;
     font-size: 0.9rem;
@@ -70,16 +77,22 @@ main {
     font-size: 0.75rem;
     text-transform: uppercase;
     color: var(--gh-text);
-    font-weight: bold;
+    font-weight: 600;
     letter-spacing: 1px;
+    text-decoration: none;
+    transition: color 0.3s ease;
 }
 
-/* --- 2. LOG-SPECIFIC STICKY NAVIGATION --- */
+.nav-links a:hover {
+    color: var(--accent-blue);
+}
+
+/* 2. Log-Specific Sticky Navigation */
 .frozen-nav {
     position: sticky;
-    top: var(--site-nav-height); /* Sticks under Global Nav */
+    top: var(--site-nav-height);
     z-index: 8000; 
-    background-color: var(--gh-bg); 
+    background-color: var(--secondary-bg); 
     border-bottom: 1px solid var(--gh-border);
     height: var(--log-nav-height);
     width: 100%;
@@ -97,34 +110,90 @@ main {
     align-items: center;
 }
 
+/* --- DISCORD MESSAGE FEED STYLING --- */
 
-/* --- REUSABLE UI COMPONENTS --- */
-.panel {
-    background: var(--panel-bg);
-    border: 1px solid var(--gh-border);
-    border-radius: 6px;
-    padding: 20px;
-    margin-bottom: 20px;
+.message-group { 
+    display: flex; 
+    padding: 15px 10px; 
+    border-bottom: 1px solid rgba(74, 79, 87, 0.3); 
+    transition: background 0.3s; 
 }
 
-.panel h3 {
-    margin: 0 0 15px 0;
-    font-size: 0.8rem;
+.avatar-container { 
+    width: 42px; 
+    height: 42px; 
+    margin-right: 15px; 
+    flex-shrink: 0; 
+    background: #1c2128; 
+    border-radius: 4px; 
+    overflow: hidden; 
+}
+
+.avatar { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+}
+
+.msg-body { flex-grow: 1; min-width: 0; }
+.username { color: var(--accent-blue); font-weight: bold; margin-right: 10px; }
+.timestamp { color: var(--text-muted); font-size: 0.75rem; font-family: monospace; }
+
+/* --- EXTENDED DISCORD MARKDOWN --- */
+
+.msg-content {
+    font-size: 0.95rem;
+    word-wrap: break-word;
+}
+
+/* Blockquotes */
+blockquote {
+    border-left: 4px solid var(--gh-border);
+    margin: 8px 0;
+    padding: 2px 15px;
+    background: rgba(255, 255, 255, 0.05);
     color: var(--text-muted);
-    text-transform: uppercase;
-    border-bottom: 1px solid var(--gh-border);
-    padding-bottom: 8px;
-    letter-spacing: 1px;
 }
 
-a { color: var(--sw-blue); text-decoration: none; transition: 0.2s; }
-a:hover { color: var(--sw-yellow); }
+/* Inline Code */
+code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 85%;
+}
 
-/* --- BUTTON THEME (TOC, Freq, Nav) --- */
+/* Spoilers */
+.spoiler {
+    background-color: #4f545c;
+    color: transparent;
+    border-radius: 3px;
+    padding: 0 2px;
+    cursor: help;
+    transition: color 0.2s ease;
+}
+.spoiler:hover { 
+    background-color: rgba(255,255,255,0.1); 
+    color: var(--gh-text); 
+}
+
+/* Headers within logs */
+.msg-content h1, .msg-content h2, .msg-content h3 {
+    font-family: 'Montserrat', sans-serif;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.subtext { display: block; font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+.emoji { height: 1.3em; vertical-align: middle; margin: 0 2px; }
+
+/* --- UI COMPONENTS --- */
+
 .toc-open-btn, .freq-btn, .nav-btn {
-    background: #1c2128 !important;
-    color: var(--sw-blue) !important;
-    border: 1px solid var(--sw-blue) !important;
+    background: var(--secondary-bg) !important;
+    color: var(--accent-blue) !important;
+    border: 1px solid var(--accent-blue) !important;
     padding: 8px 16px;
     font-weight: bold;
     cursor: pointer;
@@ -139,56 +208,48 @@ a:hover { color: var(--sw-yellow); }
 }
 
 .toc-open-btn:hover, .freq-btn:hover, .nav-btn:hover, .freq-btn.active {
-    background: var(--sw-blue) !important;
-    color: #000 !important;
-    box-shadow: 0 0 10px var(--sw-glow);
+    background: var(--accent-blue) !important;
+    color: var(--primary-bg) !important;
+    box-shadow: 0 0 10px rgba(97, 218, 251, 0.3);
 }
 
-/* --- DISCORD & CONTENT FORMATTING --- */
-.hero-section { text-align: center; padding: 20px 0; }
-.site-logo { width: 60%; max-width: 475px; height: auto; margin-bottom: 10px; }
-.flavor-text { color: var(--sw-yellow); font-style: italic; opacity: 0.8; font-size: 0.9rem; }
+/* --- MOBILE & PORTRAIT STABILIZATION --- */
 
-.timestamp { color: var(--text-muted); font-size: 0.8rem; font-family: monospace; }
-.subtext { display: block; font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+@media (max-width: 900px) {
+    /* Stabilize sticky navs for mobile */
+    .frozen-nav {
+        top: var(--site-nav-height);
+        height: auto;
+        padding: 10px 0;
+    }
+    
+    .nav-inner {
+        flex-direction: column;
+        gap: 8px;
+    }
 
-.spoiler {
-    background-color: #4f545c;
-    color: transparent;
-    border-radius: 3px;
-    padding: 0 2px;
-    cursor: help;
-}
-.spoiler:hover { background-color: rgba(255,255,255,0.1); color: var(--gh-text); }
+    .nav-brand { font-size: 0.8rem; }
+    
+    /* Ensure the log doesn't horizontal scroll on small screens */
+    .message-group {
+        padding: 10px 5px;
+    }
 
-blockquote {
-    border-left: 4px solid #4f545c;
-    margin: 8px 0;
-    padding: 2px 15px;
-    background: rgba(255, 255, 255, 0.02);
-}
-
-.emoji { height: 1.3em; vertical-align: middle; margin: 0 2px; }
-
-/* --- LISTS & ARCHIVES --- */
-.log-list, .archive-list { list-style: none; padding: 0; margin: 0; }
-.log-list li { padding: 12px 0; border-bottom: 1px solid var(--gh-border); }
-
-.view-all { display: block; margin-top: 15px; font-size: 0.8rem; font-weight: bold; text-align: right; }
-
-/* --- FOOTER --- */
-footer {
-    text-align: center;
-    padding: 60px 20px 40px;
-    border-top: 1px solid var(--gh-border);
-    margin-top: 100px;
-    font-size: 0.85rem;
+    .avatar-container {
+        width: 32px;
+        height: 32px;
+        margin-right: 10px;
+    }
 }
 
-/* --- RESPONSIVE DESIGN --- */
-@media (max-width: 800px) {
-    .dashboard-grid { grid-template-columns: 1fr !important; }
-    .nav-brand { font-size: 0.75rem; }
-    .nav-links { gap: 10px; }
-    .site-logo { width: 80%; }
+/* Portrait-specific centering for Hero logos */
+@media (max-width: 600px) and (orientation: portrait) {
+    .site-logo {
+        width: 90%;
+        max-width: 350px;
+    }
+    
+    .nav-links {
+        display: none; /* Optional: Hide menu links for mobile hamburger if implemented later */
+    }
 }

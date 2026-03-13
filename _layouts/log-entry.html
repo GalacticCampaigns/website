@@ -4,10 +4,24 @@ layout: default
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-dark.min.css">
 
 <style>
-  /* --- 1. TOC SIDEBAR (Unique to Log Entry) --- */
+  /* --- 1. THEME OVERRIDES --- */
+  .markdown-body {
+    background-color: transparent !important;
+    color: var(--gh-text) !important;
+    font-family: 'Open Sans', sans-serif !important;
+    padding-bottom: 120px; /* Space for sticky footer */
+  }
+  .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+    border-bottom: 1px solid var(--gh-border) !important;
+    color: var(--accent-blue) !important;
+    font-family: 'Montserrat', sans-serif;
+  }
+  .markdown-body a { color: var(--accent-blue) !important; }
+
+  /* --- 2. TOC SIDEBAR --- */
   .toc-sidebar {
     position: fixed; top: 0; left: 0; width: 280px; height: 100vh;
-    background: var(--gh-bg); border-right: 1px solid var(--sw-blue); 
+    background: var(--secondary-bg); border-right: 1px solid var(--accent-blue); 
     z-index: 100000; transform: translateX(-100%); 
     transition: transform 0.3s ease; padding: 25px; 
     overflow-y: auto; visibility: hidden;
@@ -24,17 +38,17 @@ layout: default
   .toc-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--gh-border); margin-bottom: 20px; padding-bottom: 10px; color: var(--text-muted); font-size: 0.8rem; letter-spacing: 1px; }
   .toc-close { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
 
-  /* TOC List Specifics */
   .toc-content ul, .toc-content li { list-style: none !important; padding: 0 !important; margin: 0 !important; }
-  .toc-content a { display: block; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; color: var(--sw-blue); }
+  .toc-content a { display: block; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.9rem; color: var(--accent-blue); text-decoration: none; }
+  .toc-content a:hover { background: rgba(97, 218, 251, 0.05); }
 
-  /* --- 2. STICKY FOOTER NAV (Optimized for Symmetry) --- */
+  /* --- 3. STICKY FOOTER NAV --- */
   .sticky-footer-nav { 
     position: fixed; bottom: 0; left: 0; 
     width: 100%; 
-    background: var(--gh-bg); 
+    background: var(--secondary-bg); 
     border-top: 1px solid var(--gh-border); 
-    padding: 10px 0;
+    padding: 12px 0;
     z-index: 4000; 
     box-shadow: 0 -5px 15px rgba(0,0,0,0.5); 
   }
@@ -47,44 +61,16 @@ layout: default
     gap: 12px; 
   }
 
-  .nav-btn { 
-    flex: 1; /* Forces exact 50/50 split */
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    padding: 12px; 
-    background: #1c2128; 
-    border: 1px solid var(--gh-border); 
-    border-radius: 4px; 
-    color: var(--sw-blue); 
-    font-size: 0.75rem; 
-    font-weight: bold; 
-    text-transform: uppercase; 
-    text-decoration: none;
-    text-align: center;
-    min-width: 0; /* Prevents long titles from breaking flexbox */
-  }
-  
-  /* Next button alignment */
-  .nav-btn.next { justify-content: center; }
-
-  .nav-btn.disabled { 
-    opacity: 0.15; 
-    cursor: not-allowed; 
-    background: transparent;
-    border: 1px solid transparent; /* Keeps sizing identical to active buttons */
-    color: var(--text-muted);
-  }
-
-  /* --- 3. RESPONSIVE FIXES --- */
+  /* --- 4. RESPONSIVE --- */
   @media (max-width: 600px) { 
-    .nav-text { display: none; } /* Hide text on mobile, icons only */
-    .nav-btn { padding: 15px; font-size: 1rem; } /* Larger touch targets for mobile icons */
-    .markdown-body { padding-bottom: 100px; } 
+    .nav-text { display: none; } 
+    .nav-btn { padding: 15px; font-size: 1rem; } 
+    .markdown-body { padding: 10px; padding-bottom: 100px; } 
   }
 </style>
 
 <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
 <div class="log-wrapper">
   <aside id="toc-sidebar" class="toc-sidebar">
     <div class="toc-header"><span>DATAPAD INDEX</span><button class="toc-close">×</button></div>
@@ -93,8 +79,8 @@ layout: default
 
   <article class="log-content">
     <header class="frozen-nav">
-        <div style="display: flex; gap: 10px; padding: 0 10px;">
-            <a href="{{ '/archives' | relative_url }}" class="toc-open-btn">⇠ ARCHIVES</a>
+        <div class="nav-inner">
+            <a href="#" id="dynamic-back-btn" class="toc-open-btn">⇠ ARCHIVES</a>
             <button id="toc-open-trigger" class="toc-open-btn">☰ VIEW INDEX</button>
         </div>
     </header>
@@ -104,36 +90,35 @@ layout: default
     </div>
 
     <footer class="sticky-footer-nav">
-      {% assign all_logs = site.pages | where: "layout", "log-entry" | sort: "path" %}
-      {% assign logs = all_logs | sort: "order" %}
+      {% assign all_logs = site.pages | where: "layout", "log-entry" | sort: "order" %}
       
-      {% for log in logs %}
-        {% if log.url == page.url %}
-          {% assign currentIndex = forloop.index0 %}
-          {% assign prevIndex = currentIndex | minus: 1 %}
-          {% assign nextIndex = currentIndex | plus: 1 %}
+      <div class="footer-nav-container">
+        {% for log in all_logs %}
+          {% if log.url == page.url %}
+            {% assign currentIndex = forloop.index0 %}
+            {% assign prevIndex = currentIndex | minus: 1 %}
+            {% assign nextIndex = currentIndex | plus: 1 %}
 
-          <div class="footer-nav-container">
             {% if prevIndex >= 0 %}
-              {% assign prevLog = logs[prevIndex] %}
-              <a href="{{ prevLog.url | relative_url }}" class="nav-btn">
+              {% assign prevLog = all_logs[prevIndex] %}
+              <a href="{{ prevLog.url | relative_url }}" class="nav-btn pagination-link">
                 «&nbsp;<span class="nav-text">PREV: {{ prevLog.title | truncate: 15 }}</span>
               </a>
             {% else %}
               <div class="nav-btn disabled">START</div>
             {% endif %}
 
-            {% if nextIndex < logs.size %}
-              {% assign nextLog = logs[nextIndex] %}
-              <a href="{{ nextLog.url | relative_url }}" class="nav-btn next">
+            {% if nextIndex < all_logs.size %}
+              {% assign nextLog = all_logs[nextIndex] %}
+              <a href="{{ nextLog.url | relative_url }}" class="nav-btn next pagination-link">
                 <span class="nav-text">NEXT: {{ nextLog.title | truncate: 15 }}</span>&nbsp;»
               </a>
             {% else %}
               <div class="nav-btn disabled">END</div>
             {% endif %}
-          </div>
-        {% endif %}
-      {% endfor %}
+          {% endif %}
+        {% endfor %}
+      </div>
     </footer>
   </article>
 </div>
@@ -146,32 +131,47 @@ document.addEventListener("DOMContentLoaded", function() {
     const closeBtn = document.querySelector('.toc-close');
     const tocTarget = document.getElementById('toc-target');
     
+    // 1. Maintain Campaign Slug across links
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('c');
+    
+    if (slug) {
+        // Update Back Button
+        document.getElementById('dynamic-back-btn').href = `{{ '/archives' | relative_url }}?c=${slug}`;
+        
+        // Update Pagination Links so the slug follows the user
+        document.querySelectorAll('.pagination-link').forEach(link => {
+            const url = new URL(link.href);
+            url.searchParams.set('c', slug);
+            link.href = url.toString();
+        });
+    } else {
+        document.getElementById('dynamic-back-btn').href = `{{ '/archives' | relative_url }}`;
+    }
+
+    // 2. Build TOC from Markdown Headers
     function buildTOC() {
         const headers = document.querySelectorAll('.markdown-body h2, .markdown-body h3');
         if (headers.length > 0) {
             const list = document.createElement('ul');
             headers.forEach((header, index) => {
-                if (!header.id) {
-                    header.id = "nav-item-" + index;
-                }
+                const id = "nav-item-" + index;
+                header.id = id;
                 const li = document.createElement('li');
-                if (header.tagName === 'H3') {
-                    li.style.paddingLeft = "15px";
-                    li.style.fontSize = "0.85rem";
-                }
+                if (header.tagName === 'H3') li.style.paddingLeft = "20px";
+                
                 const a = document.createElement('a');
-                a.href = "#" + header.id;
+                a.href = "#" + id;
                 a.textContent = header.textContent.trim();
-                a.addEventListener('click', () => {
-                    if (window.innerWidth < 1200) toggleTOC();
-                });
+                a.onclick = () => { if (window.innerWidth < 1200) toggleTOC(); };
+                
                 li.appendChild(a);
                 list.appendChild(li);
             });
             tocTarget.innerHTML = ""; 
             tocTarget.appendChild(list);
         } else {
-            tocTarget.innerHTML = "<p style='color:var(--text-muted); font-size:0.8rem; padding: 10px;'>No navigation markers found.</p>";
+            tocTarget.innerHTML = "<p style='color:var(--text-muted); font-size:0.8rem; padding: 10px;'>No data spikes detected.</p>";
         }
     }
 
@@ -181,9 +181,9 @@ document.addEventListener("DOMContentLoaded", function() {
         document.body.style.overflow = isActive ? 'hidden' : '';
     }
 
-    if (openBtn) openBtn.addEventListener('click', (e) => { e.preventDefault(); toggleTOC(); });
-    if (closeBtn) closeBtn.addEventListener('click', toggleTOC);
-    if (overlay) overlay.addEventListener('click', toggleTOC);
+    if (openBtn) openBtn.onclick = (e) => { e.preventDefault(); toggleTOC(); };
+    if (closeBtn) closeBtn.onclick = toggleTOC;
+    if (overlay) overlay.onclick = toggleTOC;
 
     buildTOC();
 });
