@@ -3,7 +3,7 @@ param (
     [switch]$ForceUpdate = $false
 )
 
-# Configuration: We now use the registry as the single source of truth
+# Configuration: Single Source of Truth
 $manifestPath = "assets/campaign-registry.json"
 $droppedItems = @()
 
@@ -12,6 +12,7 @@ if (-not (Test-Path $manifestPath)) {
     exit 1
 }
 
+# Read manifest and ensure it is treated as a modifiable object
 $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
 
 # --- Logic: Loop through each campaign defined in the registry ---
@@ -19,7 +20,7 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
     $camp = $manifest.campaigns.$campaignKey
     Write-Host "--- Hydrating Campaign: $($camp.name) ($campaignKey) ---"
     
-    # Track discovered IDs in this run to identify orphans
+    # Track discovered IDs in this run to identify orphans later
     $foundChannelIDs = @()
 
     # Determine if we are looking at a remote GitHub Repo
@@ -47,14 +48,14 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
             $messages = if ($jsonData.PSObject.Properties.Name -contains 'messages') { $jsonData.messages } else { $jsonData }
             if (-not $messages) { continue }
 
-            # 1. Identify Primary Channel ID (Chapter ID)
-            # We look at the first message's channel_id or the thread's parent_id
+            # 1. Identify Primary Channel ID (Forced to String for reliable matching)
             $firstMsg = $messages | Select-Object -First 1
             $primaryID = if ($firstMsg.thread -and $firstMsg.thread.parent_id) { [string]$firstMsg.thread.parent_id } else { [string]$firstMsg.channel_id }
             $foundChannelIDs += $primaryID
 
-            # 2. Find or Create the Log Entry
-            $logEntry = $camp.logs | Where-Object { $_.channelID -eq $primaryID }
+            # 2. Find or Create the Log Entry (Match using String comparison)
+            $logEntry = $camp.logs | Where-Object { [string]$_.channelID -eq $primaryID }
+            
             if (-not $logEntry) {
                 Write-Host "    + New Chapter detected! ID: $primaryID"
                 $logEntry = [PSCustomObject]@{ 
@@ -69,22 +70,27 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
                     lastMessageTimestamp = ""
                     order = 0
                 }
+                # Initialize the logs array if it's currently null
+                if ($null -eq $camp.logs) { $camp.logs = @() }
                 $camp.logs += $logEntry
             }
 
-            # 3. Update Dynamic Metadata (Force properties to exist)
-            $logEntry | Add-Member -MemberType NoteProperty -Name "fileName" -Value ([string]$f.name) -Force
-            $logEntry | Add-Member -MemberType NoteProperty -Name "isActive" -Value $true -Force
+            # 3. Update Dynamic Metadata (Force creation of properties to avoid Exception setting errors)
+            $logEntry | Add-Member -NotePropertyName "fileName" -NotePropertyValue ([string]$f.name) -Force
+            $logEntry | Add-Member -NotePropertyName "isActive" -NotePropertyValue $true -Force
             
             $sortedMsgs = $messages | Sort-Object timestamp
-            $logEntry.lastMessageTimestamp = [string]$sortedMsgs[-1].timestamp
-            $logEntry.order = if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 }
+            $logEntry | Add-Member -NotePropertyName "lastMessageTimestamp" -NotePropertyValue ([string]$sortedMsgs[-1].timestamp) -Force
+            
+            $orderVal = if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 }
+            $logEntry | Add-Member -NotePropertyName "order" -NotePropertyValue $orderVal -Force
 
-            # 4. Accurate Message Counting
+            # 4. Accurate Message Counting (Includes Threads, Excludes System Noise)
             $validMsgs = $messages | Where-Object { 
-                $_.content -ne "" -and ($_.type -eq "Default" -or $_.type -eq 0 -or -not $_.type) 
+                $_.content -ne "" -and 
+                ($_.type -eq "Default" -or $_.type -eq 0 -or -not $_.type) 
             }
-            $logEntry.messageCount = $validMsgs.Count
+            $logEntry | Add-Member -NotePropertyName "messageCount" -NotePropertyValue $validMsgs.Count -Force
 
             # 5. Thread Inventory
             $foundThreadIDs = @()
@@ -93,36 +99,44 @@ foreach ($campaignKey in $manifest.campaigns.PSObject.Properties.Name) {
             foreach ($group in $threadGroups) {
                 $tID = [string]$group.Name
                 $foundThreadIDs += $tID
-                $threadEntry = $logEntry.threads | Where-Object { $_.threadID -eq $tID }
+                $threadEntry = $logEntry.threads | Where-Object { [string]$_.threadID -eq $tID }
                 
                 if (-not $threadEntry) {
                     $threadEntry = [PSCustomObject]@{ 
                         threadID = $tID
                         displayName = [string]$group.Group[0].thread.name
                         isNSFW = $false
-                        isActive = $true # Initialize here
+                        isActive = $true
                         messageCount = 0
                     }
+                    if ($null -eq $logEntry.threads) { $logEntry.threads = @() }
                     $logEntry.threads += $threadEntry
                 }
                 
-                # Use Add-Member to bypass the "Property not found" error for threads
-                $threadEntry | Add-Member -MemberType NoteProperty -Name "isActive" -Value $true -Force
-                $threadEntry.messageCount = ($group.Group | Where-Object { $_.content -ne "" -and ($_.type -eq "Default" -or $_.type -eq 0) }).Count
+                $threadEntry | Add-Member -NotePropertyName "isActive" -NotePropertyValue $true -Force
+                $threadEntry | Add-Member -NotePropertyName "messageCount" -NotePropertyValue ($group.Count) -Force
+            }
+
+            # Mark missing threads as inactive within this log
+            foreach ($t in $logEntry.threads) {
+                if ($foundThreadIDs -notcontains [string]$t.threadID) { 
+                    $t | Add-Member -NotePropertyName "isActive" -NotePropertyValue $false -Force 
+                }
             }
         }
     }
 
     # 6. Global Cleanup: Mark orphaned logs as inactive
     foreach ($log in $camp.logs) {
-        if ($foundChannelIDs -notcontains $log.channelID) {
-            $log.isActive = $false
+        if ($foundChannelIDs -notcontains [string]$log.channelID) {
+            $log | Add-Member -NotePropertyName "isActive" -NotePropertyValue $false -Force
             $droppedItems += "Campaign: $($camp.name) | Log: $($log.title) (ID: $($log.channelID))"
         }
     }
 }
 
 # --- Final Step: Save and Report ---
+# Depth 10 ensures nested arrays (threads) are not truncated in the JSON output
 $manifest | ConvertTo-Json -Depth 10 | Out-File $manifestPath -Encoding UTF8
 Write-Host "--- Hydration Complete ---"
 
@@ -130,6 +144,4 @@ if ($droppedItems.Count -gt 0) {
     $report = "DROPPED IDs DETECTED:`n" + ($droppedItems -join "`n")
     Write-Host "##[warning]$report"
     $report | Out-File "dropped_report.txt" -Encoding UTF8
-
 }
-
