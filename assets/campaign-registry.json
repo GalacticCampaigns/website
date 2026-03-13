@@ -27,35 +27,35 @@
               "displayName": "Awakening: The Wayward Vigil",
               "isNSFW": false,
               "isActive": true,
-              "messageCount": 1
+              "messageCount": 0
             },
             {
               "threadID": "1463321256370634967",
               "displayName": "Intro: The Static Heart (Lis)",
               "isNSFW": false,
               "isActive": true,
-              "messageCount": 1
+              "messageCount": 0
             },
             {
               "threadID": "1463328960468357184",
               "displayName": "Intro: The Muted Echo (Ciara)",
               "isNSFW": false,
               "isActive": true,
-              "messageCount": 1
+              "messageCount": 0
             },
             {
               "threadID": "1463337940141867232",
               "displayName": "Intro: The Hollow Vigil (Cajar)",
               "isNSFW": false,
               "isActive": true,
-              "messageCount": 1
+              "messageCount": 0
             },
             {
               "threadID": "1466947514015023268",
               "displayName": "Venture - Medbay",
               "isNSFW": false,
               "isActive": true,
-              "messageCount": 1
+              "messageCount": 0
             },
             {
               "threadID": "1467270244383854787",
@@ -120,12 +120,11 @@
           "file": "FO_BB_Prelude-Dryzan.json",
           "preview": "",
           "isNSFW": false,
-          "threads": [
-          ],
+          "threads": [],
+          "order": 0,
           "fileName": "FO_BB_Prelude-Dryzan.json",
           "isActive": true,
           "lastMessageTimestamp": "07/25/2025 01:02:40",
-          "order": 0,
           "messageCount": 176
         },
         {
@@ -134,12 +133,11 @@
           "file": "FO_BB_Prelude-Iyola.json",
           "preview": "",
           "isNSFW": false,
-          "threads": [
-          ],
+          "threads": [],
+          "order": 0,
           "fileName": "FO_BB_Prelude-Iyola.json",
           "isActive": true,
           "lastMessageTimestamp": "07/25/2025 00:03:06",
-          "order": 0,
           "messageCount": 107
         },
         {
@@ -148,12 +146,11 @@
           "file": "FO_BB_Prelude-Krynn.json",
           "preview": "",
           "isNSFW": false,
-          "threads": [
-          ],
+          "threads": [],
+          "order": 0,
           "fileName": "FO_BB_Prelude-Krynn.json",
           "isActive": true,
           "lastMessageTimestamp": "06/12/2025 19:27:19",
-          "order": 0,
           "messageCount": 1
         },
         {
@@ -162,12 +159,11 @@
           "file": "FO_BB_Prelude-Vaeros.json",
           "preview": "",
           "isNSFW": false,
-          "threads": [
-          ],
+          "threads": [],
+          "order": 0,
           "fileName": "FO_BB_Prelude-Vaeros.json",
           "isActive": true,
           "lastMessageTimestamp": "07/01/2025 02:47:54",
-          "order": 0,
           "messageCount": 130
         },
         {
@@ -176,12 +172,11 @@
           "file": "FO_BB_Prelude-Varda.json",
           "preview": "",
           "isNSFW": false,
-          "threads": [
-          ],
+          "threads": [],
+          "order": 0,
           "fileName": "FO_BB_Prelude-Varda.json",
           "isActive": true,
           "lastMessageTimestamp": "06/18/2025 23:49:12",
-          "order": 0,
           "messageCount": 135
         },
         {
@@ -195,15 +190,27 @@
               "threadID": "1381783926871298098",
               "displayName": "Prelude: The Echo in the Stone (Vena)",
               "isNSFW": false,
-              "isActive": true,
-              "messageCount": 1
+              "messageCount": 1,
+              "isActive": false
             }
           ],
+          "order": 0,
           "fileName": "FO_BB_Prelude-Vena.json",
           "isActive": true,
           "lastMessageTimestamp": "06/12/2025 01:37:02",
-          "order": 0,
           "messageCount": 1
+        },
+        {
+          "channelID": "",
+          "title": "FO CH1 AWAKENING",
+          "isNSFW": false,
+          "threads": [],
+          "preview": "",
+          "fileName": "FO_Ch3_beneath-the-glare.json",
+          "isActive": true,
+          "lastMessageTimestamp": "",
+          "order": 3,
+          "messageCount": 0
         }
       ]
     }
