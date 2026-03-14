@@ -70,12 +70,12 @@
               "messageCount": 1
             }
           ],
-          "fileName": "FO_Ch4-Resonance-Frequency.json",
           "isActive": true,
           "channelID": "1463269257151254540",
           "lastMessageTimestamp": "03/08/2026 15:48:52",
           "messageCount": 476,
-          "order": 4
+          "order": 4,
+          "fileName": "FO_Ch4-Resonance-Frequency.json"
         },
         {
           "title": "CHAPTER 3: BENEATH THE GLARE",
@@ -83,11 +83,11 @@
           "isNSFW": false,
           "threads": [],
           "channelID": "",
-          "fileName": "FO_Ch3_beneath-the-glare.json",
           "isActive": true,
           "lastMessageTimestamp": "",
           "messageCount": 0,
-          "order": 3
+          "order": 3,
+          "fileName": "FO_Ch3_beneath-the-glare.json"
         },
         {
           "title": "CHAPTER 2: SILENT DRIFT",
@@ -95,11 +95,11 @@
           "isNSFW": false,
           "threads": [],
           "channelID": "",
-          "fileName": "FO_Ch2_Silent-Drift.json",
           "isActive": true,
           "lastMessageTimestamp": "",
           "messageCount": 0,
-          "order": 2
+          "order": 2,
+          "fileName": "FO_Ch2_Silent-Drift.json"
         },
         {
           "title": "CHAPTER 1: AWAKENING",
@@ -107,83 +107,83 @@
           "isNSFW": false,
           "threads": [],
           "channelID": "",
-          "fileName": "FO_Ch1_Awakening.json",
           "isActive": true,
           "lastMessageTimestamp": "",
           "messageCount": 0,
-          "order": 1
+          "order": 1,
+          "fileName": "FO_Ch1_Awakening.json"
         },
         {
           "title": "PRELUDE: The Static on the Line (Dryzan)",
           "preview": "",
           "isNSFW": false,
           "threads": [],
-          "fileName": "FO_BB_Prelude-Dryzan.json",
           "isActive": true,
           "channelID": "1381783775301734441",
           "lastMessageTimestamp": "07/25/2025 01:02:40",
           "messageCount": 176,
-          "order": 0
+          "order": 0,
+          "fileName": "FO_BB_Prelude-Dryzan.json"
         },
         {
           "title": "PRELUDE: The Sunken Star of Xylos (Iyola)",
           "preview": "",
           "isNSFW": false,
           "threads": [],
-          "fileName": "FO_BB_Prelude-Iyola.json",
           "isActive": true,
           "channelID": "1386794250947264743",
           "lastMessageTimestamp": "07/25/2025 00:03:06",
           "messageCount": 107,
-          "order": 0
+          "order": 0,
+          "fileName": "FO_BB_Prelude-Iyola.json"
         },
         {
           "title": "PRELUDE: (KRYNN)",
           "preview": "",
           "isNSFW": false,
           "threads": [],
-          "fileName": "FO_BB_Prelude-Krynn.json",
           "isActive": true,
           "channelID": "1382803271185469562",
           "lastMessageTimestamp": "06/12/2025 19:27:19",
           "messageCount": 1,
-          "order": 0
+          "order": 0,
+          "fileName": "FO_BB_Prelude-Krynn.json"
         },
         {
           "title": "PRELUDE: Ghost of the <i>Devastation<i> (Vearos)",
           "preview": "",
           "isNSFW": false,
           "threads": [],
-          "fileName": "FO_BB_Prelude-Vaeros.json",
           "isActive": true,
           "channelID": "1385685912834277456",
           "lastMessageTimestamp": "07/01/2025 02:47:54",
           "messageCount": 130,
-          "order": 0
+          "order": 0,
+          "fileName": "FO_BB_Prelude-Vaeros.json"
         },
         {
           "title": "PRELUDE: The Price of a Vision (Varda)",
           "preview": "",
           "isNSFW": false,
           "threads": [],
-          "fileName": "FO_BB_Prelude-Varda.json",
           "isActive": true,
           "channelID": "1381784157688037396",
           "lastMessageTimestamp": "06/18/2025 23:49:12",
           "messageCount": 135,
-          "order": 0
+          "order": 0,
+          "fileName": "FO_BB_Prelude-Varda.json"
         },
         {
           "title": "PRELUDE: (VENA)",
           "preview": "",
           "isNSFW": false,
           "threads": [],
-          "fileName": "FO_BB_Prelude-Vena.json",
           "isActive": true,
           "channelID": "1381783926871298098",
           "lastMessageTimestamp": "06/12/2025 01:37:02",
           "messageCount": 1,
-          "order": 0
+          "order": 0,
+          "fileName": "FO_BB_Prelude-Vena.json"
         }
       ]
     }
