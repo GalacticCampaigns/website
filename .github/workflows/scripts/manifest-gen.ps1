@@ -36,30 +36,32 @@ foreach ($campaignKey in $campaignKeys) {
 
         try {
             $rawJson = Invoke-RestMethod -Uri $f.download_url
+            # Handle both wrapper objects and top-level arrays
             $msgList = if ($rawJson.PSObject.Properties.Name -contains 'messages') { $rawJson.messages } else { $rawJson }
         } catch { Write-Warning "    ! Download/Parse failed."; continue }
 
         if ($null -eq $msgList -or $msgList.Count -eq 0) { continue }
 
-        # 1. RESOLVE CHAPTER ID (Methodology Transferred from Log-Viewer)
-        # We count occurrences of parent_ids to find the "Main" frequency
+        # 1. RESOLVE CHAPTER ID (PowerShell-native Majority Rule)
         $parentCounts = @{}
         foreach ($m in $msgList) {
-            $parentID = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
-            $channelID = if ($m.channel_id) { [string]$m.channel_id } else { "" }
+            $currentParentID = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
+            $currentChannelID = if ($m.channel_id) { [string]$m.channel_id } else { "" }
             
-            $idToCount = if ($parentID) { $parentID } else { $channelID }
+            $idToCount = if ($currentParentID) { $currentParentID } else { $currentChannelID }
+            
             if ($idToCount -and $idToCount.Length -gt 10) {
-                $parentCounts[$idToCount] = ($parentCounts[$idToCount] || 0) + 1
+                if (-not $parentCounts.ContainsKey($idToCount)) { $parentCounts[$idToCount] = 0 }
+                $parentCounts[$idToCount]++
             }
         }
 
-        # Select the ID with the highest frequency (The "Main" Channel)
         if ($parentCounts.Count -gt 0) {
+            # Sort by count and pick the top one
             $resolvedID = ($parentCounts.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 1).Key
         }
 
-        # 2. RESOLVE THREADS (Consistent with Log-Viewer mapping)
+        # 2. RESOLVE THREADS
         $threadGroups = $msgList | Where-Object { $_.thread -and $_.thread.id -and [string]$_.thread.id -ne $resolvedID } | Group-Object { [string]$_.thread.id }
         foreach ($g in $threadGroups) {
             $foundThreads += [PSCustomObject]@{
@@ -67,12 +69,15 @@ foreach ($campaignKey in $campaignKeys) {
                 displayName = [string]$g.Group[0].thread.name
                 isActive = $true
                 isNSFW = $false
-                messageCount = $g.Count
+                messageCount = [int]$g.Count
             }
+            if ($DebugLog) { Write-DebugHost "    [Thread Found] ID: $($g.Name) | Name: $($g.Group[0].thread.name) | Count: $($g.Count)" }
         }
 
         # 3. SMART REBUILD
         $oldRecord = $persistMap[$f.name]
+        
+        # Valid message types (0=Default, 18=Thread Start, 19=Reply)
         $validTypes = @(0, 18, 19, "Default", "Reply", "ThreadCreated")
         $newCount = ($msgList | Where-Object { $validTypes -contains $_.type }).Count
 
@@ -101,6 +106,7 @@ foreach ($campaignKey in $campaignKeys) {
         }
     }
 
+    # Handle Orphans
     foreach ($oldKey in $persistMap.Keys) {
         if ($processedFiles -notcontains $oldKey) {
             $orphan = $persistMap[$oldKey]
@@ -112,5 +118,6 @@ foreach ($campaignKey in $campaignKeys) {
     $camp.logs = $newLogList
 }
 
+# Final Export
 $manifest | ConvertTo-Json -Depth 10 | Out-File $manifestPath -Encoding UTF8
 Write-Host "--- Hydration Complete ---"
