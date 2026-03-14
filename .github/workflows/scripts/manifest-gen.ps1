@@ -29,9 +29,7 @@ foreach ($campaignKey in $campaignKeys) {
     
     try {
         $remoteFiles = Invoke-RestMethod -Uri $apiUrl -Method Get -Headers @{"Accept"="application/vnd.github.v3+json"}
-    } catch { 
-        Write-Warning "Could not access API for $campaignKey"; continue 
-    }
+    } catch { continue }
 
     foreach ($f in $remoteFiles | Where-Object { $_.name -like "*.json" }) {
         # --- RESET ---
@@ -41,85 +39,66 @@ foreach ($campaignKey in $campaignKeys) {
         Write-Host "  > Processing: $($f.name)"
         try {
             $rawJson = Invoke-RestMethod -Uri $f.download_url
+            # NORMALIZATION: Handle both Object {messages:[]} and Array []
             if ($rawJson.PSObject.Properties.Name -contains 'messages') { 
                 $messages = $rawJson.messages 
-                Write-DebugHost "Detected 'messages' key format."
             } else { 
                 $messages = $rawJson 
-                Write-DebugHost "Detected flat array format."
             }
         } catch { continue }
 
-        if ($null -eq $messages -or $messages.Count -eq 0) {
-            Write-Warning "    ! No messages found in $($f.name)"; continue
-        }
+        if ($null -eq $messages -or $messages.Count -eq 0) { continue }
 
-        # --- ID RESOLUTION SCAN ---
+        # --- ROBUST ID RESOLUTION ---
         foreach ($msg in $messages) {
-            # Descriptive names to avoid reserved variables like $PID
-            $msgChanId = [string]$msg.channel_id
-            $msgParentId = if ($msg.thread) { [string]$msg.thread.parent_id } else { $null }
+            # Force to string immediately to avoid .Length errors on Int64
+            $mChanId = if ($msg.channel_id) { [string]$msg.channel_id } else { "" }
+            $mParentId = if ($msg.thread -and $msg.thread.parent_id) { [string]$msg.thread.parent_id } else { "" }
 
-            # Priority Logic: Use Parent ID if it's a valid Snowflake
-            if ($msgParentId -and $msgParentId.Length -gt 15 -and $msgParentId -ne "1") { 
-                $primaryID = $msgParentId
-                Write-DebugHost "Found valid Parent ID: $primaryID. Marking as Chapter ID."
-                break 
+            # Priority 1: Parent ID (if it's a thread export)
+            if ($mParentId.Length -gt 15 -and $mParentId -ne "1") {
+                $primaryID = $mParentId
+                Write-DebugHost "Found Chapter ID via Parent: $primaryID"
+                break
             }
-            # Otherwise, use Channel ID if it's a valid Snowflake
-            elseif ($msgChanId -and $msgChanId.Length -gt 15) { 
-                $primaryID = $msgChanId
-                Write-DebugHost "Found valid Channel ID: $primaryID. Marking as Chapter ID."
-                break 
+            # Priority 2: Channel ID
+            if ($mChanId.Length -gt 15) {
+                $primaryID = $mChanId
+                Write-DebugHost "Found Chapter ID via Channel: $primaryID"
+                break
             }
         }
 
-        # --- MATCHING ---
+        if (-not $primaryID) {
+            Write-Warning "    ! Could not resolve a valid ID for $($f.name). Skipping."; continue
+        }
+
+        # --- MATCHING (FileName First) ---
         $logEntry = $camp.logs | Where-Object { $_.fileName -eq $f.name -or $_.file -eq $f.name }
 
         if (-not $logEntry) {
             Write-Host "    + Adding NEW registry entry..."
             $logEntry = [PSCustomObject]@{ 
-                title = ($f.name -replace '\.json$', '' -replace '_', ' ').ToUpper()
-                fileName = [string]$f.name
-                channelID = if($primaryID){$primaryID}else{""}
-                isActive = $true
-                threads = @()
-                messageCount = 0
-                preview = ""
-                order = 0
+                channelID = $primaryID; title = ($f.name -replace '\.json$', '' -replace '_', ' ').ToUpper()
+                fileName = [string]$f.name; isActive = $true; threads = @(); messageCount = 0; order = 0
             }
             if ($null -eq $camp.logs) { $camp.logs = @() }
             $camp.logs += $logEntry
         }
 
-        # --- UPDATE ---
+        # --- UPDATE DATA ---
         if ($logEntry.PSObject.Properties['file']) { $logEntry.PSObject.Properties.Remove('file') }
         $logEntry | Add-Member -NotePropertyName "fileName" -NotePropertyValue ([string]$f.name) -Force
+        $logEntry | Add-Member -NotePropertyName "channelID" -NotePropertyValue $primaryID -Force
         $logEntry | Add-Member -NotePropertyName "isActive" -NotePropertyValue $true -Force
-        
-        # Only overwrite channelID if we found a valid one in the file
-        if ($primaryID) {
-            $logEntry | Add-Member -NotePropertyName "channelID" -NotePropertyValue $primaryID -Force 
-        } else {
-            Write-Warning "    ! No ID found in file. Keeping existing registry ID: $($logEntry.channelID)"
-        }
         
         $sorted = $messages | Sort-Object timestamp
         $logEntry | Add-Member -NotePropertyName "lastMessageTimestamp" -NotePropertyValue ([string]$sorted[-1].timestamp) -Force
-        
-        $validMsgs = $messages | Where-Object { $_.content -ne "" -and ($_.type -eq "Default" -or $_.type -eq 0) }
-        $logEntry | Add-Member -NotePropertyName "messageCount" -NotePropertyValue $validMsgs.Count -Force
-        
-        if ($f.name -match '(\d+)') { 
-            $logEntry | Add-Member -NotePropertyName "order" -NotePropertyValue ([int]$matches[1]) -Force 
-        }
+        $logEntry | Add-Member -NotePropertyName "messageCount" -NotePropertyValue ($messages | Where-Object { $_.content -ne "" -and ($_.type -eq "Default" -or $_.type -eq 0) }).Count -Force
+        $logEntry | Add-Member -NotePropertyName "order" -NotePropertyValue (if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 }) -Force
 
-        # --- THREADS ---
-        $threadMsgs = $messages | Where-Object { 
-            $_.thread -and $_.thread.id -and [string]$_.thread.id -ne [string]$logEntry.channelID 
-        }
-
+        # --- THREADS (Filtered to avoid Chapter Starter duplication) ---
+        $threadMsgs = $messages | Where-Object { $_.thread -and $_.thread.id -and [string]$_.thread.id -ne $primaryID }
         if ($threadMsgs) {
             $groups = $threadMsgs | Group-Object { [string]$_.thread.id }
             foreach ($g in $groups) {
@@ -129,11 +108,7 @@ foreach ($campaignKey in $campaignKeys) {
                 $tEntry = $logEntry.threads | Where-Object { [string]$_.threadID -eq $tID }
                 
                 if (-not $tEntry) {
-                    $tEntry = [PSCustomObject]@{ 
-                        threadID = $tID; 
-                        displayName = [string]$g.Group[0].thread.name; 
-                        isNSFW = $false 
-                    }
+                    $tEntry = [PSCustomObject]@{ threadID = $tID; displayName = [string]$g.Group[0].thread.name; isNSFW = $false }
                     $logEntry.threads += $tEntry
                 }
                 $tEntry | Add-Member -NotePropertyName "isActive" -NotePropertyValue $true -Force
@@ -142,8 +117,8 @@ foreach ($campaignKey in $campaignKeys) {
         }
         foreach ($t in $logEntry.threads) { if ($foundThreadIDs -notcontains [string]$t.threadID) { $t.isActive = $false } }
     }
-
-    # Orphan Cleanup
+    
+    # ORPHAN CLEANUP
     foreach ($log in $camp.logs) {
         if ($processedFileNames -notcontains $log.fileName) { $log.isActive = $false }
     }
