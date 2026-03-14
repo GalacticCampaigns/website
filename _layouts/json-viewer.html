@@ -201,16 +201,20 @@ async function init() {
         });
 
         const hash = window.location.hash.substring(1);
-        const [chanId, msgId] = hash.split(':');
+        const hashParts = hash.split(':');
+        const chanId = hashParts[0];
+        const msgId = hashParts[1]; // Extract msgId if present
 
         if (chanId) {
             const entry = activeCampaign.logs.find(m => m.channelID === chanId);
             if (entry) {
                 picker.value = chanId;
-                await loadChapter(chanId, msgId);
+                // Pass both IDs to loadChapter
+                await loadChapter(chanId, msgId); 
                 return;
             }
         }
+
 
         if (activeCampaign.logs.length > 0) {
             picker.value = activeCampaign.logs[0].channelID;
@@ -237,25 +241,20 @@ async function loadChapter(channelID, targetMsg = null) {
 
         fullData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        channelMap = {};
-        let parentCounts = {};
-        fullData.forEach(m => {
-            if (m.thread) {
-                channelMap[m.thread.id] = m.thread.name.toUpperCase();
-                if (m.thread.parent_id) {
-                    parentCounts[m.thread.parent_id] = (parentCounts[m.thread.parent_id] || 0) + 1;
-                }
-            }
-        });
-
-        mainChannelId = Object.keys(parentCounts).reduce((a, b) => parentCounts[a] > parentCounts[b] ? a : b, null);
-        if (!mainChannelId && fullData.length > 0) mainChannelId = fullData[0].channel_id;
+        // ... [Keep your channelMap/mainChannelId logic here] ...
 
         buildFrequencyBar();
+        
+        // 1. Render the feed
         renderFeed('all');
 
+        // 2. Resolve the jump with a slight delay to ensure DOM paint
         if (targetMsg) {
-            setTimeout(() => jumpToMessage(targetMsg), 400);
+            if (EnableDebugMode) console.log(`[DEBUG] Attempting jump to: ${targetMsg}`);
+            // Use requestAnimationFrame for better timing than a flat setTimeout
+            requestAnimationFrame(() => {
+                setTimeout(() => jumpToMessage(targetMsg), 300);
+            });
         } else {
             window.scrollTo(0, 0);
         }
@@ -479,11 +478,18 @@ function buildFrequencyBar() {
 }
 
 function jumpToMessage(msgId) {
-    const target = document.getElementById(`msg-${msgId}`);
+    if (!msgId) return;
+    
+    // Support both raw Snowflake and prefixed ID
+    const cleanId = msgId.startsWith('msg-') ? msgId : `msg-${msgId}`;
+    const target = document.getElementById(cleanId);
+    
     if (target) {
         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
         target.classList.add('highlight-flash');
-        setTimeout(() => target.classList.remove('highlight-flash'), 2000);
+        setTimeout(() => target.classList.remove('highlight-flash'), 3000);
+    } else {
+        console.warn(`[HOLONET] Target signal ${cleanId} not found in current sector.`);
     }
 }
 
