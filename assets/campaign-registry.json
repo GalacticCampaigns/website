@@ -50,15 +50,7 @@
           "order": 0,
           "messageCount": 1,
           "lastMessageTimestamp": "2025-06-12T19:27:19.913+00:00",
-          "threads": [
-            {
-              "threadID": "1382803271185469562",
-              "displayName": "Prelude: The Stray Fortune (Krynn)",
-              "isActive": true,
-              "isNSFW": false,
-              "messageCount": 0
-            }
-          ]
+          "threads": []
         },
         {
           "title": "PRELUDE: Ghost of the <i>Devastation<i> (Vearos)",
@@ -94,21 +86,13 @@
           "order": 0,
           "messageCount": 1,
           "lastMessageTimestamp": "2025-06-12T01:37:02.532+00:00",
-          "threads": [
-            {
-              "threadID": "1381783926871298098",
-              "displayName": "Prelude: The Echo in the Stone (Vena)",
-              "isActive": true,
-              "isNSFW": false,
-              "messageCount": 0
-            }
-          ]
+          "threads": []
         },
         {
           "title": "CHAPTER 1: AWAKENING",
           "channelID": "1387901967317209218",
           "fileName": "FO_Ch1_Awakening.json",
-          "isActive": false,
+          "isActive": true,
           "isNSFW": false,
           "preview": "",
           "order": 1,
@@ -177,7 +161,7 @@
           "title": "CHAPTER 2: SILENT-DRIFT",
           "channelID": "140081666527671102",
           "fileName": "FO_Ch2_Silent-Drift.json",
-          "isActive": false,
+          "isActive": true,
           "isNSFW": false,
           "preview": "",
           "order": 2,
@@ -221,14 +205,14 @@
             },
             {
               "threadID": "1418930804574392412",
-              "displayName": "Varda lowers herself into the chair with",
+              "displayName": "Varda Vision",
               "isActive": true,
               "isNSFW": false,
               "messageCount": 1
             },
             {
               "threadID": "1423451795291639831",
-              "displayName": "Back to the *Venture*",
+              "displayName": "Back to the <i>Venture<i>",
               "isActive": true,
               "isNSFW": false,
               "messageCount": 1
@@ -253,7 +237,7 @@
           "title": "CHAPTER 3: BENEATH THE GLARE",
           "channelID": "1435992787584679936",
           "fileName": "FO_Ch3_beneath-the-glare.json",
-          "isActive": false,
+          "isActive": true,
           "isNSFW": false,
           "preview": "",
           "order": 3,
@@ -289,7 +273,7 @@
           "fileName": "FO_Ch4-Resonance-Frequency.json",
           "isActive": true,
           "isNSFW": false,
-          "preview": "***A long time ago in a galaxy far, far away....*** # **STAR WARS** ## **FORGOTTEN ONES** ### **Episode IV: The Resonan...",
+          "preview": "",
           "order": 4,
           "messageCount": 476,
           "lastMessageTimestamp": "2026-03-08T15:48:52.182+00:00",
