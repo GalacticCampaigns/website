@@ -41,7 +41,7 @@
         },
         {
           "title": "PRELUDE: (KRYNN)",
-          "channelID": "1382803271185469562",
+          "channelID": "1380700164175696062",
           "fileName": "FO_BB_Prelude-Krynn.json",
           "isActive": true,
           "isNSFW": false,
@@ -49,7 +49,15 @@
           "order": 0,
           "messageCount": 2,
           "lastMessageTimestamp": "06/12/2025 19:27:19",
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1382803271185469562",
+              "displayName": "Prelude: The Stray Fortune (Krynn)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            }
+          ]
         },
         {
           "title": "PRELUDE: Ghost of the <i>Devastation<i> (Vearos)",
@@ -85,6 +93,42 @@
           "order": 0,
           "messageCount": 2,
           "lastMessageTimestamp": "06/12/2025 01:37:02",
+          "threads": []
+        },
+        {
+          "title": "FO CH1 AWAKENING",
+          "channelID": "",
+          "fileName": "FO_Ch1_Awakening.json",
+          "isActive": true,
+          "isNSFW": false,
+          "preview": "",
+          "order": 1,
+          "messageCount": 0,
+          "lastMessageTimestamp": "",
+          "threads": []
+        },
+        {
+          "title": "FO CH2 SILENT-DRIFT",
+          "channelID": "",
+          "fileName": "FO_Ch2_Silent-Drift.json",
+          "isActive": true,
+          "isNSFW": false,
+          "preview": "",
+          "order": 2,
+          "messageCount": 0,
+          "lastMessageTimestamp": "",
+          "threads": []
+        },
+        {
+          "title": "FO CH3 BENEATH-THE-GLARE",
+          "channelID": "",
+          "fileName": "FO_Ch3_beneath-the-glare.json",
+          "isActive": true,
+          "isNSFW": false,
+          "preview": "",
+          "order": 3,
+          "messageCount": 0,
+          "lastMessageTimestamp": "",
           "threads": []
         },
         {
