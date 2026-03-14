@@ -20,11 +20,10 @@ foreach ($campaignKey in $campaignKeys) {
     Write-Host "--- Hydrating: $($camp.name) ($campaignKey) ---"
     
     $processedFiles = @()
-    $newLogList = @() # We will rebuild this list
+    $newLogList = @() 
     
-    # Map existing logs by filename for persistence lookup
     $persistMap = @{}
-    foreach($l in $camp.logs) { $persistMap[$l.fileName] = $l }
+    if ($camp.logs) { foreach($l in $camp.logs) { $persistMap[$l.fileName] = $l } }
 
     $apiUrl = "https://api.github.com/repos/$($camp.repository)/contents/$($camp.dataPath)$($camp.paths.json)?ref=$($camp.branch)"
     try { $files = Invoke-RestMethod -Uri $apiUrl -Method Get -Headers @{"Accept"="application/vnd.github.v3+json"} } catch { continue }
@@ -33,7 +32,6 @@ foreach ($campaignKey in $campaignKeys) {
         Write-Host "  > Processing File: $($f.name)"
         $processedFiles += $f.name
         
-        # Local state for this file
         $msgList = @(); $foundChapterID = $null; $foundThreads = @(); $rawJson = $null;
 
         try {
@@ -43,12 +41,19 @@ foreach ($campaignKey in $campaignKeys) {
 
         if ($null -eq $msgList -or $msgList.Count -eq 0) { continue }
 
-        # 1. RESOLVE CHAPTER ID
+        # 1. RESOLVE CHAPTER ID (Improved resilience)
         foreach ($m in $msgList) {
-            $channelID = if ($m.channel_id) { [string]$m.channel_id } else { "" }
+            $channelID = if ($m.channel_id) { [string]$m.channel_id } elseif ($m.channel -and $m.channel.id) { [string]$m.channel.id } else { "" }
             $parentID = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
-            if ($parentID -and $parentID -ne "1" -and $parentID.Length -gt 10) { $foundChapterID = $parentID; break }
-            elseif ($channelID -and $channelID.Length -gt 10) { $foundChapterID = $channelID; break }
+            
+            if ($parentID -and $parentID -ne "1" -and $parentID.Length -gt 10) { 
+                $foundChapterID = $parentID
+                break 
+            }
+            elseif ($channelID -and $channelID.Length -gt 10) { 
+                $foundChapterID = $channelID
+                break 
+            }
         }
 
         # 2. RESOLVE THREADS
@@ -64,13 +69,17 @@ foreach ($campaignKey in $campaignKeys) {
             if ($DebugLog) { Write-DebugHost "    [Thread Found] ID: $($g.Name) | Name: $($g.Group[0].thread.name) | Count: $($g.Count)" }
         }
 
-        # 3. SMART REBUILD: Merge Persistent with New
+        # 3. SMART REBUILD (Fixed type handling for Count)
         $oldRecord = $persistMap[$f.name]
         
-        # Calculate changing fields
-        $newCount = ($msgList | Where-Object { $_.content -ne "" -and ($_.type -eq "Default" -or $_.type -eq 0) }).Count
+        # We check for type 0 (integer) OR "Default" (string) to be safe across different exporters
+        $newCount = ($msgList | Where-Object { 
+            ($_.type -eq 0 -or $_.type -eq "Default") -and 
+            ($null -ne $_.content) 
+        }).Count
+
         $sorted = $msgList | Sort-Object timestamp
-        $newTs = [string]$sorted[-1].timestamp
+        $newTs = if ($sorted) { [string]$sorted[-1].timestamp } else { "" }
         $orderVal = if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 }
 
         if ($DebugLog) {
@@ -80,7 +89,6 @@ foreach ($campaignKey in $campaignKeys) {
             Write-DebugHost "    [Threads] Found $($foundThreads.Count) active threads."
         }
 
-        # Assemble the clean object
         $newLogList += [PSCustomObject]@{
             title = if ($oldRecord.title) { $oldRecord.title } else { ($f.name -replace '\.json$', '' -replace '_', ' ').ToUpper() }
             channelID = [string]$foundChapterID
@@ -95,7 +103,6 @@ foreach ($campaignKey in $campaignKeys) {
         }
     }
 
-    # 4. ORPHAN HANDLING: Keep old records that weren't in the folder but mark them inactive
     foreach ($oldKey in $persistMap.Keys) {
         if ($processedFiles -notcontains $oldKey) {
             $orphan = $persistMap[$oldKey]
@@ -105,10 +112,8 @@ foreach ($campaignKey in $campaignKeys) {
         }
     }
 
-    # Assign the rebuilt array back to the manifest
     $camp.logs = $newLogList
 }
 
-# 5. FINAL EXPORT: Depth 10 is mandatory for nested thread arrays
 $manifest | ConvertTo-Json -Depth 10 | Out-File $manifestPath -Encoding UTF8
 Write-Host "--- Hydration Complete ---"
