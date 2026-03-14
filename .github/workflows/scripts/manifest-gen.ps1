@@ -1,10 +1,9 @@
 <#
 .SYNOPSIS
-    Campaign Registry Hydrator V2.0.0 - Final Remote Build
+    Campaign Registry Hydrator V2.0.0 - Final Production Edition
 .DESCRIPTION
-    Hydrates the campaign-registry.json manifest using GitHub API.
-    Enforces "Parent 1" resolution and the "Locked 8" persistence rules.
-    Optimized for remote execution with comprehensive decision logging.
+    Hydrates campaign-registry.json via GitHub API. 
+    Strict Parent 1/Locked 8 logic. 0% reserved variable usage.
 #>
 param (
     [string]$RequestedCampaignSlug,
@@ -13,203 +12,153 @@ param (
 
 $ErrorActionPreference = "Stop"
 
-# --- 1. Environment & API Setup ---
+# --- 1. Setup & Auth ---
 $ManifestFilePath = "assets/campaign-registry.json"
-if (-not (Test-Path $ManifestFilePath)) {
-    Write-Error "CRITICAL: Manifest not found at $ManifestFilePath."
-    exit 1
-}
+if (-not (Test-Path $ManifestFilePath)) { Write-Error "Manifest missing at $ManifestFilePath."; exit 1 }
 
 $RegistryData = Get-Content $ManifestFilePath -Raw -Encoding UTF8 | ConvertFrom-Json
-$ActiveCampaignKey = if ([string]::IsNullOrWhiteSpace($RequestedCampaignSlug)) { $RegistryData.activeCampaign } else { $RequestedCampaignSlug }
-$TargetCampaign = $RegistryData.campaigns.$ActiveCampaignKey
+$ActiveKey = if ([string]::IsNullOrWhiteSpace($RequestedCampaignSlug)) { $RegistryData.activeCampaign } else { $RequestedCampaignSlug }
+$TargetCampaign = $RegistryData.campaigns.$ActiveKey
 
-if ($null -eq $TargetCampaign) {
-    Write-Error "CRITICAL: Campaign '$ActiveCampaignKey' not found in registry."
-    exit 1
-}
-
-# Setup Authentication Headers
-$RequestHeaders = @{ 
-    "Accept" = "application/vnd.github.v3+json"
-}
-
-# Check for GITHUB_TOKEN in environment to bypass rate limits (60 -> 5000 requests/hr)
-if ($env:GITHUB_TOKEN) {
-    $RequestHeaders.Add("Authorization", "Bearer $env:GITHUB_TOKEN")
-    if ($EnableDebugMode) { Write-Host "[DEBUG] Auth: Using GITHUB_TOKEN for authenticated requests." -ForegroundColor Gray }
-} else {
-    Write-Warning "No GITHUB_TOKEN found. You may hit API rate limits (60 req/hr)."
-}
+$RequestHeaders = @{ "Accept" = "application/vnd.github.v3+json" }
+if ($env:GITHUB_TOKEN) { $RequestHeaders.Add("Authorization", "Bearer $env:GITHUB_TOKEN") }
 
 $RemoteApiUrl = "https://api.github.com/repos/$($TargetCampaign.repository)/contents/$($TargetCampaign.paths.json)?ref=$($TargetCampaign.branch)"
 
-Write-Host "`n>>> Initializing Hydration: $($TargetCampaign.name)" -ForegroundColor Cyan
-Write-Host ">>> Repository: $($TargetCampaign.repository) [$($TargetCampaign.branch)]" -ForegroundColor Gray
+Write-Host "`n>>> Hydrating: $($TargetCampaign.name)" -ForegroundColor Cyan
 
 try {
-    # Fetch file list
-    $RemoteFileMetadata = Invoke-RestMethod -Uri $RemoteApiUrl -Method Get -Headers $RequestHeaders
-    $ValidJsonFiles = $RemoteFileMetadata | Where-Object { $_.name -like "*.json" }
-    Write-Host ">>> Located $($ValidJsonFiles.Count) JSON files in the remote repository." -ForegroundColor Green
+    $RemoteFiles = Invoke-RestMethod -Uri $RemoteApiUrl -Method Get -Headers $RequestHeaders
+    $ValidFiles = $RemoteFiles | Where-Object { $_.name -like "*.json" }
 } catch {
-    Write-Error "CRITICAL: Access Denied to remote files. Verify repo path/branch or Token permissions."
-    exit 1
+    Write-Error "API Access Failed: $($_.Exception.Message)"; exit 1
 }
 
-$ProcessedChannelIdentifiers = New-Object 'System.Collections.Generic.HashSet[string]'
+$ProcessedIdentifiers = New-Object 'System.Collections.Generic.HashSet[string]'
 
-# --- 2. Advanced ID Resolution (Parent 1 Logic) ---
-function Resolve-TargetChannelReference($MessageList) {
+# --- 2. Robust ID Resolver ---
+function Resolve-TargetChannelID($MessageList) {
     if ($null -eq $MessageList -or $MessageList.Count -eq 0) { return $null }
 
     # Priority 1: Parent 1 Rule
-    foreach ($CurrentMsg in $MessageList) {
-        if ($null -ne $CurrentMsg.thread -and [string]$CurrentMsg.thread.parent_id -eq "1") {
-            if ($EnableDebugMode) { Write-Host "[DEBUG] ID RESOLUTION: Priority 1 (Parent 1 Metadata) matched." -ForegroundColor Gray }
-            return [string]$CurrentMsg.channel_id
+    foreach ($m in $MessageList) {
+        if ($null -ne $m.thread -and [string]$m.thread.parent_id -eq "1") {
+            if ($EnableDebugMode) { Write-Host "[DEBUG] ID: Priority 1 (Parent 1) matched: $($m.channel_id)" -ForegroundColor Gray }
+            return [string]$m.channel_id
         }
     }
 
-    # Priority 2: Valid Snowflake Parent
-    foreach ($CurrentMsg in $MessageList) {
-        $ExtractedParentVal = [string]$CurrentMsg.thread.parent_id
-        if ($null -ne $ExtractedParentVal -and $ExtractedParentVal.Length -gt 10 -and $ExtractedParentVal -ne "1") {
-            if ($EnableDebugMode) { Write-Host "[DEBUG] ID RESOLUTION: Priority 2 (Snowflake Parent) matched." -ForegroundColor Gray }
-            return $ExtractedParentVal
-        }
+    # Priority 2: Majority Rule (Most Frequent Channel ID)
+    # This correctly identifies Preludes as the thread ID, rather than the parent category.
+    $IdTally = $MessageList | ForEach-Object { 
+        if ($_.channel_id) { [string]$_.channel_id } elseif ($_.channelID) { [string]$_.channelID }
+    } | Where-Object { $_ -ne "1" -and $_ -ne "0" -and -not [string]::IsNullOrWhiteSpace($_) }
+
+    if ($null -ne $IdTally) {
+        $Winner = ($IdTally | Group-Object | Sort-Object Count -Descending | Select-Object -First 1).Name
+        if ($EnableDebugMode) { Write-Host "[DEBUG] ID: Priority 2 (Majority) matched: $Winner" -ForegroundColor Gray }
+        return $Winner
     }
 
-    # Priority 3: First Valid Channel ID
-    foreach ($CurrentMsg in $MessageList) {
-        $ExtractedChannelVal = [string]$CurrentMsg.channel_id
-        if ($null -ne $ExtractedChannelVal -and $ExtractedChannelVal.Length -gt 10) { 
-            if ($EnableDebugMode) { Write-Host "[DEBUG] ID RESOLUTION: Priority 3 (Standard ID) matched." -ForegroundColor Gray }
-            return $ExtractedChannelVal 
-        }
-    }
-
-    # Priority 4: Majority Rule Fallback
-    $FilteredIds = $MessageList | ForEach-Object { [string]$_.channel_id } | Where-Object { 
-        $_ -ne "1" -and $_ -ne "0" -and -not [string]::IsNullOrWhiteSpace($_) 
-    }
-    if ($null -ne $FilteredIds) {
-        $Groups = $FilteredIds | Group-Object | Sort-Object Count -Descending
-        if ($EnableDebugMode) { Write-Host "[DEBUG] ID RESOLUTION: Priority 4 (Majority Rule) matched." -ForegroundColor Gray }
-        return [string]$Groups[0].Name
-    }
     return $null
 }
 
-# --- 3. Core Hydration Loop ---
-foreach ($RemoteFile in $ValidJsonFiles) {
-    $CurrentFileName = $RemoteFile.name
+# --- 3. Main Loop ---
+foreach ($RemoteFile in $ValidFiles) {
+    $Name = $RemoteFile.name
     try {
-        if ($EnableDebugMode) { Write-Host "`n[DEBUG] PROCESSING: ${CurrentFileName}" -ForegroundColor Cyan }
+        if ($EnableDebugMode) { Write-Host "`n[DEBUG] --- Processing: ${Name} ---" -ForegroundColor Cyan }
         
-        # Download Content
-        $JsonPayload = Invoke-RestMethod -Uri $RemoteFile.download_url -Headers $RequestHeaders
-        
-        # Format Normalization
-        $WorkableMessages = if ($JsonPayload.PSObject.Properties.Name -contains "messages") { $JsonPayload.messages } else { $JsonPayload }
-        if ($WorkableMessages -isnot [array]) { $WorkableMessages = @($WorkableMessages) }
+        # Download and force conversion to ensure property access
+        $RawJson = Invoke-RestMethod -Uri $RemoteFile.download_url -Headers $RequestHeaders
+        $Messages = if ($RawJson.PSObject.Properties.Name -contains "messages") { $RawJson.messages } else { $RawJson }
+        if ($Messages -isnot [array]) { $Messages = @($Messages) }
 
-        $ResolvedChannelRef = Resolve-TargetChannelReference $WorkableMessages
+        if ($EnableDebugMode) { Write-Host "[DEBUG] Message Count: $($Messages.Count)" -ForegroundColor Gray }
+
+        $ResolvedID = Resolve-TargetChannelID $Messages
         
-        # Identity Matching (Dual-Key)
-        $TargetLogRecord = $TargetCampaign.logs | Where-Object { [string]$_.channelID -eq $ResolvedChannelRef -and -not [string]::IsNullOrWhiteSpace($ResolvedChannelRef) }
-        $MatchTypeString = "ID Match"
-        
-        if ($null -eq $TargetLogRecord) {
-            $TargetLogRecord = $TargetCampaign.logs | Where-Object { $_.fileName -ieq $CurrentFileName }
-            $MatchTypeString = "Filename Match"
+        # Dual-Key Match
+        $Record = $TargetCampaign.logs | Where-Object { [string]$_.channelID -eq $ResolvedID -and -not [string]::IsNullOrWhiteSpace($ResolvedID) }
+        $MatchStyle = "ID Match"
+        if ($null -eq $Record) {
+            $Record = $TargetCampaign.logs | Where-Object { $_.fileName -ieq $Name }
+            $MatchStyle = "Filename Match"
         }
 
-        # Narrative Stats
-        $NarrativeFilter = "^(0|19|Default|Reply)$"
-        $MainFeedMessages = $WorkableMessages | Where-Object { 
-            $MsgTypeStr = [string]$_.type
-            $IsNarrative = -not [string]::IsNullOrWhiteSpace($MsgTypeStr) -and $MsgTypeStr -match $NarrativeFilter
-            $IsMainChapterFeed = [string]$_.thread.id -eq $ResolvedChannelRef -or $null -eq $_.thread
-            return ($IsNarrative -and $IsMainChapterFeed)
+        # Narrative Filter
+        $Filter = "^(0|19|Default|Reply)$"
+        $MainPosts = $Messages | Where-Object { 
+            $Type = [string]$_.type
+            $IsNarrative = -not [string]::IsNullOrWhiteSpace($Type) -and $Type -match $Filter
+            $Chan = if ($_.channel_id) { [string]$_.channel_id } else { [string]$_.channelID }
+            return ($IsNarrative -and ($Chan -eq $ResolvedID))
         }
-        $PostTally = $MainFeedMessages.Count
-        $LatestTimestamp = ($WorkableMessages | Sort-Object timestamp -Descending | Select-Object -First 1).timestamp
+        
+        $PostCount = $MainPosts.Count
+        $LastTS = ($Messages | Sort-Object timestamp -Descending | Select-Object -First 1).timestamp
 
-        # Thread Grouping (Exclude main chapter ID and self-parenting loops)
-        $DetectedThreadGroups = $WorkableMessages | Where-Object { 
-            $LoopThreadId = [string]$_.thread.id
-            $LoopThreadParent = [string]$_.thread.parent_id
-            -not [string]::IsNullOrWhiteSpace($LoopThreadId) -and $LoopThreadId -ne $ResolvedChannelRef -and $LoopThreadId -ne $LoopThreadParent
+        # Thread Grouping (Apply user exclusion: ID cannot equal Parent)
+        $ThreadGroups = $Messages | Where-Object { 
+            $Tid = [string]$_.thread.id
+            $Tpid = [string]$_.thread.parent_id
+            -not [string]::IsNullOrWhiteSpace($Tid) -and $Tid -ne $ResolvedID -and $Tid -ne $Tpid
         } | Group-Object { [string]$_.thread.id }
 
-        # Output Summary (Normal Mode)
-        $ShortName = if ($CurrentFileName.Length -gt 30) { $CurrentFileName.Substring(0, 27) + "..." } else { $CurrentFileName.PadRight(30) }
-        Write-Host "File: ${ShortName} | ID: $($ResolvedChannelRef ?? 'MISSING') | Posts: $($PostTally.ToString().PadLeft(4)) | Threads: $($DetectedThreadGroups.Count)" -ForegroundColor Gray
+        # LOG SUMMARY
+        $DispName = if ($Name.Length -gt 25) { $Name.Substring(0, 22) + "..." } else { $Name.PadRight(25) }
+        Write-Host "File: ${DispName} | ID: $($ResolvedID.PadRight(20)) | Posts: $($PostCount.ToString().PadLeft(4)) | Threads: $($ThreadGroups.Count)" -ForegroundColor Gray
 
-        if ($null -eq $TargetLogRecord) {
-            if ($EnableDebugMode) { Write-Host "[DEBUG] ACTION: Initializing new record." -ForegroundColor Yellow }
-            $MaxOrderValue = if ($TargetCampaign.logs.Count -gt 0) { ($TargetCampaign.logs | Measure-Object -Property order -Maximum).Maximum } else { -1 }
-            
-            $TargetLogRecord = [PSCustomObject]@{
-                title = $CurrentFileName.Split('.')[0].Replace("_", " "); channelID = [string]$ResolvedChannelRef; fileName = $CurrentFileName;
-                isActive = $true; isNSFW = $false; preview = ""; order = $MaxOrderValue + 1;
-                messageCount = $PostTally; lastMessageTimestamp = $LatestTimestamp; threads = @()
+        if ($null -eq $Record) {
+            if ($EnableDebugMode) { Write-Host "[DEBUG] ACTION: Creating New Entry." -ForegroundColor Yellow }
+            $MaxO = if ($TargetCampaign.logs.Count -gt 0) { ($TargetCampaign.logs | Measure-Object -Property order -Maximum).Maximum } else { -1 }
+            $Record = [PSCustomObject]@{
+                title = $Name.Split('.')[0].Replace("_", " "); channelID = [string]$ResolvedID; fileName = $Name;
+                isActive = $true; isNSFW = $false; preview = ""; order = $MaxO + 1;
+                messageCount = $PostCount; lastMessageTimestamp = $LastTS; threads = @()
             }
-            $TargetCampaign.logs += $TargetLogRecord
+            $TargetCampaign.logs += $Record
         } else {
-            # FIX: Use ${} to avoid variable/colon ambiguity ParserError
-            if ($EnableDebugMode) { Write-Host "[DEBUG] ACTION: Merging via ${MatchTypeString}: '$($TargetLogRecord.title)'" -ForegroundColor Yellow }
-            
-            if ([string]::IsNullOrWhiteSpace($TargetLogRecord.channelID)) { $TargetLogRecord.channelID = [string]$ResolvedChannelRef }
-            if ([string]::IsNullOrWhiteSpace($TargetLogRecord.title)) { $TargetLogRecord.title = $CurrentFileName.Split('.')[0].Replace("_", " ") }
-            if ($null -eq $TargetLogRecord.order) { 
-                $InternalMaxVal = if ($TargetCampaign.logs.Count -gt 0) { ($TargetCampaign.logs | Measure-Object -Property order -Maximum).Maximum } else { -1 }
-                $TargetLogRecord.order = $InternalMaxVal + 1 
+            if ($EnableDebugMode) { Write-Host "[DEBUG] ACTION: Merging via ${MatchStyle}: '$($Record.title)'" -ForegroundColor Yellow }
+            if ([string]::IsNullOrWhiteSpace($Record.channelID)) { $Record.channelID = [string]$ResolvedID }
+            if ([string]::IsNullOrWhiteSpace($Record.title)) { $Record.title = $Name.Split('.')[0].Replace("_", " ") }
+            if ($null -eq $Record.order) { 
+                $InternalMax = if ($TargetCampaign.logs.Count -gt 0) { ($TargetCampaign.logs | Measure-Object -Property order -Maximum).Maximum } else { -1 }
+                $Record.order = $InternalMax + 1 
             }
-            if ($TargetLogRecord.isActive -ne $false) { $TargetLogRecord.isActive = $true }
-
-            $TargetLogRecord.fileName = $CurrentFileName
-            $TargetLogRecord.messageCount = $PostTally
-            $TargetLogRecord.lastMessageTimestamp = $LatestTimestamp
+            if ($Record.isActive -ne $false) { $Record.isActive = $true }
+            $Record.fileName = $Name
+            $Record.messageCount = $PostCount
+            $Record.lastMessageTimestamp = $LastTS
         }
 
-        # Thread Persistence
-        $FinalThreads = New-Object System.Collections.Generic.List[PSObject]
-        foreach ($Group in $DetectedThreadGroups) {
-            $LookupThreadId = [string]$Group.Name
-            $StoredThread = $TargetLogRecord.threads | Where-Object { [string]$_.threadID -eq $LookupThreadId }
-            $ThreadPostTally = ($Group.Group | Where-Object { [string]$_.type -match $NarrativeFilter }).Count
-
-            if ($null -ne $StoredThread) {
-                $StoredThread.messageCount = $ThreadPostTally
-                if ([string]::IsNullOrWhiteSpace($StoredThread.displayName)) { $StoredThread.displayName = $Group.Group[0].thread.name }
-                $FinalThreads.Add($StoredThread)
+        # Threads
+        $FinalT = New-Object System.Collections.Generic.List[PSObject]
+        foreach ($G in $ThreadGroups) {
+            $TidLookup = [string]$G.Name
+            $StoredT = $Record.threads | Where-Object { [string]$_.threadID -eq $TidLookup }
+            $TCount = ($G.Group | Where-Object { [string]$_.type -match $Filter }).Count
+            if ($null -ne $StoredT) {
+                $StoredT.messageCount = $TCount
+                if ([string]::IsNullOrWhiteSpace($StoredT.displayName)) { $StoredT.displayName = $G.Group[0].thread.name }
+                $FinalT.Add($StoredT)
             } else {
-                $FinalThreads.Add([PSCustomObject]@{
-                    threadID = $LookupThreadId; displayName = $Group.Group[0].thread.name;
-                    isActive = $true; isNSFW = $false; messageCount = $ThreadPostTally
-                })
+                $FinalT.Add([PSCustomObject]@{ threadID = $TidLookup; displayName = $G.Group[0].thread.name; isActive = $true; isNSFW = $false; messageCount = $TCount })
             }
         }
-        $TargetLogRecord.threads = $FinalThreads.ToArray()
-        
-        if (-not [string]::IsNullOrWhiteSpace($TargetLogRecord.channelID)) { [void]$ProcessedChannelIdentifiers.Add($TargetLogRecord.channelID) }
+        $Record.threads = $FinalT.ToArray()
+        if (-not [string]::IsNullOrWhiteSpace($Record.channelID)) { [void]$ProcessedIdentifiers.Add($Record.channelID) }
 
-    } catch {
-        # FIX: Also delimit $CurrentFileName here to prevent ParserError on Line 199
-        Write-Warning "!! Error processing ${CurrentFileName}: $($_.Exception.Message)"
-    }
+    } catch { Write-Warning "!! Error in ${Name}: $($_.Exception.Message)" }
 }
 
-# --- 4. Orphan Deactivation ---
-foreach ($LogEntry in $TargetCampaign.logs) {
-    if (-not $ProcessedChannelIdentifiers.Contains($LogEntry.channelID) -and -not [string]::IsNullOrWhiteSpace($LogEntry.channelID)) {
-        if ($EnableDebugMode) { Write-Host "[DEBUG] ORPHAN: '$($LogEntry.title)' no longer in repo. Set to Inactive." -ForegroundColor Red }
-        $LogEntry.isActive = $false
+# --- 4. Orphans ---
+foreach ($Entry in $TargetCampaign.logs) {
+    if (-not $ProcessedIdentifiers.Contains($Entry.channelID) -and -not [string]::IsNullOrWhiteSpace($Entry.channelID)) {
+        $Entry.isActive = $false
     }
 }
 
 # --- 5. Export ---
 $RegistryData | ConvertTo-Json -Depth 10 | Out-File -FilePath $ManifestFilePath -Encoding UTF8 -Force
-Write-Host "`n>>> Hydration Complete. All data processed and manual locks preserved." -ForegroundColor Green
+Write-Host "`n>>> Success: Registry updated." -ForegroundColor Green
