@@ -23,8 +23,8 @@
           "isNSFW": false,
           "preview": "",
           "order": 0,
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
+          "messageCount": 177,
+          "lastMessageTimestamp": "07/25/2025 01:02:40",
           "threads": []
         },
         {
@@ -35,8 +35,8 @@
           "isNSFW": false,
           "preview": "",
           "order": 0,
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
+          "messageCount": 108,
+          "lastMessageTimestamp": "07/25/2025 00:03:06",
           "threads": []
         },
         {
@@ -47,8 +47,8 @@
           "isNSFW": false,
           "preview": "",
           "order": 0,
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
+          "messageCount": 2,
+          "lastMessageTimestamp": "06/12/2025 19:27:19",
           "threads": []
         },
         {
@@ -59,8 +59,8 @@
           "isNSFW": false,
           "preview": "",
           "order": 0,
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
+          "messageCount": 131,
+          "lastMessageTimestamp": "07/01/2025 02:47:54",
           "threads": []
         },
         {
@@ -71,8 +71,8 @@
           "isNSFW": false,
           "preview": "",
           "order": 0,
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
+          "messageCount": 136,
+          "lastMessageTimestamp": "06/18/2025 23:49:12",
           "threads": []
         },
         {
@@ -83,9 +83,9 @@
           "isNSFW": false,
           "preview": "",
           "order": 0,
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
-          "threads": []
+          "messageCount": 2,
+          "lastMessageTimestamp": "06/12/2025 01:37:02",
+          "threads": [ ]
         },
         {
           "title": "CHAPTER 1: AWAKENING",
@@ -131,9 +131,59 @@
           "isNSFW": false,
           "preview": "***A long time ago in a galaxy far, far away....*** # **STAR WARS** ## **FORGOTTEN ONES** ### **Episode IV: The Resonan...",
           "order": 4,
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
-          "threads": []
+          "messageCount": 481,
+          "lastMessageTimestamp": "03/08/2026 15:48:52",
+          "threads": [
+            {
+              "threadID": "1463304534892871844",
+              "displayName": "Awakening: The Wayward Vigil",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1463321256370634967",
+              "displayName": "Intro: The Static Heart (Lis)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1463328960468357184",
+              "displayName": "Intro: The Muted Echo (Ciara)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1463337940141867232",
+              "displayName": "Intro: The Hollow Vigil (Cajar)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1466947514015023268",
+              "displayName": "Venture - Medbay",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1467270244383854787",
+              "displayName": "Search for the Wrangler",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1472757955500970066",
+              "displayName": "Venture - Bridge",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            }
+          ]
         }
       ]
     }
