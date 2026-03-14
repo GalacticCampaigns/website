@@ -9,33 +9,11 @@
     <link rel="stylesheet" href="{{ '/assets/style.css' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}"> 
 
     <style>
+        /* 1. CAMPAIGN SELECTOR & BRANDING */
         .campaign-selector-wrapper { 
             display: flex; 
             align-items: center; 
-            gap: 4px; /* Tight gap for the arrow */
-        }
-
-        /* Discreet Arrow Selector */
-        #campaign-dropdown {
-            background: transparent;
-            color: var(--sw-yellow);
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 0;
-            margin: 0;
-            appearance: none; /* Hide default OS arrow */
-            -webkit-appearance: none;
-            outline: none;
-        }
-
-        /* Custom arrow indicator */
-        .selector-arrow {
-            color: var(--sw-yellow);
-            font-size: 0.8rem;
-            pointer-events: none; /* Let clicks pass through to the select */
-            margin-left: -12px; /* Pull closer to the select if needed */
-            margin-right: 10px;
+            position: relative;
         }
 
         .nav-brand {
@@ -45,10 +23,103 @@
             letter-spacing: 1px;
             color: var(--accent-blue) !important;
             text-decoration: none;
+            white-space: nowrap;
+            transition: text-shadow 0.3s ease;
         }
 
-        .campaign-link { display: none; }
+        .nav-brand:hover {
+            text-shadow: 0 0 10px rgba(88, 166, 255, 0.4);
+        }
+
+        /* 2. THE SECRET SELECTOR (The Name is the Menu) */
+        .selector-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            margin-left: 8px;
+        }
+
+        #campaign-dropdown {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0; /* Fully invisible but covers the arrow for clicking */
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            z-index: 2;
+        }
+
+        /* The decorative arrow next to the name */
+        .selector-arrow {
+            color: var(--sw-yellow);
+            font-size: 0.8rem;
+            pointer-events: none;
+            z-index: 1;
+            transition: transform 0.2s ease, color 0.2s ease;
+        }
+
+        .selector-container:hover .selector-arrow {
+            color: var(--accent-blue);
+            transform: translateY(1px);
+        }
+
+        /* 3. DYNAMIC NAV LINKS */
+        .campaign-link { 
+            display: none; /* Controlled by applyCampaignContext() in JS */
+        }
+
+        /* 4. HERO & HEADER SECTION */
+        .hero-section {
+            text-align: center;
+            padding: 60px 20px;
+            border-bottom: 1px solid var(--gh-border);
+            background: radial-gradient(circle at center, rgba(13, 17, 23, 0.5) 0%, var(--primary-bg) 100%);
+        }
+
+        .site-logo {
+            max-height: 150px;
+            width: auto;
+            filter: drop-shadow(0 0 20px rgba(97, 218, 251, 0.15));
+            transition: filter 0.5s ease;
+        }
+
+        .site-logo:hover {
+            filter: drop-shadow(0 0 25px rgba(97, 218, 251, 0.3));
+        }
+
+        .flavor-text {
+            color: var(--sw-yellow);
+            font-style: italic;
+            margin-top: 20px;
+            font-family: monospace;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        /* 5. FOOTER STYLING */
+        .site-footer {
+            margin-top: 80px;
+            padding: 40px 20px;
+            text-align: center;
+            border-top: 1px solid var(--gh-border);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: rgba(13, 17, 23, 0.3);
+        }
+
+        /* 6. RESPONSIVE ADJUSTMENTS */
+        @media (max-width: 768px) {
+            .hero-section { padding: 40px 15px; }
+            .site-logo { max-height: 100px; }
+            .nav-brand { font-size: 0.9rem; }
+        }
     </style>
+
 </head>
 <body>
 
@@ -58,12 +129,12 @@
         <div class="campaign-selector-wrapper">
             <a href="{{ '/' | relative_url }}" id="nav-brand-text" class="nav-brand">Galactic Campaigns</a>
             
-            <div style="position: relative; display: flex; align-items: center;">
+            <div class="selector-container">
                 <select id="campaign-dropdown" onchange="switchCampaign(this.value)">
-                    <option value="" disabled selected>▾</option>
+                    <option value="" disabled selected></option>
                     <option value="hub">-- Global Hub --</option>
                     </select>
-                <span class="selector-arrow">▾</span>
+                <span class="selector-arrow">▼</span>
             </div>
         </div>
 
