@@ -35,39 +35,31 @@ foreach ($campaignKey in $campaignKeys) {
         $msgList = @(); $resolvedID = ""; $foundThreads = @();
 
         try {
-            # Invoke-RestMethod handles the download and initial JSON conversion
             $rawJson = Invoke-RestMethod -Uri $f.download_url
-            
-            # Determine if the JSON is a wrapper object or a direct array
-            if ($rawJson.PSObject.Properties.Name -contains 'messages') {
-                $msgList = $rawJson.messages
-            } else {
-                # If it's a top-level array, PowerShell casts it as an Object[]
-                $msgList = $rawJson
-            }
-        } catch { 
-            Write-Warning "    ! Download/Parse failed for $($f.name)"
-            continue 
-        }
+            $msgList = if ($rawJson.PSObject.Properties.Name -contains 'messages') { $rawJson.messages } else { $rawJson }
+        } catch { Write-Warning "    ! Download/Parse failed."; continue }
 
         if ($null -eq $msgList -or $msgList.Count -eq 0) { continue }
 
-        # 1. RESOLVE CHAPTER ID
+        # 1. RESOLVE CHAPTER ID (Methodology Transferred from Log-Viewer)
+        # We count occurrences of parent_ids to find the "Main" frequency
+        $parentCounts = @{}
         foreach ($m in $msgList) {
-            $currentChannelID = if ($m.channel_id) { [string]$m.channel_id } else { "" }
-            $currentParentID = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
+            $pID = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
+            $cID = if ($m.channel_id) { [string]$m.channel_id } else { "" }
             
-            if ($currentParentID -and $currentParentID.Length -gt 10) { 
-                $resolvedID = $currentParentID
-                break 
-            }
-            elseif ($currentChannelID -and $currentChannelID.Length -gt 10) { 
-                $resolvedID = $currentChannelID
-                break 
+            $idToCount = if ($pID) { $pID } else { $cID }
+            if ($idToCount -and $idToCount.Length -gt 10) {
+                $parentCounts[$idToCount] = ($parentCounts[$idToCount] || 0) + 1
             }
         }
 
-        # 2. RESOLVE THREADS
+        # Select the ID with the highest frequency (The "Main" Channel)
+        if ($parentCounts.Count -gt 0) {
+            $resolvedID = ($parentCounts.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 1).Key
+        }
+
+        # 2. RESOLVE THREADS (Consistent with Log-Viewer mapping)
         $threadGroups = $msgList | Where-Object { $_.thread -and $_.thread.id -and [string]$_.thread.id -ne $resolvedID } | Group-Object { [string]$_.thread.id }
         foreach ($g in $threadGroups) {
             $foundThreads += [PSCustomObject]@{
@@ -77,13 +69,10 @@ foreach ($campaignKey in $campaignKeys) {
                 isNSFW = $false
                 messageCount = $g.Count
             }
-            if ($DebugLog) { Write-DebugHost "    [Thread Found] ID: $($g.Name) | Name: $($g.Group[0].thread.name) | Count: $($g.Count)" }
         }
 
         # 3. SMART REBUILD
         $oldRecord = $persistMap[$f.name]
-        
-        # Valid message types: 0 (Default), 18 (Thread Start), 19 (Reply)
         $validTypes = @(0, 18, 19, "Default", "Reply", "ThreadCreated")
         $newCount = ($msgList | Where-Object { $validTypes -contains $_.type }).Count
 
