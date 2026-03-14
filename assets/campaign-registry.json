@@ -23,7 +23,7 @@
           "isNSFW": false,
           "preview": "",
           "order": 0,
-          "messageCount": 176,
+          "messageCount": 177,
           "lastMessageTimestamp": "07/25/2025 01:02:40",
           "threads": []
         },
@@ -35,7 +35,7 @@
           "isNSFW": false,
           "preview": "",
           "order": 0,
-          "messageCount": 107,
+          "messageCount": 108,
           "lastMessageTimestamp": "07/25/2025 00:03:06",
           "threads": []
         },
@@ -47,7 +47,7 @@
           "isNSFW": false,
           "preview": "",
           "order": 0,
-          "messageCount": 1,
+          "messageCount": 2,
           "lastMessageTimestamp": "06/12/2025 19:27:19",
           "threads": []
         },
@@ -59,7 +59,7 @@
           "isNSFW": false,
           "preview": "",
           "order": 0,
-          "messageCount": 130,
+          "messageCount": 131,
           "lastMessageTimestamp": "07/01/2025 02:47:54",
           "threads": []
         },
@@ -71,7 +71,7 @@
           "isNSFW": false,
           "preview": "",
           "order": 0,
-          "messageCount": 135,
+          "messageCount": 136,
           "lastMessageTimestamp": "06/18/2025 23:49:12",
           "threads": []
         },
@@ -83,44 +83,8 @@
           "isNSFW": false,
           "preview": "",
           "order": 0,
-          "messageCount": 1,
+          "messageCount": 2,
           "lastMessageTimestamp": "06/12/2025 01:37:02",
-          "threads": []
-        },
-        {
-          "title": "CHAPTER 1: AWAKENING",
-          "channelID": "",
-          "fileName": "FO_Ch1_Awakening.json",
-          "isActive": true,
-          "isNSFW": false,
-          "preview": "The crew awakens to a hostile breach in an unknown system...",
-          "order": 1,
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
-          "threads": []
-        },
-        {
-          "title": "CHAPTER 2: SILENT DRIFT",
-          "channelID": "",
-          "fileName": "FO_Ch2_Silent-Drift.json",
-          "isActive": true,
-          "isNSFW": false,
-          "preview": "As the crew recovers from the physical toll of stasis in the remote Kinooine system...",
-          "order": 2,
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
-          "threads": []
-        },
-        {
-          "title": "CHAPTER 3: BENEATH THE GLARE",
-          "channelID": "",
-          "fileName": "FO_Ch3_beneath-the-glare.json",
-          "isActive": true,
-          "isNSFW": false,
-          "preview": "Following their arrival at Cloud City, the crew of the Venture formally enters the employ of Ghurn Skirata as \"special assets\" for Kando's Coursers...",
-          "order": 3,
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
           "threads": []
         },
         {
@@ -131,7 +95,7 @@
           "isNSFW": false,
           "preview": "***A long time ago in a galaxy far, far away....*** # **STAR WARS** ## **FORGOTTEN ONES** ### **Episode IV: The Resonan...",
           "order": 4,
-          "messageCount": 476,
+          "messageCount": 481,
           "lastMessageTimestamp": "03/08/2026 15:48:52",
           "threads": [
             {
