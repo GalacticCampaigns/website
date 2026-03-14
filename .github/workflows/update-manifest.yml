@@ -27,14 +27,14 @@ jobs:
       - name: Run Hydrator
         shell: pwsh
         run: |
-          # Use client_payload if triggered by remote ping, else use manual input
           $id = "${{ github.event.client_payload.campaign_id }}"
           if ([string]::IsNullOrWhiteSpace($id)) { $id = "${{ github.event.inputs.campaign_id }}" }
           
+          # Added -DebugLog flag here
           if (-not [string]::IsNullOrWhiteSpace($id)) {
-             ./.github/workflows/scripts/manifest-gen.ps1 -CampaignId $id
+             ./.github/workflows/scripts/manifest-gen.ps1 -CampaignId $id -DebugLog
           } else {
-             ./.github/workflows/scripts/manifest-gen.ps1
+             ./.github/workflows/scripts/manifest-gen.ps1 -DebugLog
           }
       - name: Commit and Push
         run: |
