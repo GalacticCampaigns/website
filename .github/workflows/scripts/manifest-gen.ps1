@@ -45,10 +45,10 @@ foreach ($campaignKey in $campaignKeys) {
         # We count occurrences of parent_ids to find the "Main" frequency
         $parentCounts = @{}
         foreach ($m in $msgList) {
-            $pID = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
-            $cID = if ($m.channel_id) { [string]$m.channel_id } else { "" }
+            $parentID = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
+            $channelID = if ($m.channel_id) { [string]$m.channel_id } else { "" }
             
-            $idToCount = if ($pID) { $pID } else { $cID }
+            $idToCount = if ($parentID) { $parentID } else { $channelID }
             if ($idToCount -and $idToCount.Length -gt 10) {
                 $parentCounts[$idToCount] = ($parentCounts[$idToCount] || 0) + 1
             }
