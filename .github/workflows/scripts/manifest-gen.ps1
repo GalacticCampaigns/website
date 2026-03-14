@@ -48,7 +48,7 @@ Write-Host "`n>>> Initializing Hydration: $($TargetCampaign.name)" -ForegroundCo
 Write-Host ">>> Repository: $($TargetCampaign.repository) [$($TargetCampaign.branch)]" -ForegroundColor Gray
 
 try {
-    # Fetch file list (GitHub API uses lowercase properties: .name, .download_url)
+    # Fetch file list
     $RemoteFileMetadata = Invoke-RestMethod -Uri $RemoteApiUrl -Method Get -Headers $RequestHeaders
     $ValidJsonFiles = $RemoteFileMetadata | Where-Object { $_.name -like "*.json" }
     Write-Host ">>> Located $($ValidJsonFiles.Count) JSON files in the remote repository." -ForegroundColor Green
@@ -130,7 +130,7 @@ foreach ($RemoteFile in $ValidJsonFiles) {
         $MainFeedMessages = $WorkableMessages | Where-Object { 
             $MsgTypeStr = [string]$_.type
             $IsNarrative = -not [string]::IsNullOrWhiteSpace($MsgTypeStr) -and $MsgTypeStr -match $NarrativeFilter
-            $IsMain चैप्टरFeed = [string]$_.thread.id -eq $ResolvedChannelRef -or $null -eq $_.thread
+            $IsMainChapterFeed = [string]$_.thread.id -eq $ResolvedChannelRef -or $null -eq $_.thread
             return ($IsNarrative -and $IsMainChapterFeed)
         }
         $PostTally = $MainFeedMessages.Count
@@ -149,23 +149,22 @@ foreach ($RemoteFile in $ValidJsonFiles) {
 
         if ($null -eq $TargetLogRecord) {
             if ($EnableDebugMode) { Write-Host "[DEBUG] ACTION: Initializing new record." -ForegroundColor Yellow }
-            $MaxOrder = if ($TargetCampaign.logs.Count -gt 0) { ($TargetCampaign.logs | Measure-Object -Property order -Maximum).Maximum } else { -1 }
+            $MaxOrderValue = if ($TargetCampaign.logs.Count -gt 0) { ($TargetCampaign.logs | Measure-Object -Property order -Maximum).Maximum } else { -1 }
             
             $TargetLogRecord = [PSCustomObject]@{
                 title = $CurrentFileName.Split('.')[0].Replace("_", " "); channelID = [string]$ResolvedChannelRef; fileName = $CurrentFileName;
-                isActive = $true; isNSFW = $false; preview = ""; order = $MaxOrder + 1;
+                isActive = $true; isNSFW = $false; preview = ""; order = $MaxOrderValue + 1;
                 messageCount = $PostTally; lastMessageTimestamp = $LatestTimestamp; threads = @()
             }
             $TargetCampaign.logs += $TargetLogRecord
         } else {
-            # FIX: Use ${} to avoid variable/colon ambiguity ParserError
             if ($EnableDebugMode) { Write-Host "[DEBUG] ACTION: Merging via ${MatchTypeString}: '$($TargetLogRecord.title)'" -ForegroundColor Yellow }
             
             if ([string]::IsNullOrWhiteSpace($TargetLogRecord.channelID)) { $TargetLogRecord.channelID = [string]$ResolvedChannelRef }
             if ([string]::IsNullOrWhiteSpace($TargetLogRecord.title)) { $TargetLogRecord.title = $CurrentFileName.Split('.')[0].Replace("_", " ") }
             if ($null -eq $TargetLogRecord.order) { 
-                $InternalMax = if ($TargetCampaign.logs.Count -gt 0) { ($TargetCampaign.logs | Measure-Object -Property order -Maximum).Maximum } else { -1 }
-                $TargetLogRecord.order = $InternalMax + 1 
+                $InternalMaxVal = if ($TargetCampaign.logs.Count -gt 0) { ($TargetCampaign.logs | Measure-Object -Property order -Maximum).Maximum } else { -1 }
+                $TargetLogRecord.order = $InternalMaxVal + 1 
             }
             if ($TargetLogRecord.isActive -ne $false) { $TargetLogRecord.isActive = $true }
 
@@ -179,16 +178,16 @@ foreach ($RemoteFile in $ValidJsonFiles) {
         foreach ($Group in $DetectedThreadGroups) {
             $LookupThreadId = [string]$Group.Name
             $StoredThread = $TargetLogRecord.threads | Where-Object { [string]$_.threadID -eq $LookupThreadId }
-            $ThreadCount = ($Group.Group | Where-Object { [string]$_.type -match $NarrativeFilter }).Count
+            $ThreadPostTally = ($Group.Group | Where-Object { [string]$_.type -match $NarrativeFilter }).Count
 
             if ($null -ne $StoredThread) {
-                $StoredThread.messageCount = $ThreadCount
+                $StoredThread.messageCount = $ThreadPostTally
                 if ([string]::IsNullOrWhiteSpace($StoredThread.displayName)) { $StoredThread.displayName = $Group.Group[0].thread.name }
                 $FinalThreads.Add($StoredThread)
             } else {
                 $FinalThreads.Add([PSCustomObject]@{
                     threadID = $LookupThreadId; displayName = $Group.Group[0].thread.name;
-                    isActive = $true; isNSFW = $false; messageCount = $ThreadCount
+                    isActive = $true; isNSFW = $false; messageCount = $ThreadPostTally
                 })
             }
         }
