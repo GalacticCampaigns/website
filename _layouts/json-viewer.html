@@ -236,7 +236,7 @@ layout: default
         const messages = filterId === 'all' ? fullData : fullData.filter(m => m.channel_id === filterId || (m.thread && m.thread.id === filterId));
 
         messages.forEach(msg => {
-            const isThreadStarter = (msg.thread && msg.channel_id === mainChannelId);
+            const isThreadStarter = (msg.thread && msg.thread.id === mainChannelId);
             const actualChannel = isThreadStarter ? msg.thread.id : msg.channel_id;
 
             if (filterId === 'all' && lastChannelId !== null && actualChannel !== lastChannelId && !isThreadStarter) {

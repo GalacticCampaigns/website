@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page.title }} | Galactic Campaigns</title>
+    <link rel="icon" type="image/png" href="{{ '/assets/gc_logo.png' | relative_url }}">
+
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ '/assets/style.css' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}"> 
     <style>
@@ -43,7 +45,7 @@
 
 <header class="hero-section" style="text-align: center; padding: 40px 20px;">
     <div class="container-hero">
-        <img src="{{ '/assets/logo.png' | relative_url }}" alt="Logo" id="site-logo" class="site-logo" style="max-height: 150px; width: auto;">
+        <img src="{{ '/assets/gc-banner.png' | relative_url }}" alt="Logo" id="site-logo" class="site-logo" style="max-height: 150px; width: auto;">
         <p id="flavor-text" class="flavor-text" style="color: var(--sw-yellow); font-style: italic; margin-top: 15px;">
             Select a campaign to begin decryption.
         </p>
