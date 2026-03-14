@@ -5,21 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ page.title }} | Galactic Campaigns</title>
     <link rel="icon" type="image/png" href="{{ '/assets/gc_logo.png' | relative_url }}">
-
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ '/assets/style.css' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}"> 
+
     <style>
-        .campaign-selector-wrapper { display: flex; align-items: center; gap: 12px; }
-        #campaign-dropdown {
-            background: #1c2128;
-            color: var(--accent-blue);
-            border: 1px solid var(--gh-border);
-            border-radius: 4px;
-            font-size: 0.75rem;
-            padding: 4px;
-            cursor: pointer;
+        .campaign-selector-wrapper { 
+            display: flex; 
+            align-items: center; 
+            gap: 4px; /* Tight gap for the arrow */
         }
-        /* Hide campaign-specific links by default */
+
+        /* Discreet Arrow Selector */
+        #campaign-dropdown {
+            background: transparent;
+            color: var(--sw-yellow);
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0;
+            margin: 0;
+            appearance: none; /* Hide default OS arrow */
+            -webkit-appearance: none;
+            outline: none;
+        }
+
+        /* Custom arrow indicator */
+        .selector-arrow {
+            color: var(--sw-yellow);
+            font-size: 0.8rem;
+            pointer-events: none; /* Let clicks pass through to the select */
+            margin-left: -12px; /* Pull closer to the select if needed */
+            margin-right: 10px;
+        }
+
+        .nav-brand {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-blue) !important;
+            text-decoration: none;
+        }
+
         .campaign-link { display: none; }
     </style>
 </head>
@@ -27,16 +54,21 @@
 
 <nav class="site-nav">
     <div class="nav-inner" style="display:flex; width:100%; align-items:center; justify-content: space-between;">
+        
         <div class="campaign-selector-wrapper">
             <a href="{{ '/' | relative_url }}" id="nav-brand-text" class="nav-brand">Galactic Campaigns</a>
-            <select id="campaign-dropdown" onchange="switchCampaign(this.value)">
-                <option value="">-- Switch Campaign --</option>
-            </select>
+            
+            <div style="position: relative; display: flex; align-items: center;">
+                <select id="campaign-dropdown" onchange="switchCampaign(this.value)">
+                    <option value="" disabled selected>▾</option>
+                    <option value="hub">-- Global Hub --</option>
+                    </select>
+                <span class="selector-arrow">▾</span>
+            </div>
         </div>
 
         <div class="nav-links" id="dynamic-nav-links">
-            <a href="{{ '/' | relative_url }}" id="hub-home">Hub Home</a>
-            
+            <a href="{{ '/' | relative_url }}" id="hub-home">Home</a>
             <a href="#" id="nav-archives" class="campaign-link">Archives</a>
             <a href="#" id="nav-wiki" class="campaign-link" target="_blank">Wiki</a>
         </div>
@@ -47,7 +79,7 @@
     <div class="container-hero">
         <img src="{{ '/assets/gc_banner.png' | relative_url }}" alt="Logo" id="site-logo" class="site-logo" style="max-height: 150px; width: auto;">
         <p id="flavor-text" class="flavor-text" style="color: var(--sw-yellow); font-style: italic; margin-top: 15px;">
-            Select a campaign to begin decryption.
+            Select a frequency to begin decryption.
         </p>
     </div>
 </header>
@@ -62,86 +94,78 @@
 </footer>
 
 <script>
-    let registryData = null;
+let registryData = null;
 
-    function getCampaignSlug() {
-        return new URLSearchParams(window.location.search).get('c');
-    }
+function getCampaignSlug() {
+    return new URLSearchParams(window.location.search).get('c');
+}
 
-    async function initNavigation() {
-        try {
-            const res = await fetch("{{ '/assets/campaign-registry.json' | relative_url }}");
-            registryData = await res.json();
-            
-            const dropdown = document.getElementById('campaign-dropdown');
-            const currentSlug = getCampaignSlug();
-            
-            // 1. Populate Dropdown
-            Object.keys(registryData.campaigns).forEach(slug => {
-                const campaign = registryData.campaigns[slug];
-                const opt = document.createElement('option');
-                opt.value = slug;
-                opt.textContent = campaign.name;
-                if (slug === currentSlug) opt.selected = true;
-                dropdown.appendChild(opt);
-            });
+async function initNavigation() {
+    try {
+        const res = await fetch("{{ '/assets/campaign-registry.json' | relative_url }}");
+        registryData = await res.json();
+        const dropdown = document.getElementById('campaign-dropdown');
+        const currentSlug = getCampaignSlug();
 
-            // 2. Adjust UI based on state
-            if (currentSlug && registryData.campaigns[currentSlug]) {
-                applyCampaignContext(currentSlug);
-            } else {
-                showHubContext();
-            }
-        } catch (e) {
-            console.error("Registry load failed:", e);
-        }
-    }
+        // Populate Dropdown
+        Object.keys(registryData.campaigns).forEach(slug => {
+            const campaign = registryData.campaigns[slug];
+            const opt = document.createElement('option');
+            opt.value = slug;
+            opt.textContent = campaign.name;
+            dropdown.appendChild(opt);
+        });
 
-    function applyCampaignContext(slug) {
-        const campaign = registryData.campaigns[slug];
-        
-        // Update Brand & Hero
-        document.getElementById('nav-brand-text').textContent = campaign.name;
-        document.getElementById('flavor-text').textContent = campaign.flavorText || "Decrypting Holonet Archives...";
-        
-        // Update Archives Link (Appends the slug so the next page knows the context)
-        const archiveLink = document.getElementById('nav-archives');
-        archiveLink.href = `{{ '/archives' | relative_url }}?c=${slug}`;
-        archiveLink.style.display = 'inline-block';
-
-        // Update Wiki Link (Only if it exists)
-        const wikiLink = document.getElementById('nav-wiki');
-        if (campaign.paths && campaign.paths.wiki) {
-            wikiLink.href = campaign.paths.wiki;
-            wikiLink.style.display = 'inline-block';
+        // Apply context
+        if (currentSlug && registryData.campaigns[currentSlug]) {
+            applyCampaignContext(currentSlug);
         } else {
-            wikiLink.style.display = 'none';
+            showHubContext();
         }
-
-        // Adjust "Hub Home" to just "Hub"
-        document.getElementById('hub-home').textContent = "Hub";
+    } catch (e) {
+        console.error("Registry load failed:", e);
     }
+}
 
-    function showHubContext() {
-        document.getElementById('nav-brand-text').textContent = "Galactic Campaigns";
-        document.querySelectorAll('.campaign-link').forEach(el => el.style.display = 'none');
-        document.getElementById('hub-home').textContent = "Home";
+function applyCampaignContext(slug) {
+    const campaign = registryData.campaigns[slug];
+    
+    // Update Title to Campaign Name
+    document.getElementById('nav-brand-text').textContent = campaign.name;
+    document.getElementById('nav-brand-text').href = `{{ '/' | relative_url }}?c=${slug}`;
+    
+    // Update Flavor
+    document.getElementById('flavor-text').textContent = campaign.description || "Decrypting narrative stream...";
+
+    // Update Links
+    document.getElementById('nav-archives').href = `{{ '/archives' | relative_url }}?c=${slug}`;
+    document.getElementById('nav-archives').style.display = 'inline-block';
+
+    const wikiLink = document.getElementById('nav-wiki');
+    if (campaign.paths && campaign.paths.wiki) {
+        wikiLink.href = campaign.paths.wiki;
+        wikiLink.style.display = 'inline-block';
+    } else {
+        wikiLink.style.display = 'none';
     }
+}
 
-    function switchCampaign(slug) {
-        const url = new URL(window.location.href);
-        if (slug) {
-            url.searchParams.set('c', slug);
-        } else {
-            url.searchParams.delete('c');
-            // If dropping back to hub, go to index
-            window.location.href = "{{ '/' | relative_url }}";
-            return;
-        }
-        window.location.href = url.toString();
+function showHubContext() {
+    document.getElementById('nav-brand-text').textContent = "Galactic Campaigns";
+    document.getElementById('nav-brand-text').href = "{{ '/' | relative_url }}";
+    document.querySelectorAll('.campaign-link').forEach(el => el.style.display = 'none');
+}
+
+function switchCampaign(slug) {
+    if (slug === "hub" || !slug) {
+        window.location.href = "{{ '/' | relative_url }}";
+    } else {
+        window.location.href = `{{ '/' | relative_url }}?c=${slug}`;
     }
+}
 
-    document.addEventListener("DOMContentLoaded", initNavigation);
+document.addEventListener("DOMContentLoaded", initNavigation);
 </script>
+
 </body>
 </html>
