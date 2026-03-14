@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", async function() {
         if (!campaign) throw new Error("Invalid Campaign ID.");
 
         titleEl.textContent = `📡 ${campaign.name} Archives`;
-        statusEl.textContent = `Displaying all transmissions for ${slug}...`;
+        statusEl.textContent = `Displaying all transmissions for ${campaign.name}...`;
 
         // Sort by Chapter Order (Descending)
         const sorted = campaign.logs.sort((a, b) => b.order - a.order);
@@ -147,8 +147,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                     <div class="archive-meta">TRANSMITTED: ${dateStr}</div>
                 </div>
                 <div class="archive-meta">
-                    SIGNAL STRENGTH: <span class="signal-tag">${log.messageCount} POSTS</span> | 
-                    FILE: <code>${log.fileName}</code>
+                    SIGNAL STRENGTH: <span class="signal-tag">${log.messageCount} POSTS</span>
                 </div>
                 ${log.preview ? `<div class="archive-preview">${log.preview}</div>` : ''}
             `;

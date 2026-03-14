@@ -299,7 +299,7 @@ function parseMarkdown(text) {
     return html
         .replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (match, name, id) => {
             const cleanName = name.replace(/:/g, '');
-            return `<img src="${emojiBase}${cleanName}_${id}.png" class="emoji" title="${cleanName}">`;
+            return `<img src="!${emojiBase}${cleanName}!_${id}.png" class="emoji" title="${cleanName}">`;
         })
         .replace(/\[(.*?)\]\(&lt;?(https?:\/\/[^\s&gt;]+)&gt;?\)/g, '<a href="$2" target="_blank" class="external-link">$1</a>')
         .replace(/`(.*?)`/g, '<code>$1</code>')
@@ -307,6 +307,9 @@ function parseMarkdown(text) {
         .replace(/^# (.*$)/gim, '<h1>$1</h1>')
         .replace(/^## (.*$)/gim, '<h2>$1</h2>')
         .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
+        .replace(/^##### (.*$)/gim, '<h5>$1</h5>')
+        .replace(/^###### (.*$)/gim, '<h6>$1</h6>')
         .replace(/^-# (.*$)/gim, '<small class="subtext">$1</small>')
         .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</strong></i>')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
