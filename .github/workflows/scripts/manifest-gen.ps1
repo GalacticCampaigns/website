@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-    Campaign Registry Hydrator V2.0.0 - Comprehensive Remote Edition
+    Campaign Registry Hydrator V2.0.0 - Final Remote Build
 .DESCRIPTION
     Hydrates the campaign-registry.json manifest using GitHub API.
     Enforces "Parent 1" resolution and the "Locked 8" persistence rules.
-    Strictly avoids system-reserved variable names and handles API authentication.
+    Optimized for remote execution with comprehensive decision logging.
 #>
 param (
     [string]$RequestedCampaignSlug,
@@ -73,19 +73,19 @@ function Resolve-TargetChannelReference($MessageList) {
 
     # Priority 2: Valid Snowflake Parent
     foreach ($CurrentMsg in $MessageList) {
-        $ExtractedParentValue = [string]$CurrentMsg.thread.parent_id
-        if ($null -ne $ExtractedParentValue -and $ExtractedParentValue.Length -gt 10 -and $ExtractedParentValue -ne "1") {
+        $ExtractedParentVal = [string]$CurrentMsg.thread.parent_id
+        if ($null -ne $ExtractedParentVal -and $ExtractedParentVal.Length -gt 10 -and $ExtractedParentVal -ne "1") {
             if ($EnableDebugMode) { Write-Host "[DEBUG] ID RESOLUTION: Priority 2 (Snowflake Parent) matched." -ForegroundColor Gray }
-            return $ExtractedParentValue
+            return $ExtractedParentVal
         }
     }
 
     # Priority 3: First Valid Channel ID
     foreach ($CurrentMsg in $MessageList) {
-        $ExtractedChannelValue = [string]$CurrentMsg.channel_id
-        if ($null -ne $ExtractedChannelValue -and $ExtractedChannelValue.Length -gt 10) { 
+        $ExtractedChannelVal = [string]$CurrentMsg.channel_id
+        if ($null -ne $ExtractedChannelVal -and $ExtractedChannelVal.Length -gt 10) { 
             if ($EnableDebugMode) { Write-Host "[DEBUG] ID RESOLUTION: Priority 3 (Standard ID) matched." -ForegroundColor Gray }
-            return $ExtractedChannelValue 
+            return $ExtractedChannelVal 
         }
     }
 
@@ -105,7 +105,7 @@ function Resolve-TargetChannelReference($MessageList) {
 foreach ($RemoteFile in $ValidJsonFiles) {
     $CurrentFileName = $RemoteFile.name
     try {
-        if ($EnableDebugMode) { Write-Host "`n[DEBUG] PROCESSING: $CurrentFileName" -ForegroundColor Cyan }
+        if ($EnableDebugMode) { Write-Host "`n[DEBUG] PROCESSING: ${CurrentFileName}" -ForegroundColor Cyan }
         
         # Download Content
         $JsonPayload = Invoke-RestMethod -Uri $RemoteFile.download_url -Headers $RequestHeaders
@@ -145,7 +145,7 @@ foreach ($RemoteFile in $ValidJsonFiles) {
 
         # Output Summary (Normal Mode)
         $ShortName = if ($CurrentFileName.Length -gt 30) { $CurrentFileName.Substring(0, 27) + "..." } else { $CurrentFileName.PadRight(30) }
-        Write-Host "File: $ShortName | ID: $($ResolvedChannelRef ?? 'MISSING') | Posts: $($PostTally.ToString().PadLeft(4)) | Threads: $($DetectedThreadGroups.Count)" -ForegroundColor Gray
+        Write-Host "File: ${ShortName} | ID: $($ResolvedChannelRef ?? 'MISSING') | Posts: $($PostTally.ToString().PadLeft(4)) | Threads: $($DetectedThreadGroups.Count)" -ForegroundColor Gray
 
         if ($null -eq $TargetLogRecord) {
             if ($EnableDebugMode) { Write-Host "[DEBUG] ACTION: Initializing new record." -ForegroundColor Yellow }
@@ -158,6 +158,7 @@ foreach ($RemoteFile in $ValidJsonFiles) {
             }
             $TargetCampaign.logs += $TargetLogRecord
         } else {
+            # FIX: Use ${} to avoid variable/colon ambiguity ParserError
             if ($EnableDebugMode) { Write-Host "[DEBUG] ACTION: Merging via ${MatchTypeString}: '$($TargetLogRecord.title)'" -ForegroundColor Yellow }
             
             if ([string]::IsNullOrWhiteSpace($TargetLogRecord.channelID)) { $TargetLogRecord.channelID = [string]$ResolvedChannelRef }
@@ -196,18 +197,19 @@ foreach ($RemoteFile in $ValidJsonFiles) {
         if (-not [string]::IsNullOrWhiteSpace($TargetLogRecord.channelID)) { [void]$ProcessedChannelIdentifiers.Add($TargetLogRecord.channelID) }
 
     } catch {
-        Write-Warning "!! Error processing $CurrentFileName: $($_.Exception.Message)"
+        # FIX: Also delimit $CurrentFileName here to prevent ParserError on Line 199
+        Write-Warning "!! Error processing ${CurrentFileName}: $($_.Exception.Message)"
     }
 }
 
 # --- 4. Orphan Deactivation ---
 foreach ($LogEntry in $TargetCampaign.logs) {
     if (-not $ProcessedChannelIdentifiers.Contains($LogEntry.channelID) -and -not [string]::IsNullOrWhiteSpace($LogEntry.channelID)) {
-        if ($EnableDebugMode) { Write-Host "[DEBUG] ORPHAN: '$($LogEntry.title)' ID not found in repo. Set to Inactive." -ForegroundColor Red }
+        if ($EnableDebugMode) { Write-Host "[DEBUG] ORPHAN: '$($LogEntry.title)' no longer in repo. Set to Inactive." -ForegroundColor Red }
         $LogEntry.isActive = $false
     }
 }
 
 # --- 5. Export ---
 $RegistryData | ConvertTo-Json -Depth 10 | Out-File -FilePath $ManifestFilePath -Encoding UTF8 -Force
-Write-Host "`n>>> Hydration Complete. Manual edits preserved and threads refreshed." -ForegroundColor Green
+Write-Host "`n>>> Hydration Complete. All data processed and manual locks preserved." -ForegroundColor Green
