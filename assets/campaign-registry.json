@@ -25,15 +25,7 @@
           "order": 0,
           "messageCount": 176,
           "lastMessageTimestamp": "2025-07-25T01:02:40.602+00:00",
-          "threads": [
-            {
-              "threadID": "1381783775301734441",
-              "displayName": "Prelude: The Static on the Line (Dryzan)",
-              "isActive": true,
-              "isNSFW": false,
-              "messageCount": 0
-            }
-          ]
+          "threads": []
         },
         {
           "title": "PRELUDE: The Sunken Star of Xylos (Iyola)",
@@ -45,15 +37,7 @@
           "order": 0,
           "messageCount": 107,
           "lastMessageTimestamp": "2025-07-25T00:03:06.396+00:00",
-          "threads": [
-            {
-              "threadID": "1386794250947264743",
-              "displayName": "Prelude: The Sunken Star of Xylos (Iyola)",
-              "isActive": true,
-              "isNSFW": false,
-              "messageCount": 0
-            }
-          ]
+          "threads": []
         },
         {
           "title": "PRELUDE: THE STRAY FORTUNE (KRYNN)",
@@ -85,15 +69,7 @@
           "order": 0,
           "messageCount": 130,
           "lastMessageTimestamp": "2025-07-01T02:47:54.153+00:00",
-          "threads": [
-            {
-              "threadID": "1385685912834277456",
-              "displayName": "Prelude: Ghost of the *Devastation* (Vearos)",
-              "isActive": true,
-              "isNSFW": false,
-              "messageCount": 0
-            }
-          ]
+          "threads": []
         },
         {
           "title": "PRELUDE: The Price of a Vision (Varda)",
@@ -105,15 +81,7 @@
           "order": 0,
           "messageCount": 135,
           "lastMessageTimestamp": "2025-06-18T23:49:12.754+00:00",
-          "threads": [
-            {
-              "threadID": "1381784157688037396",
-              "displayName": "Prelude: The Price of a Vision (Varda)",
-              "isActive": true,
-              "isNSFW": false,
-              "messageCount": 0
-            }
-          ]
+          "threads": []
         },
         {
           "title": "PRELUDE: THE ECHO IN THE STONE (VENA)",
@@ -139,7 +107,7 @@
           "title": "CHAPTER 1: AWAKENING",
           "channelID": "1387901967317209218",
           "fileName": "FO_Ch1_Awakening.json",
-          "isActive": true,
+          "isActive": false,
           "isNSFW": false,
           "preview": "",
           "order": 1,
@@ -151,7 +119,7 @@
           "title": "CHAPTER 2: SILENT-DRIFT",
           "channelID": "140081666527671102",
           "fileName": "FO_Ch2_Silent-Drift.json",
-          "isActive": true,
+          "isActive": false,
           "isNSFW": false,
           "preview": "",
           "order": 2,
@@ -163,7 +131,7 @@
           "title": "CHAPTER 3: BENEATH THE GLARE",
           "channelID": "1435992787584679936",
           "fileName": "FO_Ch3_beneath-the-glare.json",
-          "isActive": true,
+          "isActive": false,
           "isNSFW": false,
           "preview": "",
           "order": 3,
