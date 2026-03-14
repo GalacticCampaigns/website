@@ -11,6 +11,13 @@ layout: default
     padding-top: 20px;
     overflow: visible !important; 
 }
+#chapter-picker {
+    flex: 1; /* Grow to fill center space */
+    min-width: 0; /* Allows the select to shrink smaller than its text content */
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
 
 /* --- 2. SECONDARY FREQUENCY BAR --- */
 .frequency-nav-bar { 
@@ -112,10 +119,19 @@ layout: default
 }
 
 /* 5. MOBILE OVERRIDES */
-@media (max-width: 600px) {
-    .log-container-json { padding: 5px; }
-    .frequency-nav-bar { top: calc(var(--site-nav-height) + 120px); } 
+@media (max-width: 900px) {
+    .log-container-json { 
+        padding: 5px; 
+    }
+    
+    /* Logic: Site Nav (50px) + Mobile Frozen Nav (60px) = 110px. 
+       This ensures the Frequency Bar anchors perfectly to the bottom of the chapter picker.
+    */
+    .frequency-nav-bar { 
+        top: 110px; 
+    } 
 }
+
 </style>
 
 <header class="frozen-nav">

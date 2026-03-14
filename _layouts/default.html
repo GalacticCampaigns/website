@@ -113,11 +113,36 @@
         }
 
         /* 6. RESPONSIVE ADJUSTMENTS */
-        @media (max-width: 768px) {
-            .hero-section { padding: 40px 15px; }
-            .site-logo { max-height: 100px; }
-            .nav-brand { font-size: 0.9rem; }
-        }
+        /* --- HERO & BRAND MOBILE TRANSITION --- */
+@media (max-width: 900px) {
+    /* Reduce hero padding to save vertical space on tablets/phones */
+    .hero-section { 
+        padding: 40px 15px; 
+    }
+
+    /* Shrink the logo to prevent excessive scrolling */
+    .site-logo { 
+        max-height: 100px; 
+    }
+
+    /* Note: .nav-brand font-size is now handled by style.css 
+       to ensure the 900px row-locking logic is consistent. 
+    */
+}
+
+/* Portrait-specific centering for Hero logos (per SOP) */
+@media (max-width: 600px) and (orientation: portrait) {
+    .site-logo {
+        width: 90%;
+        max-width: 320px;
+    }
+    
+    .flavor-text {
+        font-size: 0.75rem;
+        padding: 0 10px;
+    }
+}
+
     </style>
 
 </head>

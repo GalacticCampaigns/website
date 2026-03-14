@@ -108,6 +108,8 @@ main {
     gap: 10px;
     padding: 0 15px;
     align-items: center;
+    flex-direction: row; /* Force row layout by default */
+    flex-wrap: nowrap; /* Prevent wrapping into 3 lines */
 }
 
 /* --- DISCORD MESSAGE FEED STYLING --- */
@@ -213,43 +215,68 @@ code {
     box-shadow: 0 0 10px rgba(97, 218, 251, 0.3);
 }
 
-/* --- MOBILE & PORTRAIT STABILIZATION --- */
+/* --- RESPONSIVE STABILIZATION --- */
 
-@media (max-width: 900px) {
-    /* Stabilize sticky navs for mobile */
-    .frozen-nav {
-        top: var(--site-nav-height);
-        height: auto;
-        padding: 10px 0;
-    }
-    
+/* 1. Large Tablets & Small Laptops (1100px and below) */
+@media (max-width: 1100px) {
     .nav-inner {
-        flex-direction: column;
         gap: 8px;
+    }
+    .toc-open-btn, .freq-btn {
+        padding: 8px 12px; /* Slightly more compact buttons */
+    }
+}
+
+/* 2. Standard Tablets & Large Phones (900px and below) */
+@media (max-width: 900px) {
+    .frozen-nav {
+        height: 60px; /* Reduced vertical footprint */
+    }
+
+    .nav-inner {
+        flex-direction: row !important; /* Force row layout to prevent 3-line stacking */
+        flex-wrap: nowrap;
+        gap: 6px;
+    }
+
+    /* Force the picker to take all available middle space */
+    #chapter-picker {
+        flex: 1;
+        min-width: 0;
     }
 
     .nav-brand { font-size: 0.8rem; }
     
-    /* Ensure the log doesn't horizontal scroll on small screens */
-    .message-group {
-        padding: 10px 5px;
+    .message-group { padding: 10px 5px; }
+    .avatar-container { width: 32px; height: 32px; margin-right: 10px; }
+}
+
+/* 3. Small Phones & Strict Portrait (600px and below) */
+@media (max-width: 600px) {
+    .nav-links {
+        display: none; /* Hide top-tier links to save vertical space */
     }
 
-    .avatar-container {
-        width: 32px;
-        height: 32px;
-        margin-right: 10px;
+    .nav-inner {
+        padding: 0 10px;
     }
 }
 
-/* Portrait-specific centering for Hero logos */
-@media (max-width: 600px) and (orientation: portrait) {
-    .site-logo {
-        width: 90%;
-        max-width: 350px;
+/* 4. Ultra-Narrow Devices (480px and below) */
+@media (max-width: 480px) {
+    .nav-inner {
+        gap: 4px;
+        padding: 0 5px;
     }
-    
-    .nav-links {
-        display: none; /* Optional: Hide menu links for mobile hamburger if implemented later */
+
+    .toc-open-btn, .freq-btn {
+        padding: 8px; /* Maximum compression for buttons */
+        font-size: 0.7rem;
+    }
+
+    /* Simplify the thread toggle to just the icon on tiny screens */
+    #thread-toggle { 
+        padding: 8px 10px; 
+        font-size: 1rem; 
     }
 }
