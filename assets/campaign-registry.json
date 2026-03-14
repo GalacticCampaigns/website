@@ -86,7 +86,7 @@
           "fileName": "FO_Ch3_beneath-the-glare.json",
           "isActive": true,
           "lastMessageTimestamp": "",
-          "messageCount": 1,
+          "messageCount": 0,
           "order": 3
         },
         {
@@ -98,7 +98,7 @@
           "fileName": "FO_Ch2_Silent-Drift.json",
           "isActive": true,
           "lastMessageTimestamp": "",
-          "messageCount": 1,
+          "messageCount": 0,
           "order": 2
         },
         {
@@ -110,7 +110,7 @@
           "fileName": "FO_Ch1_Awakening.json",
           "isActive": true,
           "lastMessageTimestamp": "",
-          "messageCount": 1,
+          "messageCount": 0,
           "order": 1
         },
         {
