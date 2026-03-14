@@ -269,13 +269,10 @@ function renderFeed(filterId) {
     output.innerHTML = "";
     let lastChannelId = null;
 
-    // Filter Logic: Show only narrative messages (Type 0 and 19)
     const validTypes = [0, 19];
     const filteredMessages = fullData.filter(m => validTypes.includes(m.type));
-    
     const messages = filterId === 'all' ? filteredMessages : filteredMessages.filter(m => m.channel_id === filterId || (m.thread && m.thread.id === filterId));
 
-    // Update Browser URL Slug/Hash
     const currentChapterId = document.getElementById('chapter-picker').value;
     const hash = filterId === 'all' ? currentChapterId : `${currentChapterId}:${filterId}`;
     history.replaceState(null, null, `?c=${campaignSlug}#${hash}`);
@@ -301,11 +298,14 @@ function renderFeed(filterId) {
         group.className = 'message-group';
         group.id = `msg-${msg.id}`;
 
-        // Get the logEntry to find the filename for the media folder path
         const logEntry = activeCampaign.logs.find(l => l.channelID === msg.channel_id) || 
-                        activeCampaign.logs.find(l => l.threads.some(t => t.threadID === msg.channel_id));
+                         activeCampaign.logs.find(l => l.threads.some(t => t.threadID === msg.channel_id));
 
         const attachmentHtml = renderAttachments(msg, logEntry);
+
+        const avatarUrl = msg.author.avatar 
+            ? `${remoteBase}${activeCampaign.paths.avatars}${msg.author.id}/${msg.author.avatar}.png` 
+            : `${remoteBase}${activeCampaign.paths.avatars}default.png`;
 
         group.innerHTML = `
             <div class="avatar-container">
@@ -328,26 +328,18 @@ function renderFeed(filterId) {
 
 function parseMarkdown(text) {
     if (!text) return "";
-    
-    // Initial escape
     let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
 
     return html
-        /* --- 1. Discord Custom Emojis --- */
         .replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (match, name, id) => {
             const cleanName = name.replace(/:/g, '');
             return `<img src="${emojiBase}${cleanName}_${id}.png" class="emoji" title="${cleanName}">`;
         })
-
-        /* --- 2. Discord Channel/Post References <#ID> --- */
         .replace(/&lt;#(\d+)&gt;/g, (match, id) => {
             const location = resolveDiscordReference(id);
-            // Search globally for the right slug/channel
             let targetSlug = campaignSlug;
             let found = false;
-            
-            // Basic lookup to find which campaign this belongs to
             for (let s in registry.campaigns) {
                 if (registry.campaigns[s].logs.some(l => l.channelID === id || l.threads.some(t => t.threadID === id))) {
                     targetSlug = s;
@@ -355,15 +347,10 @@ function parseMarkdown(text) {
                     break;
                 }
             }
-            
             const href = found ? `{{ '/logs' | relative_url }}?c=${targetSlug}#${id}` : "javascript:void(0)";
             return `<a href="${href}" class="channel-link"># ${location} <span style="font-size:0.8em">✉️</span></a>`;
         })
-
-        /* --- 3. Links Handling [Text](<URL>) or [Text](URL) --- */
         .replace(/\[(.*?)\]\(&lt;?(https?:\/\/[^\s&gt;]+?)&gt;?\)/g, '<a href="$2" target="_blank" class="external-link">$1</a>')
-
-        /* --- 4. Headers (h1 - h6) --- */
         .replace(/^# (.*$)/gim, '<h1>$1</h1>')
         .replace(/^## (.*$)/gim, '<h2>$1</h2>')
         .replace(/^### (.*$)/gim, '<h3>$1</h3>')
@@ -371,8 +358,6 @@ function parseMarkdown(text) {
         .replace(/^##### (.*$)/gim, '<h5>$1</h5>')
         .replace(/^###### (.*$)/gim, '<h6>$1</h6>')
         .replace(/^-# (.*$)/gim, '<small class="subtext">$1</small>')
-
-        /* --- 5. Formatting --- */
         .replace(/`(.*?)`/g, '<code>$1</code>')
         .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</strong></i>')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -381,11 +366,63 @@ function parseMarkdown(text) {
         .replace(/\n/g, '<br>');
 }
 
+function resolveDiscordReference(refId) {
+    if (channelMap[refId]) return channelMap[refId];
+
+    const localMatch = activeCampaign.logs.find(l => l.channelID === refId);
+    if (localMatch) return localMatch.title;
+
+    for (let log of activeCampaign.logs) {
+        const threadMatch = log.threads.find(t => t.threadID === refId);
+        if (threadMatch) return `${log.title} > ${threadMatch.displayName}`;
+    }
+
+    for (let slug in registry.campaigns) {
+        if (slug === campaignSlug) continue;
+        const camp = registry.campaigns[slug];
+        const globalMatch = camp.logs.find(l => l.channelID === refId);
+        if (globalMatch) return `${camp.name} > ${globalMatch.title}`;
+
+        for (let log of camp.logs) {
+            const gThread = log.threads.find(t => t.threadID === refId);
+            if (gThread) return `${camp.name} > ${log.title} > ${gThread.displayName}`;
+        }
+    }
+    return "Unknown Frequency";
+}
+
+function renderAttachments(msg, logEntry) {
+    if (!msg.attachments || msg.attachments.length === 0 || !logEntry) return "";
+
+    let html = '<div class="msg-attachments">';
+    msg.attachments.forEach(att => {
+        const folderName = logEntry.fileName.replace('.json', '');
+        const localSrc = `${remoteBase}${activeCampaign.paths.media}${folderName}/${att.filename}`;
+
+        if (att.content_type && att.content_type.startsWith('image/')) {
+            html += `
+                <div class="attachment-item">
+                    <a href="${localSrc}" target="_blank">
+                        <img src="${localSrc}" class="log-image" loading="lazy" alt="Attachment">
+                    </a>
+                </div>`;
+        } else {
+            html += `
+                <div class="attachment-item">
+                    <a href="${localSrc}" target="_blank" class="file-link">
+                        📄 Download ${att.filename}
+                    </a>
+                </div>`;
+        }
+    });
+    html += '</div>';
+    return html;
+}
+
 function copyMsgLink(event, msgId, chanId) {
     event.preventDefault();
     const chapterId = document.getElementById('chapter-picker').value;
     const url = `${window.location.origin}${window.location.pathname}?c=${campaignSlug}#${chapterId}:${msgId}`;
-    
     navigator.clipboard.writeText(url).then(() => {
         const icon = event.target;
         icon.innerText = "CHECK";
@@ -406,8 +443,6 @@ function buildFrequencyBar() {
     const bar = document.getElementById('frequency-selector');
     const target = document.getElementById('freq-buttons-target');
     const toggleBtn = document.getElementById('thread-toggle');
-    
-    // Get unique channel IDs that are NOT the main channel
     const uniqueChannels = [...new Set(fullData.map(m => m.channel_id))].filter(id => id !== mainChannelId);
 
     if (uniqueChannels.length === 0) { 
@@ -444,81 +479,6 @@ function silentLoadAvatars() {
     });
 }
 
-/**
- * Resolves a Discord Snowflake ID to a readable Location string
- */
-function resolveDiscordReference(refId) {
-    // 1. Check local thread map from the current file
-    if (channelMap[refId]) {
-        return channelMap[refId];
-    }
-
-    // 2. Check current campaign manifest
-    const localMatch = activeCampaign.logs.find(l => l.channelID === refId);
-    if (localMatch) return localMatch.title;
-
-    // Check threads inside current campaign logs
-    for (let log of activeCampaign.logs) {
-        const threadMatch = log.threads.find(t => t.threadID === refId);
-        if (threadMatch) return `${log.title} > ${threadMatch.displayName}`;
-    }
-
-    // 3. Global Registry Search (Outside Campaigns)
-    for (let slug in registry.campaigns) {
-        if (slug === campaignSlug) continue; // Already checked
-        const camp = registry.campaigns[slug];
-        
-        const globalMatch = camp.logs.find(l => l.channelID === refId);
-        if (globalMatch) return `${camp.name} > ${globalMatch.title}`;
-
-        for (let log of camp.logs) {
-            const gThread = log.threads.find(t => t.threadID === refId);
-            if (gThread) return `${camp.name} > ${log.title} > ${gThread.displayName}`;
-        }
-    }
-
-/**
- * Renders attachments by converting Discord CDN links to local repository paths
- */
-function renderAttachments(msg, logEntry) {
-    if (!msg.attachments || msg.attachments.length === 0) return "";
-
-    let html = '<div class="msg-attachments">';
-    
-    msg.attachments.forEach(att => {
-        // 1. Determine the folder name. 
-        // Logic: Campaign dataPath + media + fileName (stripped of .json)
-        const folderName = logEntry.fileName.replace('.json', '');
-        
-        // 2. Construct the local path
-        // Format: remoteBase + mediaPath + folderName + originalFilename
-        const localSrc = `${remoteBase}${activeCampaign.paths.media}${folderName}/${att.filename}`;
-
-        if (att.content_type && att.content_type.startsWith('image/')) {
-            html += `
-                <div class="attachment-item">
-                    <a href="${localSrc}" target="_blank">
-                        <img src="${localSrc}" class="log-image" loading="lazy" alt="Attachment">
-                    </a>
-                </div>`;
-        } else {
-            // Fallback for non-image files (PDFs, etc)
-            html += `
-                <div class="attachment-item">
-                    <a href="${localSrc}" target="_blank" class="file-link">
-                        📄 Download ${att.filename}
-                    </a>
-                </div>`;
-        }
-    });
-
-    html += '</div>';
-    return html;
-}
-
-
-    return "Unknown Frequency";
-}
-
 document.addEventListener("DOMContentLoaded", init);
 </script>
+
