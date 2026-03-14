@@ -201,6 +201,16 @@ async function initNavigation() {
 function applyCampaignContext(slug) {
     const campaign = registryData.campaigns[slug];
     
+    // Update the Site Logo dynamically
+    const logoImg = document.getElementById('site-logo');
+    if (campaign.paths && campaign.paths.logo) {
+        // Points to the remote repo logo
+        logoImg.src = `${remoteBase}${campaign.paths.logo}`;
+    } else {
+        // Fallback to default site banner
+        logoImg.src = "{{ '/assets/gc_banner.png' | relative_url }}";
+    }
+    
     // Update Title to Campaign Name
     document.getElementById('nav-brand-text').textContent = campaign.name;
     document.getElementById('nav-brand-text').href = `{{ '/' | relative_url }}?c=${slug}`;
