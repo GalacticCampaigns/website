@@ -3,110 +3,127 @@ layout: default
 ---
 
 <style>
-    /* 1. CONTAINER & STICKY STABILIZATION */
-    .log-container-json { 
-        width: 100%; 
-        max-width: 900px; 
-        margin: 0 auto; 
-        padding-top: 20px;
-        overflow: visible !important; 
-    }
+/* 1. CONTAINER & STICKY STABILIZATION */
+.log-container-json { 
+    width: 100%; 
+    max-width: 900px; 
+    margin: 0 auto; 
+    padding-top: 20px;
+    overflow: visible !important; 
+}
 
-    /* --- 2. SECONDARY FREQUENCY BAR --- */
-    .frequency-nav-bar { 
-        position: sticky; 
-        top: calc(var(--site-nav-height) + var(--log-nav-height)); 
-        z-index: 7000; 
-        background: var(--secondary-bg);
-        border-bottom: 1px solid var(--gh-border);
-        padding: 12px 0;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-        display: none;
-    }
+/* --- 2. SECONDARY FREQUENCY BAR --- */
+.frequency-nav-bar { 
+    position: sticky; 
+    top: calc(var(--site-nav-height) + var(--log-nav-height)); 
+    z-index: 7000; 
+    background: var(--secondary-bg);
+    border-bottom: 1px solid var(--gh-border);
+    padding: 12px 0;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    display: none;
+}
 
-    .freq-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        width: 100%;
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 0 15px;
-    }
+.freq-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
 
-    .comms-status { 
-        width: 100%; 
-        padding-bottom: 8px; 
-        font-size: 0.6rem; 
-        color: var(--sw-yellow); 
-        font-family: monospace; 
-        text-transform: uppercase; 
-        border-bottom: 1px solid rgba(255,255,255,0.05);
-        margin-bottom: 5px;
-    }
+.freq-btn {
+    padding: 6px 12px;
+    background: #1c2128;
+    border: 1px solid var(--gh-border);
+    color: var(--gh-text);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    font-family: monospace;
+}
 
-    /* 3. MESSAGE FEED STYLING */
-    .message-group { 
-        display: flex; 
-        padding: 15px 10px; 
-        border-bottom: 1px solid rgba(48, 54, 61, 0.2); 
-        transition: background 0.3s; 
-    }
+.freq-btn.active {
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+    background: rgba(88,166,255,0.1);
+}
 
-    .avatar-container { 
-        width: 42px; 
-        height: 42px; 
-        margin-right: 15px; 
-        flex-shrink: 0; 
-        background: #1c2128; 
-        border-radius: 4px; 
-        overflow: hidden; 
-    }
+.comms-status { 
+    width: 100%; 
+    padding-bottom: 8px; 
+    font-size: 0.6rem; 
+    color: var(--sw-yellow); 
+    font-family: monospace; 
+    text-transform: uppercase; 
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    margin-bottom: 5px;
+}
 
-    .avatar { 
-        width: 100%; 
-        height: 100%; 
-        object-fit: cover; 
-        opacity: 0; 
-        transition: opacity 0.3s; 
-    }
+/* 3. MESSAGE FEED STYLING */
+.message-group { 
+    display: flex; 
+    padding: 15px 10px; 
+    border-bottom: 1px solid rgba(48, 54, 61, 0.2); 
+    transition: background 0.3s; 
+}
 
-    .avatar.loaded { opacity: 1; }
+.avatar-container { 
+    width: 42px; 
+    height: 42px; 
+    margin-right: 15px; 
+    flex-shrink: 0; 
+    background: #1c2128; 
+    border-radius: 4px; 
+    overflow: hidden; 
+}
 
-    .msg-body { flex-grow: 1; min-width: 0; }
-    .username { color: var(--accent-blue); font-weight: bold; margin-right: 10px; }
+.avatar { 
+    width: 100%; 
+    height: 100%; 
+    object-fit: cover; 
+    opacity: 0; 
+    transition: opacity 0.3s; 
+}
 
-    /* 4. TRANSITIONS & HIGHLIGHTS */
-    .channel-transition { 
-        display: flex; align-items: center; justify-content: center; 
-        margin: 40px 0 20px; padding: 15px; 
-        background: rgba(88,166,255,0.05); border: 1px dashed var(--accent-blue); 
-        color: var(--accent-blue); font-family: monospace; font-size: 0.75rem; 
-        letter-spacing: 2px; text-transform: uppercase; cursor: pointer; 
-    }
+.avatar.loaded { opacity: 1; }
 
-    .message-group:target, .highlight-flash { 
-        background: rgba(210, 153, 34, 0.15) !important; 
-        border-left: 3px solid var(--sw-yellow); 
-    }
+.msg-body { flex-grow: 1; min-width: 0; }
+.username { color: var(--accent-blue); font-weight: bold; margin-right: 10px; }
+.msg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.timestamp { font-size: 0.75rem; color: var(--text-muted); }
+.copy-link-icon { text-decoration: none; font-size: 0.8rem; opacity: 0.3; transition: 0.2s; }
+.copy-link-icon:hover { opacity: 1; }
 
-    /* 5. MOBILE OVERRIDES */
-    @media (max-width: 600px) {
-        .log-container-json { padding: 5px; }
-        .username { font-size: 0.95rem; }
-        .timestamp { font-size: 0.7rem; display: block; margin-top: 2px; }
-        .frequency-nav-bar { top: calc(var(--site-nav-height) + 120px); } /* Adjust for stacked nav on mobile */
-    }
+/* 4. TRANSITIONS & HIGHLIGHTS */
+.channel-transition { 
+    display: flex; align-items: center; justify-content: center; 
+    margin: 40px 0 20px; padding: 15px; 
+    background: rgba(88,166,255,0.05); border: 1px dashed var(--accent-blue); 
+    color: var(--accent-blue); font-family: monospace; font-size: 0.75rem; 
+    letter-spacing: 2px; text-transform: uppercase; cursor: pointer; 
+}
+
+.message-group:target, .highlight-flash { 
+    background: rgba(210, 153, 34, 0.15) !important; 
+    border-left: 3px solid var(--sw-yellow); 
+}
+
+/* 5. MOBILE OVERRIDES */
+@media (max-width: 600px) {
+    .log-container-json { padding: 5px; }
+    .frequency-nav-bar { top: calc(var(--site-nav-height) + 120px); } 
+}
 </style>
 
 <header class="frozen-nav">
     <div class="nav-inner">
         <a href="javascript:void(0)" id="back-to-archives" class="toc-open-btn" style="text-decoration: none;">⇠</a>
-        
         <select id="chapter-picker" class="toc-open-btn" onchange="onPickerChange(this.value)" style="background: #1c2128; flex-grow: 1; min-width: 0;">
             <option value="">-- LOADING DATAPAD --</option>
         </select>
-
         <button id="thread-toggle" class="toc-open-btn" onclick="toggleFrequencies()" style="display:none;">📡</button>
     </div>
 </header>
@@ -120,259 +137,246 @@ layout: default
 </div>
 
 <script>
-    let registry = null;
-    let activeCampaign = null;
-    let fullData = [];
-    let channelMap = {}; 
-    let mainChannelId = null;
-    let remoteBase = "";
+let registry = null;
+let activeCampaign = null;
+let campaignSlug = "";
+let fullData = [];
+let channelMap = {}; 
+let mainChannelId = null;
+let remoteBase = "";
 
-    /**
-     * INITIALIZATION: Fetch Registry and Resolve Campaign
-     */
-    async function init() {
-        try {
-            const res = await fetch("{{ '/assets/campaign-registry.json' | relative_url }}");
-            registry = await res.json();
-            
-            // Get Campaign from URL ?c=slug
-            const params = new URLSearchParams(window.location.search);
-            const slug = params.get('c') || registry.activeCampaign;
-            activeCampaign = registry.campaigns[slug];
+async function init() {
+    try {
+        const res = await fetch("{{ '/assets/campaign-registry.json' | relative_url }}");
+        registry = await res.json();
+        const params = new URLSearchParams(window.location.search);
+        campaignSlug = params.get('c') || registry.activeCampaign;
+        activeCampaign = registry.campaigns[campaignSlug];
 
-            if (!activeCampaign) throw new Error("Unknown Campaign ID.");
+        if (!activeCampaign) throw new Error("Unknown Campaign ID.");
 
-            // Set Remote Paths
-            remoteBase = `https://raw.githubusercontent.com/${activeCampaign.repository}/${activeCampaign.branch}/${activeCampaign.dataPath}`;
-            document.getElementById('back-to-archives').href = `{{ '/archives' | relative_url }}?c=${slug}`;
+        remoteBase = `https://raw.githubusercontent.com/${activeCampaign.repository}/${activeCampaign.branch}/${activeCampaign.dataPath}`;
+        document.getElementById('back-to-archives').href = `{{ '/archives' | relative_url }}?c=${campaignSlug}`;
 
-            const picker = document.getElementById('chapter-picker');
-            picker.innerHTML = ""; 
+        const picker = document.getElementById('chapter-picker');
+        picker.innerHTML = ""; 
 
-            activeCampaign.logs.forEach(item => {
-                const opt = document.createElement('option');
-                opt.value = item.channelID;
-                opt.textContent = item.title; 
-                picker.appendChild(opt);
-            });
+        activeCampaign.logs.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.channelID;
+            opt.textContent = item.title; 
+            picker.appendChild(opt);
+        });
 
-            // ROUTE HANDLING: /logs#channelID:msg-ID
-            const hash = window.location.hash.substring(1);
-            const [chanId, msgId] = hash.split(':');
+        const hash = window.location.hash.substring(1);
+        const [chanId, msgId] = hash.split(':');
 
-            if (chanId) {
-                const entry = activeCampaign.logs.find(m => m.channelID === chanId);
-                if (entry) {
-                    picker.value = chanId;
-                    await loadChapter(chanId, msgId);
-                    return;
-                }
-            }
-
-            // Fallback: Load first log
-            if (activeCampaign.logs.length > 0) {
-                picker.value = activeCampaign.logs[0].channelID;
-                loadChapter(activeCampaign.logs[0].channelID);
-            }
-        } catch (e) {
-            console.error("Init Error:", e);
-            document.getElementById('viewer-output').innerHTML = `<b style="color:red">COMMS ERROR: ${e.message}</b>`;
-        }
-    }
-
-    /**
-     * CHAPTER LOADING
-     */
-    async function loadChapter(channelID, targetMsg = null) {
-        const logEntry = activeCampaign.logs.find(l => l.channelID === channelID);
-        if (!logEntry) return;
-
-        const jsonUrl = `${remoteBase}${activeCampaign.paths.json}${logEntry.fileName}`;
-        const output = document.getElementById('viewer-output');
-        output.innerHTML = "<em>Decrypting Data Stream...</em>";
-
-        try {
-            const response = await fetch(jsonUrl);
-            const data = await response.json();
-            fullData = Array.isArray(data) ? data : (data.messages || []);
-
-            fullData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-            channelMap = {};
-            let parentCounts = {};
-            fullData.forEach(m => {
-                if (m.thread) {
-                    channelMap[m.thread.id] = m.thread.name.toUpperCase();
-                    if (m.thread.parent_id) {
-                        parentCounts[m.thread.parent_id] = (parentCounts[m.thread.parent_id] || 0) + 1;
-                    }
-                }
-            });
-
-            mainChannelId = Object.keys(parentCounts).reduce((a, b) => parentCounts[a] > parentCounts[b] ? a : b, null);
-            if (!mainChannelId && fullData.length > 0) mainChannelId = fullData[0].channel_id;
-
-            buildFrequencyBar();
-            renderFeed('all');
-
-            if (targetMsg) {
-                setTimeout(() => jumpToMessage(targetMsg), 400);
-            } else {
-                window.scrollTo(0, 0);
-            }
-        } catch (err) {
-            output.innerHTML = `<b style="color:red">DATA CORRUPTION: ${err.message}</b>`;
-        }
-    }
-
-    /**
-     * FEED RENDERING & AVATARS
-     */
-    function renderFeed(filterId) {
-        const output = document.getElementById('viewer-output');
-        output.innerHTML = "";
-        let lastChannelId = null;
-
-        const messages = filterId === 'all' ? fullData : fullData.filter(m => m.channel_id === filterId || (m.thread && m.thread.id === filterId));
-
-        messages.forEach(msg => {
-            const isThreadStarter = (msg.thread && msg.thread.id === mainChannelId);
-            const actualChannel = isThreadStarter ? msg.thread.id : msg.channel_id;
-
-            if (filterId === 'all' && lastChannelId !== null && actualChannel !== lastChannelId && !isThreadStarter) {
-                const shiftName = channelMap[actualChannel] || "PRIMARY FREQUENCY";
-                const transition = document.createElement('div');
-                transition.className = 'channel-transition';
-                transition.innerHTML = `📡 FREQUENCY SHIFT >> ${shiftName}`;
-                transition.onclick = () => renderFeed(actualChannel);
-                output.appendChild(transition);
-            }
-            if (!isThreadStarter) lastChannelId = actualChannel;
-
-            if (isThreadStarter) {
-                const div = document.createElement('div');
-                div.className = 'channel-transition';
-                div.style.cssText = "background:rgba(210,153,34,0.05); border-color:var(--sw-yellow); color:var(--sw-yellow);";
-                div.innerHTML = `📂 NEW ENCRYPTED CHANNEL: ${msg.thread.name} (OPEN)`;
-                div.onclick = () => renderFeed(msg.thread.id);
-                output.appendChild(div);
+        if (chanId) {
+            const entry = activeCampaign.logs.find(m => m.channelID === chanId);
+            if (entry) {
+                picker.value = chanId;
+                await loadChapter(chanId, msgId);
                 return;
             }
+        }
 
-            const group = document.createElement('div');
-            group.className = 'message-group';
-            group.id = `msg-${msg.id}`;
+        if (activeCampaign.logs.length > 0) {
+            picker.value = activeCampaign.logs[0].channelID;
+            loadChapter(activeCampaign.logs[0].channelID);
+        }
+    } catch (e) {
+        console.error("Init Error:", e);
+        document.getElementById('viewer-output').innerHTML = `<b style="color:red">COMMS ERROR: ${e.message}</b>`;
+    }
+}
 
-            const avatarUrl = msg.author.avatar 
-                ? `${remoteBase}${activeCampaign.paths.avatars}${msg.author.id}/${msg.author.avatar}.png` 
-                : `${remoteBase}${activeCampaign.paths.avatars}default.png`;
+async function loadChapter(channelID, targetMsg = null) {
+    const logEntry = activeCampaign.logs.find(l => l.channelID === channelID);
+    if (!logEntry) return;
 
-            group.innerHTML = `
-                <div class="avatar-container">
-                    <img src="" data-src="${avatarUrl}" class="avatar lazy-load">
+    const jsonUrl = `${remoteBase}${activeCampaign.paths.json}${logEntry.fileName}`;
+    const output = document.getElementById('viewer-output');
+    output.innerHTML = "<em>Decrypting Data Stream...</em>";
+
+    try {
+        const response = await fetch(jsonUrl);
+        const data = await response.json();
+        fullData = Array.isArray(data) ? data : (data.messages || []);
+
+        fullData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+        channelMap = {};
+        let parentCounts = {};
+        fullData.forEach(m => {
+            if (m.thread) {
+                channelMap[m.thread.id] = m.thread.name.toUpperCase();
+                if (m.thread.parent_id) {
+                    parentCounts[m.thread.parent_id] = (parentCounts[m.thread.parent_id] || 0) + 1;
+                }
+            }
+        });
+
+        mainChannelId = Object.keys(parentCounts).reduce((a, b) => parentCounts[a] > parentCounts[b] ? a : b, null);
+        if (!mainChannelId && fullData.length > 0) mainChannelId = fullData[0].channel_id;
+
+        buildFrequencyBar();
+        renderFeed('all');
+
+        if (targetMsg) {
+            setTimeout(() => jumpToMessage(targetMsg), 400);
+        } else {
+            window.scrollTo(0, 0);
+        }
+    } catch (err) {
+        output.innerHTML = `<b style="color:red">DATA CORRUPTION: ${err.message}</b>`;
+    }
+}
+
+function renderFeed(filterId) {
+    const output = document.getElementById('viewer-output');
+    output.innerHTML = "";
+    let lastChannelId = null;
+
+    // Filter Logic: Show only narrative messages (Type 0 and 19)
+    const validTypes = [0, 19];
+    const filteredMessages = fullData.filter(m => validTypes.includes(m.type));
+    
+    const messages = filterId === 'all' ? filteredMessages : filteredMessages.filter(m => m.channel_id === filterId || (m.thread && m.thread.id === filterId));
+
+    // Update Browser URL Slug/Hash
+    const currentChapterId = document.getElementById('chapter-picker').value;
+    const hash = filterId === 'all' ? currentChapterId : `${currentChapterId}:${filterId}`;
+    history.replaceState(null, null, `?c=${campaignSlug}#${hash}`);
+
+    messages.forEach(msg => {
+        const isThreadStarter = (msg.thread && msg.thread.id === mainChannelId);
+        const actualChannel = isThreadStarter ? msg.thread.id : msg.channel_id;
+
+        if (filterId === 'all' && lastChannelId !== null && actualChannel !== lastChannelId && !isThreadStarter) {
+            const shiftName = channelMap[actualChannel] || "PRIMARY FREQUENCY";
+            const transition = document.createElement('div');
+            transition.className = 'channel-transition';
+            transition.innerHTML = `📡 FREQUENCY SHIFT >> ${shiftName}`;
+            transition.onclick = () => {
+                renderFeed(actualChannel);
+                window.scrollTo(0,0);
+            };
+            output.appendChild(transition);
+        }
+        if (!isThreadStarter) lastChannelId = actualChannel;
+
+        const group = document.createElement('div');
+        group.className = 'message-group';
+        group.id = `msg-${msg.id}`;
+
+        const avatarUrl = msg.author.avatar 
+            ? `${remoteBase}${activeCampaign.paths.avatars}${msg.author.id}/${msg.author.avatar}.png` 
+            : `${remoteBase}${activeCampaign.paths.avatars}default.png`;
+
+        group.innerHTML = `
+            <div class="avatar-container">
+                <img src="" data-src="${avatarUrl}" class="avatar lazy-load">
+            </div>
+            <div class="msg-body">
+                <div class="msg-header">
+                    <span class="username">${msg.author.nickname || msg.author.global_name || msg.author.username}</span>
+                    <span class="timestamp">${new Date(msg.timestamp).toLocaleString()}</span>
+                    <a href="javascript:void(0)" class="copy-link-icon" onclick="copyMsgLink(event, '${msg.id}', '${actualChannel}')">🔗</a>
                 </div>
-                <div class="msg-body">
-                    <div class="msg-header">
-                        <span class="username">${msg.author.nickname || msg.author.global_name || msg.author.username}</span>
-                        <span class="timestamp">${new Date(msg.timestamp).toLocaleString()}</span>
-                        <a href="javascript:void(0)" class="copy-link-icon" onclick="copyMsgLink(event, '${msg.id}')">🔗</a>
-                    </div>
-                    <div class="msg-content">${parseMarkdown(msg.content)}</div>
-                </div>
-            `;
-            output.appendChild(group);
-        });
-        silentLoadAvatars();
+                <div class="msg-content">${parseMarkdown(msg.content)}</div>
+            </div>
+        `;
+        output.appendChild(group);
+    });
+    silentLoadAvatars();
+}
+
+function parseMarkdown(text) {
+    if (!text) return "";
+    let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
+
+    return html
+        .replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (match, name, id) => {
+            const cleanName = name.replace(/:/g, '');
+            return `<img src="${emojiBase}${cleanName}_${id}.png" class="emoji" title="${cleanName}">`;
+        })
+        .replace(/\[(.*?)\]\(&lt;?(https?:\/\/[^\s&gt;]+)&gt;?\)/g, '<a href="$2" target="_blank" class="external-link">$1</a>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/^&gt; (.*$)/gim, '<blockquote>$1</blockquote>')
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^-# (.*$)/gim, '<small class="subtext">$1</small>')
+        .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</strong></i>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<i>$1</i>')
+        .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler">$1</span>')
+        .replace(/\n/g, '<br>');
+}
+
+function copyMsgLink(event, msgId, chanId) {
+    event.preventDefault();
+    const chapterId = document.getElementById('chapter-picker').value;
+    const url = `${window.location.origin}${window.location.pathname}?c=${campaignSlug}#${chapterId}:${msgId}`;
+    
+    navigator.clipboard.writeText(url).then(() => {
+        const icon = event.target;
+        icon.innerText = "CHECK";
+        setTimeout(() => icon.innerText = "🔗", 1000);
+    });
+}
+
+function onPickerChange(chanId) {
+    loadChapter(chanId);
+}
+
+function toggleFrequencies() {
+    const bar = document.getElementById('frequency-selector');
+    bar.style.display = (bar.style.display === 'none' || bar.style.display === '') ? 'block' : 'none';
+}
+
+function buildFrequencyBar() {
+    const bar = document.getElementById('frequency-selector');
+    const target = document.getElementById('freq-buttons-target');
+    const toggleBtn = document.getElementById('thread-toggle');
+    
+    // Get unique channel IDs that are NOT the main channel
+    const uniqueChannels = [...new Set(fullData.map(m => m.channel_id))].filter(id => id !== mainChannelId);
+
+    if (uniqueChannels.length === 0) { 
+        bar.style.display = 'none'; 
+        toggleBtn.style.display = 'none'; 
+        return; 
     }
 
-    /**
-     * FULL DISCORD MARKDOWN PARSER
-     */
-    function parseMarkdown(text) {
-        if (!text) return "";
-        let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    toggleBtn.style.display = 'block';
+    let html = `<div class="comms-status">📡 Encrypted Frequencies Detected:</div>`;
+    html += `<button class="freq-btn" onclick="renderFeed('all')">COMBINED FEED</button>`;
+    uniqueChannels.forEach(id => {
+        html += `<button class="freq-btn" onclick="renderFeed('${id}')">${channelMap[id] || "SUB-CHANNEL"}</button>`;
+    });
+    target.innerHTML = html;
+}
 
-        const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
-
-        return html
-            // Emojis
-            .replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (match, name, id) => {
-                const cleanName = name.replace(/:/g, '');
-                return `<img src="${emojiBase}${cleanName}_${id}.png" class="emoji" title="${cleanName}">`;
-            })
-            // Links & Code
-            .replace(/\[(.*?)\]\(&lt;?(https?:\/\/[^\s&gt;]+)&gt;?\)/g, '<a href="$2" target="_blank" class="external-link">$1</a>')
-            .replace(/`(.*?)`/g, '<code>$1</code>')
-            // Blockquotes
-            .replace(/^&gt; (.*$)/gim, '<blockquote>$1</blockquote>')
-            // Headers
-            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-            .replace(/^-# (.*$)/gim, '<small class="subtext">$1</small>')
-            // Bold/Italic
-            .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</strong></i>')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<i>$1</i>')
-            // Spoilers
-            .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler">$1</span>')
-            .replace(/\n/g, '<br>');
+function jumpToMessage(msgId) {
+    const target = document.getElementById(`msg-${msgId}`);
+    if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.add('highlight-flash');
+        setTimeout(() => target.classList.remove('highlight-flash'), 2000);
     }
+}
 
-    /**
-     * UI HELPERS
-     */
-    function onPickerChange(chanId) {
-        loadChapter(chanId);
-    }
+function silentLoadAvatars() {
+    document.querySelectorAll('.lazy-load').forEach(img => {
+        const realSrc = img.getAttribute('data-src');
+        const probe = new Image();
+        probe.src = realSrc;
+        probe.onload = () => { img.src = realSrc; img.classList.add('loaded'); };
+        probe.onerror = () => { img.src = `${remoteBase}${activeCampaign.paths.avatars}default.png`; img.classList.add('loaded'); };
+    });
+}
 
-    function toggleFrequencies() {
-        const bar = document.getElementById('frequency-selector');
-        bar.style.display = (bar.style.display === 'none' || bar.style.display === '') ? 'block' : 'none';
-    }
-
-    function buildFrequencyBar() {
-        const bar = document.getElementById('frequency-selector');
-        const target = document.getElementById('freq-buttons-target');
-        const toggleBtn = document.getElementById('thread-toggle');
-        const uniqueChannels = [...new Set(fullData.map(m => m.channel_id))];
-        
-        if (uniqueChannels.length <= 1) { 
-            bar.style.display = 'none'; toggleBtn.style.display = 'none'; return; 
-        }
-        
-        toggleBtn.style.display = 'block';
-        let html = `<div class="comms-status">📡 Encrypted Frequencies Detected:</div>`;
-        html += `<button class="freq-btn active" onclick="renderFeed('all')">COMBINED FEED</button>`;
-        uniqueChannels.forEach(id => {
-            html += `<button class="freq-btn" onclick="renderFeed('${id}')">${channelMap[id] || "PRIMARY"}</button>`;
-        });
-        target.innerHTML = html;
-    }
-
-    function jumpToMessage(msgId, chanId = null) {
-        if (chanId && chanId !== document.getElementById('chapter-picker').value) {
-            document.getElementById('chapter-picker').value = chanId;
-            loadChapter(chanId, msgId);
-            return;
-        }
-        const target = document.getElementById(msgId.startsWith('msg-') ? msgId : `msg-${msgId}`);
-        if (target) {
-            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            target.classList.add('highlight-flash');
-            setTimeout(() => target.classList.remove('highlight-flash'), 2000);
-        }
-    }
-
-    function silentLoadAvatars() {
-        document.querySelectorAll('.lazy-load').forEach(img => {
-            const realSrc = img.getAttribute('data-src');
-            const probe = new Image();
-            probe.src = realSrc;
-            probe.onload = () => { img.src = realSrc; img.classList.add('loaded'); };
-            probe.onerror = () => { img.src = `${remoteBase}${activeCampaign.paths.avatars}default.png`; img.classList.add('loaded'); };
-        });
-    }
-
-    document.addEventListener("DOMContentLoaded", init);
+document.addEventListener("DOMContentLoaded", init);
 </script>

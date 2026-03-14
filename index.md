@@ -50,6 +50,16 @@ title: Home
     text-transform: uppercase;
 }
 
+.campaign-tag {
+    font-size: 0.7rem;
+    background: rgba(97, 218, 251, 0.1);
+    color: var(--accent-blue);
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    margin-right: 8px;
+}
+
 .signal-meta {
     margin: 5px 0;
     font-family: monospace;
@@ -68,9 +78,10 @@ title: Home
 
 .hub-welcome {
     text-align: center;
-    padding: 60px 20px;
+    padding: 40px 20px;
     border: 1px dashed var(--gh-border);
     border-radius: 8px;
+    margin-bottom: 20px;
 }
 
 /* 4. RESPONSIVE */
@@ -79,23 +90,23 @@ title: Home
 }
 </style>
 
-<div id="hub-view" class="hub-welcome">
+<div id="hub-view" class="hub-welcome" style="display: none;">
     <h2 style="color: var(--accent-blue);">Welcome to the Galactic Registry</h2>
-    <p>Select an encrypted campaign frequency from the datapad above to begin decryption and access mission logs.</p>
+    <p>Select an encrypted campaign frequency from the datapad above to begin decryption.</p>
 </div>
 
-<div id="campaign-view" class="dashboard-grid" style="display: none;"> 
+<div class="dashboard-grid"> 
     <section class="update-panel">
         <h3 style="color: var(--accent-blue); border-bottom: 2px solid var(--accent-blue); padding-bottom: 10px;">
-            <span class="icon">📡</span> Recent Transmissions
+            <span class="icon">📡</span> <span id="feed-title">Recent Transmissions</span>
         </h3>
         <ul class="log-list" id="recent-logs-list">
             <li class="timestamp">Initializing holonet connection...</li>
         </ul>
-        <a href="#" id="view-all-link" class="toc-open-btn" style="margin-top: 20px; text-decoration: none; width: 100%; justify-content: center;">View Full Archive →</a> 
+        <a href="#" id="view-all-link" class="toc-open-btn" style="margin-top: 20px; text-decoration: none; width: 100%; justify-content: center; display: none;">View Full Archive →</a> 
     </section>
 
-    <section class="wiki-panel">
+    <section class="wiki-panel" id="wiki-panel" style="display: none;">
         <h3 style="color: var(--sw-yellow);">
             <span class="icon">🗂️</span> Datapad Wiki
         </h3>
@@ -108,54 +119,84 @@ title: Home
 document.addEventListener("DOMContentLoaded", async function() {
     const listContainer = document.getElementById('recent-logs-list');
     const hubView = document.getElementById('hub-view');
-    const campaignView = document.getElementById('campaign-view');
-    
-    // 1. Resolve Slug
+    const feedTitle = document.getElementById('feed-title');
+    const viewAllLink = document.getElementById('view-all-link');
+    const wikiPanel = document.getElementById('wiki-panel');
+
     const params = new URLSearchParams(window.location.search);
     const slug = params.get('c');
-
-    if (!slug) {
-        hubView.style.display = 'block';
-        campaignView.style.display = 'none';
-        return;
-    }
 
     try {
         const res = await fetch("{{ '/assets/campaign-registry.json' | relative_url }}");
         const registry = await res.json();
-        const campaign = registry.campaigns[slug];
+        let displayLogs = [];
 
-        if (!campaign) throw new Error("Frequency Unknown");
+        if (slug && registry.campaigns[slug]) {
+            // --- CAMPAIGN SPECIFIC VIEW ---
+            const campaign = registry.campaigns[slug];
+            feedTitle.innerText = `${campaign.name}: Recent Transmissions`;
+            viewAllLink.href = `{{ '/archives' | relative_url }}?c=${slug}`;
+            viewAllLink.style.display = 'flex';
 
-        // UI Prep
-        hubView.style.display = 'none';
-        campaignView.style.display = 'grid';
-        document.getElementById('view-all-link').href = `{{ '/archives' | relative_url }}?c=${slug}`;
-        
-        // Wiki Logic
-        if (campaign.paths && campaign.paths.wiki) {
-            document.getElementById('wiki-cta').href = campaign.paths.wiki;
+            if (campaign.paths && campaign.paths.wiki) {
+                wikiPanel.style.display = 'block';
+                document.getElementById('wiki-cta').href = campaign.paths.wiki;
+            }
+
+            // Filter active logs, sort by lastMessageTimestamp, take top 3
+            displayLogs = campaign.logs
+                .filter(l => l.isActive !== false)
+                .sort((a, b) => new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp))
+                .slice(0, 3)
+                .map(l => ({ ...l, campaignSlug: slug, campaignName: campaign.name }));
+
         } else {
-            document.querySelector('.wiki-panel').style.display = 'none';
+            // --- GLOBAL FEED VIEW ---
+            hubView.style.display = 'block';
+            feedTitle.innerText = "Latest Global Signals";
+            
+            // Flatten all logs from all campaigns
+            let allLogs = [];
+            Object.keys(registry.campaigns).forEach(cSlug => {
+                const camp = registry.campaigns[cSlug];
+                const logsWithMeta = camp.logs
+                    .filter(l => l.isActive !== false)
+                    .map(l => ({ 
+                        ...l, 
+                        campaignSlug: cSlug, 
+                        campaignName: camp.name 
+                    }));
+                allLogs = allLogs.concat(logsWithMeta);
+            });
+
+            // Sort all logs by timestamp, take top 5
+            displayLogs = allLogs
+                .sort((a, b) => new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp))
+                .slice(0, 5);
         }
 
-        // 2. Fetch recent logs for this specific campaign
-        // Using the campaign's specific log array from the registry
+        if (displayLogs.length === 0) {
+            listContainer.innerHTML = "<li>No active transmissions found.</li>";
+            return;
+        }
+
         listContainer.innerHTML = ""; 
-
-        // Get the last 3 logs from the campaign's manifest/registry entry
-        const recentLogs = campaign.logs.slice(-3).reverse();
-
-        recentLogs.forEach(log => {
+        displayLogs.forEach(log => {
             const li = document.createElement('li');
-            // Check if log is JSON or Markdown to determine the link path
             const viewerPath = log.fileName.endsWith('.json') ? "{{ '/logs' | relative_url }}" : "{{ '/entry' | relative_url }}";
             
+            // Format timestamp for display
+            const dateObj = new Date(log.lastMessageTimestamp);
+            const dateStr = isNaN(dateObj) ? "" : dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
             li.innerHTML = `
-                <a href="${viewerPath}?c=${slug}#${log.channelID}">
+                <a href="${viewerPath}?c=${log.campaignSlug}#${log.channelID}">
                     <div class="log-info">
-                        <span class="chapter-title">${log.title}</span>
-                        <span class="timestamp" style="font-family: monospace; font-size: 0.8rem; color: var(--text-muted);">${log.date || ''}</span>
+                        <div>
+                            ${!slug ? `<span class="campaign-tag">${log.campaignName}</span>` : ''}
+                            <span class="chapter-title">${log.title}</span>
+                        </div>
+                        <span class="timestamp" style="font-family: monospace; font-size: 0.8rem; color: var(--text-muted);">${dateStr}</span>
                     </div>
                     <p class="signal-meta">
                         ORIGIN: ${log.fileName}
@@ -168,7 +209,7 @@ document.addEventListener("DOMContentLoaded", async function() {
 
     } catch (e) {
         console.error("Dashboard Error:", e);
-        listContainer.innerHTML = "<li><span style='color:var(--sw-yellow);'>📡 UPLINK ERROR:</span> Failed to retrieve recent transmissions for this frequency.</li>";
+        listContainer.innerHTML = "<li><span style='color:var(--sw-yellow);'>📡 UPLINK ERROR:</span> Failed to retrieve transmissions.</li>";
     }
 });
 </script>
