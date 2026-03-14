@@ -57,12 +57,12 @@ foreach ($campaignKey in $campaignKeys) {
         # 1. RESOLVE CHAPTER ID
         # We look for the first message that has a channel_id, or a thread parent_id
         foreach ($m in $msgList) {
-            $cID = if ($m.channel_id) { [string]$m.channel_id } else { "" }
-            $pID = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
+            $channelID = if ($m.channel_id) { [string]$m.channel_id } else { "" }
+            $parentID = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
             
             # Priority: Thread Parent ID is usually the true Chapter/Channel ID
-            if ($pID -and $pID.Length -gt 10) { $foundChapterID = $pID; break }
-            elseif ($cID -and $cID.Length -gt 10) { $foundChapterID = $cID; break }
+            if ($parentID -and $parentID.Length -gt 10) { $foundChapterID = $parentID; break }
+            elseif ($channelID -and $channelID.Length -gt 10) { $foundChapterID = $channelID; break }
         }
 
         # 2. RESOLVE THREADS
