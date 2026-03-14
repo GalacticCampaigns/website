@@ -50,16 +50,16 @@ function Get-TargetChannelId($messages) {
 
     # Priority 2: Valid Snowflake Parent
     foreach ($msg in $messages) {
-        $pid = [string]$msg.thread.parent_id
-        if ($null -ne $pid -and $pid.Length -gt 10 -and $pid -ne "1") {
-            return $pid
+        $parentID = [string]$msg.thread.parent_id
+        if ($null -ne $parentID -and $parentID.Length -gt 10 -and $parentID -ne "1") {
+            return $parentID
         }
     }
 
     # Priority 3: Standard Export ID (First valid snowflake)
     foreach ($msg in $messages) {
-        $cid = [string]$msg.channel_id
-        if ($null -ne $cid -and $cid.Length -gt 10) { return $cid }
+        $channelID = [string]$msg.channel_id
+        if ($null -ne $channelID -and $channelID.Length -gt 10) { return $channelID }
     }
 
     # Priority 4: Majority Rule Fallback (With Strict Junk Filter)
