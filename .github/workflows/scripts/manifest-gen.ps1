@@ -95,8 +95,9 @@ foreach ($campaignKey in $campaignKeys) {
         $sorted = $messages | Sort-Object timestamp
         $logEntry | Add-Member -NotePropertyName "lastMessageTimestamp" -NotePropertyValue ([string]$sorted[-1].timestamp) -Force
         $logEntry | Add-Member -NotePropertyName "messageCount" -NotePropertyValue ($messages | Where-Object { $_.content -ne "" -and ($_.type -eq "Default" -or $_.type -eq 0) }).Count -Force
-        $logEntry | Add-Member -NotePropertyName "order" -NotePropertyValue (if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 }) -Force
-
+        $orderVal = if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 }
+        $logEntry | Add-Member -NotePropertyName "order" -NotePropertyValue $orderVal -Force
+        
         # --- THREADS (Filtered to avoid Chapter Starter duplication) ---
         $threadMsgs = $messages | Where-Object { $_.thread -and $_.thread.id -and [string]$_.thread.id -ne $primaryID }
         if ($threadMsgs) {
