@@ -112,9 +112,66 @@
           "isNSFW": false,
           "preview": "",
           "order": 1,
-          "messageCount": 0,
-          "lastMessageTimestamp": null,
-          "threads": []
+          "messageCount": 296,
+          "lastMessageTimestamp": "2025-08-01T12:39:15.84+00:00",
+          "threads": [
+            {
+              "threadID": "1387904540778561576",
+              "displayName": "Intro: The Cold Shell (Wes)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1387912482172964989",
+              "displayName": "Intro: Rude Awakening (Dryzan)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1387912831697158184",
+              "displayName": "Intro: A Cage of Glass (Iyola)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1387913268730794056",
+              "displayName": "Intro: The Static Within (Vaeros)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1387916926667460722",
+              "displayName": "Intro: A Cracked Lens (Varda)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1397604779227615402",
+              "displayName": "Galley ☆ Post Escape",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1397620423914684427",
+              "displayName": "In Medbay ☆ Post Escape",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1397997211576438784",
+              "displayName": "Bridge ☆ Post Escape",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            }
+          ]
         },
         {
           "title": "CHAPTER 2: SILENT-DRIFT",
@@ -124,9 +181,73 @@
           "isNSFW": false,
           "preview": "",
           "order": 2,
-          "messageCount": 0,
-          "lastMessageTimestamp": null,
-          "threads": []
+          "messageCount": 667,
+          "lastMessageTimestamp": "2025-11-06T13:58:18.492+00:00",
+          "threads": [
+            {
+              "threadID": "1402706232732811425",
+              "displayName": "Workshop / Recreation",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1403550882012074084",
+              "displayName": "Medbay",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1410311118030901268",
+              "displayName": "Exploring the Ghost Ship",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 0
+            },
+            {
+              "threadID": "1410313405197451405",
+              "displayName": "The Echo and the Oracle",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 0
+            },
+            {
+              "threadID": "1412211178981032037",
+              "displayName": "Mess Hall",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1418930804574392412",
+              "displayName": "Varda lowers herself into the chair with",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1423451795291639831",
+              "displayName": "Back to the *Venture*",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1424361258995417250",
+              "displayName": "Atin Oya'ka",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 0
+            },
+            {
+              "threadID": "1430238393102630953",
+              "displayName": "Iyola's Cabin",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            }
+          ]
         },
         {
           "title": "CHAPTER 3: BENEATH THE GLARE",
@@ -136,9 +257,31 @@
           "isNSFW": false,
           "preview": "",
           "order": 3,
-          "messageCount": 0,
-          "lastMessageTimestamp": null,
-          "threads": []
+          "messageCount": 233,
+          "lastMessageTimestamp": "2026-01-20T23:45:34.598+00:00",
+          "threads": [
+            {
+              "threadID": "1457878207498817734",
+              "displayName": "Echoes of the Past",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            },
+            {
+              "threadID": "1458169536749633690",
+              "displayName": "Nanite Mysteries",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 0
+            },
+            {
+              "threadID": "1462985529439031461",
+              "displayName": "Epilogue: Iyola",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            }
+          ]
         },
         {
           "title": "CHAPTER 4: RESONANCE FREQUENCY",
