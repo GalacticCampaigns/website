@@ -32,28 +32,37 @@ foreach ($campaignKey in $campaignKeys) {
         Write-Host "  > Processing File: $($f.name)"
         $processedFiles += $f.name
         
-        $msgList = @(); $foundChapterID = $null; $foundThreads = @(); $rawJson = $null;
+        $msgList = @(); $foundChapterID = $null; $foundThreads = @();
 
         try {
-            $rawJson = Invoke-RestMethod -Uri $f.download_url
-            $msgList = if ($rawJson.PSObject.Properties.Name -contains 'messages') { $rawJson.messages } else { $rawJson }
-        } catch { Write-Warning "    ! Download failed."; continue }
-
-        if ($null -eq $msgList -or $msgList.Count -eq 0) { continue }
-
-        # 1. RESOLVE CHAPTER ID (Improved resilience)
-        foreach ($m in $msgList) {
-            $channelID = if ($m.channel_id) { [string]$m.channel_id } elseif ($m.channel -and $m.channel.id) { [string]$m.channel.id } else { "" }
-            $parentID = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
+            # Use -Raw and ConvertFrom-Json to have better control over object detection
+            $response = Invoke-WebRequest -Uri $f.download_url -UseBasicParsing
+            $rawJson = $response.Content | ConvertFrom-Json
             
-            if ($parentID -and $parentID -ne "1" -and $parentID.Length -gt 10) { 
-                $foundChapterID = $parentID
-                break 
+            # Robustly find the message list
+            if ($rawJson -is [Array]) {
+                $msgList = $rawJson
+            } elseif ($rawJson.PSObject.Properties.Name -contains 'messages') {
+                $msgList = $rawJson.messages
+            } else {
+                $msgList = @($rawJson)
             }
-            elseif ($channelID -and $channelID.Length -gt 10) { 
-                $foundChapterID = $channelID
-                break 
-            }
+        } catch { Write-Warning "    ! Download/Parse failed."; continue }
+
+        if ($null -eq $msgList -or $msgList.Count -eq 0) { 
+            Write-Warning "    ! No messages found in $($f.name)"
+            continue 
+        }
+
+        # 1. RESOLVE CHAPTER ID
+        # We look for the first message that has a channel_id, or a thread parent_id
+        foreach ($m in $msgList) {
+            $cID = if ($m.channel_id) { [string]$m.channel_id } else { "" }
+            $pID = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
+            
+            # Priority: Thread Parent ID is usually the true Chapter/Channel ID
+            if ($pID -and $pID.Length -gt 10) { $foundChapterID = $pID; break }
+            elseif ($cID -and $cID.Length -gt 10) { $foundChapterID = $cID; break }
         }
 
         # 2. RESOLVE THREADS
@@ -69,14 +78,12 @@ foreach ($campaignKey in $campaignKeys) {
             if ($DebugLog) { Write-DebugHost "    [Thread Found] ID: $($g.Name) | Name: $($g.Group[0].thread.name) | Count: $($g.Count)" }
         }
 
-        # 3. SMART REBUILD (Fixed type handling for Count)
+        # 3. SMART REBUILD
         $oldRecord = $persistMap[$f.name]
         
-        # We check for type 0 (integer) OR "Default" (string) to be safe across different exporters
-        $newCount = ($msgList | Where-Object { 
-            ($_.type -eq 0 -or $_.type -eq "Default") -and 
-            ($null -ne $_.content) 
-        }).Count
+        # Count all messages that aren't system headers/pins (Types 0, 18, 19 are usually valid content)
+        $validTypes = @(0, 18, 19, "Default", "Reply", "ThreadCreated")
+        $newCount = ($msgList | Where-Object { $validTypes -contains $_.type }).Count
 
         $sorted = $msgList | Sort-Object timestamp
         $newTs = if ($sorted) { [string]$sorted[-1].timestamp } else { "" }
@@ -108,7 +115,6 @@ foreach ($campaignKey in $campaignKeys) {
             $orphan = $persistMap[$oldKey]
             $orphan.isActive = $false
             $newLogList += $orphan
-            Write-DebugHost "    [Orphan] $($oldKey) marked inactive."
         }
     }
 
