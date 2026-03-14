@@ -45,10 +45,10 @@ foreach ($campaignKey in $campaignKeys) {
 
         # 1. RESOLVE CHAPTER ID
         foreach ($m in $msgList) {
-            $cid = if ($m.channel_id) { [string]$m.channel_id } else { "" }
-            $pid = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
-            if ($pid -and $pid -ne "1" -and $pid.Length -gt 10) { $foundChapterID = $pid; break }
-            elseif ($cid -and $cid.Length -gt 10) { $foundChapterID = $cid; break }
+            $channelID = if ($m.channel_id) { [string]$m.channel_id } else { "" }
+            $parentID = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
+            if ($parentID -and $parentID -ne "1" -and $parentID.Length -gt 10) { $foundChapterID = $parentID; break }
+            elseif ($channelID -and $channelID.Length -gt 10) { $foundChapterID = $channelID; break }
         }
 
         # 2. RESOLVE THREADS
