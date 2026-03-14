@@ -32,74 +32,80 @@ foreach ($campaignKey in $campaignKeys) {
         Write-Host "  > Processing File: $($f.name)"
         $processedFiles += $f.name
         
-        $msgList = @(); $resolvedID = ""; $foundThreads = @();
+        $msgList = @(); $foundThreads = @();
+        $oldRecord = $persistMap[$f.name]
 
         try {
             $rawJson = Invoke-RestMethod -Uri $f.download_url
-            # Handle both wrapper objects and top-level arrays
-            $msgList = if ($rawJson.PSObject.Properties.Name -contains 'messages') { $rawJson.messages } else { $rawJson }
+            $msgList = if ($rawJson.messages) { $rawJson.messages } else { $rawJson }
         } catch { Write-Warning "    ! Download/Parse failed."; continue }
 
-        if ($null -eq $msgList -or $msgList.Count -eq 0) { continue }
+        $msgList = @($msgList)
+        if ($msgList.Count -eq 0) { continue }
 
-        # 1. RESOLVE CHAPTER ID (PowerShell-native Majority Rule)
-        $parentCounts = @{}
-        foreach ($m in $msgList) {
-            $currentParentID = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
-            $currentChannelID = if ($m.channel_id) { [string]$m.channel_id } else { "" }
-            
-            $idToCount = if ($currentParentID) { $currentParentID } else { $currentChannelID }
-            
-            if ($idToCount -and $idToCount.Length -gt 10) {
-                if (-not $parentCounts.ContainsKey($idToCount)) { $parentCounts[$idToCount] = 0 }
-                $parentCounts[$idToCount]++
-            }
-        }
-
-        if ($parentCounts.Count -gt 0) {
-            # Sort by count and pick the top one
-            $resolvedID = ($parentCounts.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 1).Key
-        }
-
-        # 2. RESOLVE THREADS
-        $threadGroups = $msgList | Where-Object { $_.thread -and $_.thread.id -and [string]$_.thread.id -ne $resolvedID } | Group-Object { [string]$_.thread.id }
-        foreach ($g in $threadGroups) {
-            $foundThreads += [PSCustomObject]@{
-                threadID = [string]$g.Name
-                displayName = [string]$g.Group[0].thread.name
-                isActive = $true
-                isNSFW = $false
-                messageCount = [int]$g.Count
-            }
-            if ($DebugLog) { Write-DebugHost "    [Thread Found] ID: $($g.Name) | Name: $($g.Group[0].thread.name) | Count: $($g.Count)" }
-        }
-
-        # 3. SMART REBUILD
-        $oldRecord = $persistMap[$f.name]
+        # --- 1. PERSISTENT FIELD RESOLUTION (Chapter Level) ---
+        # Prioritize registry values for channelID, title, isNSFW, isActive, preview, order
         
-        # Valid message types (0=Default, 18=Thread Start, 19=Reply)
-        $validTypes = @(0, 18, 19, "Default", "Reply", "ThreadCreated")
-        $newCount = ($msgList | Where-Object { $validTypes -contains $_.type }).Count
+        $finalChannelID = if ($oldRecord.channelID -and $oldRecord.channelID.Length -gt 10) { $oldRecord.channelID } else { "" }
+        $finalTitle = if ($oldRecord.title) { $oldRecord.title } else { ($f.name -replace '\.json$', '' -replace '_', ' ').ToUpper() }
+        $finalNSFW = if ($null -ne $oldRecord.isNSFW) { $oldRecord.isNSFW } else { $false }
+        $finalActive = if ($null -ne $oldRecord.isActive) { $oldRecord.isActive } else { $true }
+        $finalPreview = if ($oldRecord.preview) { $oldRecord.preview } else { "" }
+        $finalOrder = if ($null -ne $oldRecord.order) { $oldRecord.order } else { if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 } }
 
+        # Auto-detect channelID ONLY if registry is blank
+        if (-not $finalChannelID) {
+            $parentCounts = @{}
+            foreach ($m in $msgList) {
+                $curP = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
+                $curC = if ($m.channel_id) { [string]$m.channel_id } else { "" }
+                $idToCount = if ($curP) { $curP } else { $curC }
+                if ($idToCount -and $idToCount.Length -gt 10) {
+                    if (-not $parentCounts.ContainsKey($idToCount)) { $parentCounts[$idToCount] = 0 }
+                    $parentCounts[$idToCount]++
+                }
+            }
+            if ($parentCounts.Count -gt 0) {
+                $finalChannelID = ($parentCounts.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 1).Key
+            }
+        }
+
+        # --- 2. PERSISTENT FIELD RESOLUTION (Thread Level) ---
+        $storyTypes = @(0, 19, "Default", "Reply")
+        $threadGroups = $msgList | Where-Object { $_.thread -and $_.thread.id -and [string]$_.thread.id -ne $finalChannelID } | Group-Object { [string]$_.thread.id }
+        
+        foreach ($g in $threadGroups) {
+            $tID = [string]$g.Name
+            # Look for existing thread data in the old record to persist manually updated displayName
+            $oldThread = if ($oldRecord.threads) { $oldRecord.threads | Where-Object { $_.threadID -eq $tID } } else { $null }
+            
+            $finalThreadID = if ($oldThread.threadID) { $oldThread.threadID } else { $tID }
+            $finalDisplayName = if ($oldThread.displayName) { $oldThread.displayName } else { [string]$g.Group[0].thread.name }
+            
+            $threadMsgCount = ($g.Group | Where-Object { $storyTypes -contains $_.type }).Count
+            
+            $foundThreads += [PSCustomObject]@{
+                threadID = $finalThreadID
+                displayName = $finalDisplayName
+                isActive = if ($null -ne $oldThread.isActive) { $oldThread.isActive } else { $true }
+                isNSFW = if ($null -ne $oldThread.isNSFW) { $oldThread.isNSFW } else { $false }
+                messageCount = [int]$threadMsgCount
+            }
+        }
+
+        # --- 3. DYNAMIC DATA UPDATES ---
+        $newCount = ($msgList | Where-Object { $storyTypes -contains $_.type }).Count
         $sorted = $msgList | Sort-Object timestamp
         $newTs = if ($sorted) { [string]$sorted[-1].timestamp } else { "" }
-        $orderVal = if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 }
-
-        if ($DebugLog) {
-            Write-DebugHost "    [ID Update] '$($oldRecord.channelID)' -> '$resolvedID'"
-            Write-DebugHost "    [Count Update] $($oldRecord.messageCount) -> $newCount"
-            Write-DebugHost "    [Order] $orderVal"
-            Write-DebugHost "    [Threads] Found $($foundThreads.Count) active threads."
-        }
 
         $newLogList += [PSCustomObject]@{
-            title = if ($oldRecord.title) { $oldRecord.title } else { ($f.name -replace '\.json$', '' -replace '_', ' ').ToUpper() }
-            channelID = [string]$resolvedID
+            title = $finalTitle
+            channelID = [string]$finalChannelID
             fileName = [string]$f.name
-            isActive = $true
-            isNSFW = if ($null -ne $oldRecord.isNSFW) { $oldRecord.isNSFW } else { $false }
-            preview = if ($oldRecord.preview) { $oldRecord.preview } else { "" }
-            order = $orderVal
+            isActive = $finalActive
+            isNSFW = $finalNSFW
+            preview = $finalPreview
+            order = $finalOrder
             messageCount = [int]$newCount
             lastMessageTimestamp = $newTs
             threads = $foundThreads
@@ -114,10 +120,8 @@ foreach ($campaignKey in $campaignKeys) {
             $newLogList += $orphan
         }
     }
-
     $camp.logs = $newLogList
 }
 
-# Final Export
 $manifest | ConvertTo-Json -Depth 10 | Out-File $manifestPath -Encoding UTF8
 Write-Host "--- Hydration Complete ---"
