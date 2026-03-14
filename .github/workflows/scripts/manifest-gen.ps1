@@ -21,7 +21,6 @@ foreach ($campaignKey in $campaignKeys) {
     
     $processedFiles = @()
     $newLogList = @() 
-    
     $persistMap = @{}
     if ($camp.logs) { foreach($l in $camp.logs) { $persistMap[$l.fileName] = $l } }
 
@@ -31,9 +30,9 @@ foreach ($campaignKey in $campaignKeys) {
     foreach ($f in $files | Where-Object { $_.name -like "*.json" }) {
         Write-Host "  > Processing File: $($f.name)"
         $processedFiles += $f.name
-        
-        $msgList = @(); $foundThreads = @();
         $oldRecord = $persistMap[$f.name]
+        
+        $msgList = @(); $foundThreads = @(); $resolvedID = ""
 
         try {
             $rawJson = Invoke-RestMethod -Uri $f.download_url
@@ -43,18 +42,10 @@ foreach ($campaignKey in $campaignKeys) {
         $msgList = @($msgList)
         if ($msgList.Count -eq 0) { continue }
 
-        # --- 1. PERSISTENT FIELD RESOLUTION (Chapter Level) ---
-        # Prioritize registry values for channelID, title, isNSFW, isActive, preview, order
-        
-        $finalChannelID = if ($oldRecord.channelID -and $oldRecord.channelID.Length -gt 10) { $oldRecord.channelID } else { "" }
-        $finalTitle = if ($oldRecord.title) { $oldRecord.title } else { ($f.name -replace '\.json$', '' -replace '_', ' ').ToUpper() }
-        $finalNSFW = if ($null -ne $oldRecord.isNSFW) { $oldRecord.isNSFW } else { $false }
-        $finalActive = if ($null -ne $oldRecord.isActive) { $oldRecord.isActive } else { $true }
-        $finalPreview = if ($oldRecord.preview) { $oldRecord.preview } else { "" }
-        $finalOrder = if ($null -ne $oldRecord.order) { $oldRecord.order } else { if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 } }
-
-        # Auto-detect channelID ONLY if registry is blank
-        if (-not $finalChannelID) {
+        # --- 1. CHANNEL ID RESOLUTION (With Persistence) ---
+        if ($oldRecord.channelID -and $oldRecord.channelID.Length -gt 10) {
+            $resolvedID = $oldRecord.channelID
+        } else {
             $parentCounts = @{}
             foreach ($m in $msgList) {
                 $curP = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
@@ -66,41 +57,51 @@ foreach ($campaignKey in $campaignKeys) {
                 }
             }
             if ($parentCounts.Count -gt 0) {
-                $finalChannelID = ($parentCounts.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 1).Key
+                $resolvedID = ($parentCounts.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 1).Key
             }
         }
 
-        # --- 2. PERSISTENT FIELD RESOLUTION (Thread Level) ---
+        # --- 2. THREAD RESOLUTION (With Persistence) ---
         $storyTypes = @(0, 19, "Default", "Reply")
-        $threadGroups = $msgList | Where-Object { $_.thread -and $_.thread.id -and [string]$_.thread.id -ne $finalChannelID } | Group-Object { [string]$_.thread.id }
+        $threadGroups = $msgList | Where-Object { $_.thread -and $_.thread.id -and [string]$_.thread.id -ne $resolvedID } | Group-Object { [string]$_.thread.id }
         
         foreach ($g in $threadGroups) {
             $tID = [string]$g.Name
-            # Look for existing thread data in the old record to persist manually updated displayName
+            # Persistence: check if this thread existed in the manual registry
             $oldThread = if ($oldRecord.threads) { $oldRecord.threads | Where-Object { $_.threadID -eq $tID } } else { $null }
-            
-            $finalThreadID = if ($oldThread.threadID) { $oldThread.threadID } else { $tID }
-            $finalDisplayName = if ($oldThread.displayName) { $oldThread.displayName } else { [string]$g.Group[0].thread.name }
             
             $threadMsgCount = ($g.Group | Where-Object { $storyTypes -contains $_.type }).Count
             
             $foundThreads += [PSCustomObject]@{
-                threadID = $finalThreadID
-                displayName = $finalDisplayName
+                threadID = if ($oldThread.threadID) { $oldThread.threadID } else { $tID }
+                displayName = if ($oldThread.displayName) { $oldThread.displayName } else { [string]$g.Group[0].thread.name }
                 isActive = if ($null -ne $oldThread.isActive) { $oldThread.isActive } else { $true }
                 isNSFW = if ($null -ne $oldThread.isNSFW) { $oldThread.isNSFW } else { $false }
                 messageCount = [int]$threadMsgCount
             }
         }
 
-        # --- 3. DYNAMIC DATA UPDATES ---
+        # --- 3. DYNAMIC DATA & REBUILD ---
         $newCount = ($msgList | Where-Object { $storyTypes -contains $_.type }).Count
         $sorted = $msgList | Sort-Object timestamp
         $newTs = if ($sorted) { [string]$sorted[-1].timestamp } else { "" }
+        
+        # Field Persistance logic
+        $finalTitle = if ($oldRecord.title) { $oldRecord.title } else { ($f.name -replace '\.json$', '' -replace '_', ' ').ToUpper() }
+        $finalActive = if ($null -ne $oldRecord.isActive) { $oldRecord.isActive } else { $true }
+        $finalNSFW = if ($null -ne $oldRecord.isNSFW) { $oldRecord.isNSFW } else { $false }
+        $finalPreview = if ($oldRecord.preview) { $oldRecord.preview } else { "" }
+        $finalOrder = if ($null -ne $oldRecord.order) { $oldRecord.order } else { if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 } }
+
+        if ($DebugLog) {
+            Write-DebugHost "    [ID Update] '$($oldRecord.channelID)' -> '$resolvedID'"
+            Write-DebugHost "    [Count Update] $($oldRecord.messageCount) -> $newCount"
+            Write-DebugHost "    [Threads] Found $($foundThreads.Count) active threads."
+        }
 
         $newLogList += [PSCustomObject]@{
             title = $finalTitle
-            channelID = [string]$finalChannelID
+            channelID = [string]$resolvedID
             fileName = [string]$f.name
             isActive = $finalActive
             isNSFW = $finalNSFW
@@ -112,12 +113,9 @@ foreach ($campaignKey in $campaignKeys) {
         }
     }
 
-    # Handle Orphans
     foreach ($oldKey in $persistMap.Keys) {
         if ($processedFiles -notcontains $oldKey) {
-            $orphan = $persistMap[$oldKey]
-            $orphan.isActive = $false
-            $newLogList += $orphan
+            $orphan = $persistMap[$oldKey]; $orphan.isActive = $false; $newLogList += $orphan
         }
     }
     $camp.logs = $newLogList
