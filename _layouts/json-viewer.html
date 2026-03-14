@@ -328,14 +328,22 @@ function renderFeed(filterId) {
 
 function parseMarkdown(text) {
     if (!text) return "";
+    
+    // Initial escape
     let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    
+    // Construct base path for emojis
     const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
 
     return html
+        /* --- 1. Discord Custom Emojis (!name!_id format) --- */
         .replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (match, name, id) => {
             const cleanName = name.replace(/:/g, '');
-            return `<img src="${emojiBase}${cleanName}_${id}.png" class="emoji" title="${cleanName}">`;
+            // Correct format: !name!_id.png
+            return `<img src="${emojiBase}!${cleanName}!_${id}.png" class="emoji" title="${cleanName}">`;
         })
+
+        /* --- 2. Discord Channel/Post References <#ID> --- */
         .replace(/&lt;#(\d+)&gt;/g, (match, id) => {
             const location = resolveDiscordReference(id);
             let targetSlug = campaignSlug;
@@ -350,7 +358,14 @@ function parseMarkdown(text) {
             const href = found ? `{{ '/logs' | relative_url }}?c=${targetSlug}#${id}` : "javascript:void(0)";
             return `<a href="${href}" class="channel-link"># ${location} <span style="font-size:0.8em">✉️</span></a>`;
         })
-        .replace(/\[(.*?)\]\(&lt;?(https?:\/\/[^\s&gt;]+?)&gt;?\)/g, '<a href="$2" target="_blank" class="external-link">$1</a>')
+
+        /* --- 3. External Links Handling --- */
+        // Handles: [Text](<https://link>) and [Text](https://link)
+        .replace(/\[(.*?)\]\(&lt;?(https?:\/\/[^\s&gt;]+?)&gt;?\)/g, (match, label, url) => {
+            return `<a href="${url}" target="_blank" class="external-link">${label}</a>`;
+        })
+
+        /* --- 4. Headers (h1 - h6) --- */
         .replace(/^# (.*$)/gim, '<h1>$1</h1>')
         .replace(/^## (.*$)/gim, '<h2>$1</h2>')
         .replace(/^### (.*$)/gim, '<h3>$1</h3>')
@@ -358,6 +373,8 @@ function parseMarkdown(text) {
         .replace(/^##### (.*$)/gim, '<h5>$1</h5>')
         .replace(/^###### (.*$)/gim, '<h6>$1</h6>')
         .replace(/^-# (.*$)/gim, '<small class="subtext">$1</small>')
+
+        /* --- 5. Formatting --- */
         .replace(/`(.*?)`/g, '<code>$1</code>')
         .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</strong></i>')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -365,6 +382,7 @@ function parseMarkdown(text) {
         .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>')
         .replace(/\n/g, '<br>');
 }
+
 
 function resolveDiscordReference(refId) {
     if (channelMap[refId]) return channelMap[refId];
