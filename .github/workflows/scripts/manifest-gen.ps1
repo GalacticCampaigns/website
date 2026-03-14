@@ -12,34 +12,31 @@ param (
 
 $ErrorActionPreference = "Stop"
 
-# --- 1. Environment & Path Resolution ---
+# --- 1. Environment & Remote API Resolution ---
 $manifestPath = "assets/campaign-registry.json"
-if (-not (Test-Path $manifestPath)) {
-    Write-Error "CRITICAL: Manifest not found at $manifestPath."
-    exit 1
-}
-
-# Strict UTF8 Reading to prevent Snowflake corruption
 $registry = Get-Content $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
 $targetKey = if ([string]::IsNullOrWhiteSpace($CampaignId)) { $registry.activeCampaign } else { $CampaignId }
 $campaign = $registry.campaigns.$targetKey
 
-if ($null -eq $campaign) {
-    Write-Error "CRITICAL: Campaign '$targetKey' not found in registry."
-    exit 1
-}
+# Construct the API URL for the REMOTE repository
+# Example: https://api.github.com/repos/alicia86/SW_ForgottenOnes/contents/Chapter_Logs/JSON/
+$apiBase = "https://api.github.com/repos/$($campaign.repository)/contents/$($campaign.paths.json)?ref=$($campaign.branch)"
 
-$jsonSourcePath = Join-Path $campaign.dataPath $campaign.paths.json
-if (-not (Test-Path $jsonSourcePath)) {
-    Write-Warning "Source path $jsonSourcePath missing. Skipping processing."
-    exit 0
-}
+if ($DebugLog) { Write-Host "[DEBUG] Target Repo: $($campaign.repository) | API: $apiBase" -ForegroundColor Cyan }
 
-$logFiles = Get-ChildItem -Path $jsonSourcePath -Filter "*.json"
-$processedIds = New-Object 'System.Collections.Generic.HashSet[string]'
+try {
+    # Fetch the list of files from the remote GitHub Repo
+        $remoteFiles = Invoke-RestMethod -Uri $apiBase -Method Get -Headers @{
+                "Accept" = "application/vnd.github.v3+json"
+                        # If you hit rate limits, you'll need to pass the GITHUB_TOKEN here
+                            }
+                            } catch {
+                                Write-Error "CRITICAL: Could not access remote files at $apiBase. Check repository permissions."
+                                    exit 1
+                                    }
 
-if ($DebugLog) { Write-Host "[DEBUG] Processing '$targetKey' | Target: $jsonSourcePath" -ForegroundColor Cyan }
-
+                                    $processedIds = New-Object 'System.Collections.Generic.HashSet[string]'
+                                    $logFiles = $remoteFiles | Where-Object { $_.name -like "*.json" }
 # --- 2. Advanced ID Resolution (Parent 1 Logic) ---
 function Get-TargetChannelId($messages) {
     if ($null -eq $messages -or $messages.Count -eq 0) { return $null }
@@ -77,19 +74,23 @@ function Get-TargetChannelId($messages) {
     return $null
 }
 
-# --- 3. Core Hydration Loop ---
+# --- 3. Core Hydration Loop (Updated for Remote) ---
 foreach ($file in $logFiles) {
     try {
-        $fileRaw = Get-Content $file.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+        # Use the 'download_url' provided by the API to get the actual JSON content
+        $fileRaw = Invoke-RestMethod -Uri $file.download_url
+        
+        # Determine if it's nested or flat (Format A vs B)
         $messages = if ($fileRaw.PSObject.Properties.Name -contains "messages") { $fileRaw.messages } else { $fileRaw }
         if ($messages -isnot [array]) { $messages = @($messages) }
 
         $resolvedId = Get-TargetChannelId $messages
         
-        # Identity Matching (Dual-Key Strategy)
+        # Dual-Key Matching (ID first, then Filename)
+        # Use $file.name instead of $file.Name (API returns lowercase 'name')
         $logEntry = $campaign.logs | Where-Object { [string]$_.channelID -eq $resolvedId -and -not [string]::IsNullOrWhiteSpace($resolvedId) }
         if ($null -eq $logEntry) {
-            $logEntry = $campaign.logs | Where-Object { $_.fileName -eq $file.Name }
+            $logEntry = $campaign.logs | Where-Object { $_.fileName -eq $file.name }
         }
 
         # Narrative Stats: String-forced comparison with null-coalescing safety
@@ -134,7 +135,7 @@ foreach ($file in $logFiles) {
             if ($logEntry.isActive -ne $false) { $logEntry.isActive = $true }
 
             # Volatile updates
-            $logEntry.fileName = $file.Name
+            $logEntry.fileName = $file.name
             $logEntry.messageCount = $msgCount
             $logEntry.lastMessageTimestamp = $lastTimestamp
         }
