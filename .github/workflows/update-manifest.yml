@@ -26,6 +26,8 @@ jobs:
 
       - name: Run Hydrator
         shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # 1. Resolve Campaign ID (Check payload first, then manual input)
           $id = "${{ github.event.client_payload.campaign_id }}"
@@ -37,8 +39,8 @@ jobs:
 
           # 3. Build Parameter Hash (Splatting)
           $params = @{}
-          if (-not [string]::IsNullOrWhiteSpace($id)) { $params["CampaignId"] = $id }
-          if ($debug) { $params["DebugLog"] = $true }
+          if (-not [string]::IsNullOrWhiteSpace($id)) { $params["RequestedCampaignSlug"] = $id }
+          if ($debug) { $params["EnableDebugMode"] = $true }
 
           Write-Host "Running hydrator with CampaignId: $($id) | Debug: $($debug)"
           
