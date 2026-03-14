@@ -198,9 +198,6 @@ document.addEventListener("DOMContentLoaded", async function() {
                         </div>
                         <span class="timestamp" style="font-family: monospace; font-size: 0.8rem; color: var(--text-muted);">${dateStr}</span>
                     </div>
-                    <p class="signal-meta">
-                        ORIGIN: ${log.fileName}
-                    </p>
                     <p class="preview-text">${log.preview || 'Narrative stream active...'}</p>
                 </a>
             `;
