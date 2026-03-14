@@ -56,27 +56,25 @@ foreach ($campaignKey in $campaignKeys) {
 
         # --- ID RESOLUTION SCAN ---
         foreach ($msg in $messages) {
-            $cid = [string]$msg.channel_id
-            $pid = if ($msg.thread) { [string]$msg.thread.parent_id } else { $null }
-
-            Write-DebugHost "Checking Msg $($msg.id): chanID='$cid', parentID='$pid'"
+            # Descriptive names to avoid reserved variables like $PID
+            $msgChanId = [string]$msg.channel_id
+            $msgParentId = if ($msg.thread) { [string]$msg.thread.parent_id } else { $null }
 
             # Priority Logic: Use Parent ID if it's a valid Snowflake
-            if ($pid -and $pid.Length -gt 15 -and $pid -ne "1") { 
-                $primaryID = $pid
+            if ($msgParentId -and $msgParentId.Length -gt 15 -and $msgParentId -ne "1") { 
+                $primaryID = $msgParentId
                 Write-DebugHost "Found valid Parent ID: $primaryID. Marking as Chapter ID."
                 break 
             }
             # Otherwise, use Channel ID if it's a valid Snowflake
-            elseif ($cid -and $cid.Length -gt 15) { 
-                $primaryID = $cid
+            elseif ($msgChanId -and $msgChanId.Length -gt 15) { 
+                $primaryID = $msgChanId
                 Write-DebugHost "Found valid Channel ID: $primaryID. Marking as Chapter ID."
                 break 
             }
         }
 
         # --- MATCHING ---
-        # Match by Filename first (keeps your manual updates safe)
         $logEntry = $camp.logs | Where-Object { $_.fileName -eq $f.name -or $_.file -eq $f.name }
 
         if (-not $logEntry) {
@@ -89,11 +87,10 @@ foreach ($campaignKey in $campaignKeys) {
                 threads = @()
                 messageCount = 0
                 preview = ""
+                order = 0
             }
             if ($null -eq $camp.logs) { $camp.logs = @() }
             $camp.logs += $logEntry
-        } else {
-            Write-DebugHost "Matched existing entry by FileName: $($f.name)"
         }
 
         # --- UPDATE ---
@@ -101,9 +98,8 @@ foreach ($campaignKey in $campaignKeys) {
         $logEntry | Add-Member -NotePropertyName "fileName" -NotePropertyValue ([string]$f.name) -Force
         $logEntry | Add-Member -NotePropertyName "isActive" -NotePropertyValue $true -Force
         
-        # PRESERVATION: Only overwrite channelID if we found a valid one in the file
+        # Only overwrite channelID if we found a valid one in the file
         if ($primaryID) {
-            Write-DebugHost "Syncing ID: $($logEntry.channelID) -> $primaryID"
             $logEntry | Add-Member -NotePropertyName "channelID" -NotePropertyValue $primaryID -Force 
         } else {
             Write-Warning "    ! No ID found in file. Keeping existing registry ID: $($logEntry.channelID)"
@@ -112,19 +108,20 @@ foreach ($campaignKey in $campaignKeys) {
         $sorted = $messages | Sort-Object timestamp
         $logEntry | Add-Member -NotePropertyName "lastMessageTimestamp" -NotePropertyValue ([string]$sorted[-1].timestamp) -Force
         
-        $validMsgs = $messages | Where-Object { $_.content -ne "" -and ($_.type -eq "Default" -or $_.type -eq 0 -or -not $_.type) }
+        $validMsgs = $messages | Where-Object { $_.content -ne "" -and ($_.type -eq "Default" -or $_.type -eq 0) }
         $logEntry | Add-Member -NotePropertyName "messageCount" -NotePropertyValue $validMsgs.Count -Force
-        Write-DebugHost "Counted $($validMsgs.Count) narrative messages."
+        
+        if ($f.name -match '(\d+)') { 
+            $logEntry | Add-Member -NotePropertyName "order" -NotePropertyValue ([int]$matches[1]) -Force 
+        }
 
         # --- THREADS ---
-        # 1. Identify valid threads that are NOT the main channel
         $threadMsgs = $messages | Where-Object { 
             $_.thread -and $_.thread.id -and [string]$_.thread.id -ne [string]$logEntry.channelID 
         }
 
         if ($threadMsgs) {
             $groups = $threadMsgs | Group-Object { [string]$_.thread.id }
-            Write-DebugHost "Found $($groups.Count) unique threads."
             foreach ($g in $groups) {
                 $tID = [string]$g.Name
                 $foundThreadIDs += $tID
@@ -132,13 +129,14 @@ foreach ($campaignKey in $campaignKeys) {
                 $tEntry = $logEntry.threads | Where-Object { [string]$_.threadID -eq $tID }
                 
                 if (-not $tEntry) {
-                    Write-DebugHost "New Thread Detected: $tID ($($g.Group[0].thread.name))"
-                    $tEntry = [PSCustomObject]@{ threadID = $tID; displayName = [string]$g.Group[0].thread.name; isNSFW = $false }
+                    $tEntry = [PSCustomObject]@{ 
+                        threadID = $tID; 
+                        displayName = [string]$g.Group[0].thread.name; 
+                        isNSFW = $false 
+                    }
                     $logEntry.threads += $tEntry
                 }
-                
                 $tEntry | Add-Member -NotePropertyName "isActive" -NotePropertyValue $true -Force
-                # Count actual messages inside this specific group
                 $tEntry | Add-Member -NotePropertyName "messageCount" -NotePropertyValue ($g.Count) -Force
             }
         }
