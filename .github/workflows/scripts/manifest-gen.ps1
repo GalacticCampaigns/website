@@ -8,163 +8,107 @@ param (
 function Write-DebugHost { param($msg); if ($DebugLog) { Write-Host "DEBUG: $msg" -ForegroundColor Cyan } }
 
 $manifestPath = "assets/campaign-registry.json"
-if (-not (Test-Path $manifestPath)) { Write-Error "Registry not found at $manifestPath"; exit 1 }
+if (-not (Test-Path $manifestPath)) { Write-Error "Registry not found."; exit 1 }
 
-# Read manifest
 $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
 
-# 1. Campaign Selection
 $campaignKeys = $manifest.campaigns.PSObject.Properties.Name
-if (-not [string]::IsNullOrWhiteSpace($CampaignId)) {
-    Write-Host "Targeting specific campaign: $CampaignId"
-    $campaignKeys = $campaignKeys | Where-Object { $_ -eq $CampaignId }
-}
+if ($CampaignId) { $campaignKeys = $campaignKeys | Where-Object { $_ -eq $CampaignId } }
 
 foreach ($campaignKey in $campaignKeys) {
     $camp = $manifest.campaigns.$campaignKey
-    Write-Host "--- Hydrating Campaign: $($camp.name) ($campaignKey) ---"
+    Write-Host "--- Hydrating: $($camp.name) ($campaignKey) ---"
     
-    if (-not $camp.repository) { 
-        Write-Warning "No repository defined for $campaignKey. Skipping."
-        continue 
-    }
+    $processedFiles = @()
+    $newLogList = @() # We will rebuild this list
+    
+    # Map existing logs by filename for persistence lookup
+    $persistMap = @{}
+    foreach($l in $camp.logs) { $persistMap[$l.fileName] = $l }
 
-    $processedFileNames = @()
     $apiUrl = "https://api.github.com/repos/$($camp.repository)/contents/$($camp.dataPath)$($camp.paths.json)?ref=$($camp.branch)"
-    
-    Write-DebugHost "Fetching file list from: $apiUrl"
-    try {
-        $files = Invoke-RestMethod -Uri $apiUrl -Method Get -Headers @{"Accept"="application/vnd.github.v3+json"}
-    } catch {
-        Write-Warning "Could not access remote repository for $campaignKey."
-        continue
-    }
+    try { $files = Invoke-RestMethod -Uri $apiUrl -Method Get -Headers @{"Accept"="application/vnd.github.v3+json"} } catch { continue }
 
     foreach ($f in $files | Where-Object { $_.name -like "*.json" }) {
-        # --- RESET: Prevent data bleeding between files ---
-        $foundID = $null; $messages = @(); $rawJson = $null; $foundThreadIDs = @()
-        $processedFileNames += $f.name
-
         Write-Host "  > Processing File: $($f.name)"
+        $processedFiles += $f.name
+        
+        # Local state for this file
+        $msgList = @(); $foundChapterID = $null; $foundThreads = @(); $rawJson = $null;
+
         try {
             $rawJson = Invoke-RestMethod -Uri $f.download_url
-            # NORMALIZATION: Handle both Object {messages:[]} and Array []
-            if ($rawJson.PSObject.Properties.Name -contains 'messages') { 
-                $messages = $rawJson.messages 
-                Write-DebugHost "Format: Nested 'messages' object."
-            } else { 
-                $messages = $rawJson 
-                Write-DebugHost "Format: Flat Array."
-            }
-        } catch { 
-            Write-Warning "    ! Failed to download or parse $($f.name)"
-            continue 
+            $msgList = if ($rawJson.PSObject.Properties.Name -contains 'messages') { $rawJson.messages } else { $rawJson }
+        } catch { Write-Warning "    ! Download failed."; continue }
+
+        if ($null -eq $msgList -or $msgList.Count -eq 0) { continue }
+
+        # 1. RESOLVE CHAPTER ID
+        foreach ($m in $msgList) {
+            $cid = if ($m.channel_id) { [string]$m.channel_id } else { "" }
+            $pid = if ($m.thread -and $m.thread.parent_id) { [string]$m.thread.parent_id } else { "" }
+            if ($pid -and $pid -ne "1" -and $pid.Length -gt 10) { $foundChapterID = $pid; break }
+            elseif ($cid -and $cid.Length -gt 10) { $foundChapterID = $cid; break }
         }
 
-        if ($null -eq $messages -or $messages.Count -eq 0) {
-            Write-Warning "    ! No messages found in $($f.name). Skipping."
-            continue
-        }
-
-        # --- ID RESOLUTION SCAN ---
-        foreach ($msg in $messages) {
-            $mC = if ($msg.channel_id) { [string]$msg.channel_id } else { "" }
-            $mP = if ($msg.thread -and $msg.thread.parent_id) { [string]$msg.thread.parent_id } else { "" }
-
-            if ($mP -and $mP -ne "1" -and $mP.Length -gt 10) {
-                $foundID = $mP
-                Write-DebugHost "ID Resolved via Thread Parent: $foundID"
-                break
-            } elseif ($mC -and $mC.Length -gt 10) {
-                $foundID = $mC
-                Write-DebugHost "ID Resolved via Channel ID: $foundID"
-                break
-            }
-        }
-
-        # --- MATCHING LOGIC (Direct Registry Patching) ---
-        $logIndex = -1
-        for ($i=0; $i -lt $camp.logs.Count; $i++) {
-            if ($camp.logs[$i].fileName -eq $f.name -or $camp.logs[$i].file -eq $f.name) {
-                $logIndex = $i; break
-            }
-        }
-
-        if ($logIndex -ge 0) {
-            # --- PATCH EXISTING ---
-            $target = $camp.logs[$logIndex]
-            Write-DebugHost "Found existing entry. Patching volatile fields..."
-            
-            # Standardize filename property
-            if ($target.PSObject.Properties['file']) { $target.PSObject.Properties.Remove('file') }
-            $target | Add-Member -NotePropertyName "fileName" -NotePropertyValue ([string]$f.name) -Force
-
-            # Only update ID if we actually found a valid one in the file
-            if ($foundID) { $target.channelID = $foundID }
-            
-            $target.isActive = $true
-            
-            $sorted = $messages | Sort-Object timestamp
-            $target.lastMessageTimestamp = [string]$sorted[-1].timestamp
-            $target.messageCount = ($messages | Where-Object { $_.content -ne "" -and ($_.type -eq "Default" -or $_.type -eq 0) }).Count
-
-            if (-not $target.order -and $f.name -match '(\d+)') { $target.order = [int]$matches[1] }
-
-            # --- THREADS (Filtered to avoid Chapter Starter) ---
-            $threadMsgs = $messages | Where-Object { 
-                $_.thread -and $_.thread.id -and [string]$_.thread.id -ne [string]$target.channelID 
-            }
-
-            if ($threadMsgs) {
-                $groups = $threadMsgs | Group-Object { [string]$_.thread.id }
-                foreach ($g in $groups) {
-                    $tID = [string]$g.Name
-                    $foundThreadIDs += $tID
-                    if ($null -eq $target.threads) { $target.threads = @() }
-                    $tEntry = $target.threads | Where-Object { [string]$_.threadID -eq $tID }
-                    
-                    if (-not $tEntry) {
-                        $tEntry = [PSCustomObject]@{ 
-                            threadID = $tID; displayName = [string]$g.Group[0].thread.name; 
-                            isActive = $true; isNSFW = $false; messageCount = $g.Count 
-                        }
-                        $target.threads += $tEntry
-                    } else {
-                        $tEntry.isActive = $true
-                        $tEntry.messageCount = $g.Count
-                    }
-                }
-            }
-            # Mark missing threads as inactive in this specific log
-            foreach ($t in $target.threads) { if ($foundThreadIDs -notcontains [string]$t.threadID) { $t.isActive = $false } }
-
-        } else {
-            # --- CREATE NEW ---
-            Write-Host "    + New file detected. Creating initial entry..."
-            $newEntry = [PSCustomObject]@{
-                title = ($f.name -replace '\.json$', '' -replace '_', ' ').ToUpper()
-                channelID = if($foundID){$foundID}else{""}
-                fileName = [string]$f.name
+        # 2. RESOLVE THREADS
+        $threadGroups = $msgList | Where-Object { $_.thread -and $_.thread.id -and [string]$_.thread.id -ne $foundChapterID } | Group-Object { [string]$_.thread.id }
+        foreach ($g in $threadGroups) {
+            $foundThreads += [PSCustomObject]@{
+                threadID = [string]$g.Name
+                displayName = [string]$g.Group[0].thread.name
                 isActive = $true
                 isNSFW = $false
-                threads = @()
-                preview = ""
-                messageCount = 0
-                order = if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 }
+                messageCount = $g.Count
             }
-            if ($null -eq $camp.logs) { $camp.logs = @() }
-            $camp.logs += $newEntry
+            if ($DebugLog) { Write-DebugHost "    [Thread Found] ID: $($g.Name) | Name: $($g.Group[0].thread.name) | Count: $($g.Count)" }
+        }
+
+        # 3. SMART REBUILD: Merge Persistent with New
+        $oldRecord = $persistMap[$f.name]
+        
+        # Calculate changing fields
+        $newCount = ($msgList | Where-Object { $_.content -ne "" -and ($_.type -eq "Default" -or $_.type -eq 0) }).Count
+        $sorted = $msgList | Sort-Object timestamp
+        $newTs = [string]$sorted[-1].timestamp
+        $orderVal = if ($f.name -match '(\d+)') { [int]$matches[1] } else { 0 }
+
+        if ($DebugLog) {
+            Write-DebugHost "    [ID Update] '$($oldRecord.channelID)' -> '$foundChapterID'"
+            Write-DebugHost "    [Count Update] $($oldRecord.messageCount) -> $newCount"
+            Write-DebugHost "    [Order] $orderVal"
+            Write-DebugHost "    [Threads] Found $($foundThreads.Count) active threads."
+        }
+
+        # Assemble the clean object
+        $newLogList += [PSCustomObject]@{
+            title = if ($oldRecord.title) { $oldRecord.title } else { ($f.name -replace '\.json$', '' -replace '_', ' ').ToUpper() }
+            channelID = [string]$foundChapterID
+            fileName = [string]$f.name
+            isActive = $true
+            isNSFW = if ($null -ne $oldRecord.isNSFW) { $oldRecord.isNSFW } else { $false }
+            preview = if ($oldRecord.preview) { $oldRecord.preview } else { "" }
+            order = $orderVal
+            messageCount = [int]$newCount
+            lastMessageTimestamp = $newTs
+            threads = $foundThreads
         }
     }
 
-    # --- GLOBAL CLEANUP ---
-    foreach ($log in $camp.logs) {
-        if ($processedFileNames -notcontains $log.fileName) {
-            $log.isActive = $false
+    # 4. ORPHAN HANDLING: Keep old records that weren't in the folder but mark them inactive
+    foreach ($oldKey in $persistMap.Keys) {
+        if ($processedFiles -notcontains $oldKey) {
+            $orphan = $persistMap[$oldKey]
+            $orphan.isActive = $false
+            $newLogList += $orphan
+            Write-DebugHost "    [Orphan] $($oldKey) marked inactive."
         }
     }
+
+    # Assign the rebuilt array back to the manifest
+    $camp.logs = $newLogList
 }
 
-# Final Export with proper depth
+# 5. FINAL EXPORT: Depth 10 is mandatory for nested thread arrays
 $manifest | ConvertTo-Json -Depth 10 | Out-File $manifestPath -Encoding UTF8
 Write-Host "--- Hydration Complete ---"
