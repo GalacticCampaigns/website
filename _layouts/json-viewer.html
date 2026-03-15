@@ -281,7 +281,7 @@ function renderFeed(filterId) {
 function parseMarkdown(text) {
     if (!text) return "";
 
-    // 1. Initial escape to prevent HTML injection
+    // 1. Initial escape for security
     let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
 
@@ -309,15 +309,13 @@ function parseMarkdown(text) {
         .replace(/^-# (.*$)/gm, '<small class="subtext">$1</small>');
 
     // 5. EXTERNAL MARKDOWN LINKS [text](url) or [text](<url>)
-    // Regex explanation:
-    // \[([^\]]+)\] matches [label]
-    // \(\s* matches ( plus optional whitespace
-    // (?:&lt;)? optional <
-    // (https?:\/\/[^\s\)]+?) matches the URL (stops at space or closing paren)
-    // (?:&gt;)? optional >
-    // \s*\) matches optional whitespace plus )
-    html = html.replace(/\[([^\]]+)\]\(\s*(?:&lt;)?(https?:\/\/[^\s&gt;\)]+?)(?:&gt;)?\s*\)/g, (match, label, url) => {
-        return `<a href="${url}" target="_blank" class="external-link">${label}</a>`;
+    // Captures everything inside () then cleans up Discord's < > formatting
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, rawUrl) => {
+        let cleanUrl = rawUrl.trim()
+            .replace(/^&lt;/, "") // Remove leading <
+            .replace(/&gt;$/, "") // Remove trailing >
+            .replace(/&amp;/g, "&"); // Unescape ampersands for the actual href
+        return `<a href="${cleanUrl}" target="_blank" class="external-link">${label}</a>`;
     });
 
     // 6. INTERNAL DISCORD LINKS (Mentions & Channel URLs)
@@ -336,14 +334,16 @@ function parseMarkdown(text) {
     });
 
     // 7. NAKED IMAGE AUTO-EMBED
-    // Regex logic:
-    // (?<!href="|src=") -> Negative Lookbehind: Don't match if it's already in a link or image tag
-    // (https?:\/\/\S+?\.(?:png|jpg|jpeg|gif|webp)(?:\?\S+)?) -> Match URL ending in image extension
-    // (?!&gt;) -> Discord Logic: If a URL is wrapped in < >, it does NOT auto-embed. 
-    //             This skips URLs ending in &gt;
-    const imgRegex = /(?<!href="|src="|">)(https?:\/\/\S+?\.(?:png|jpg|jpeg|gif|webp)(?:\?\S+)?)(?!&gt;)/gi;
+    // Logic: 
+    // - (?<!href="|src="|&lt;) : Don't match if preceded by a tag or &lt; (suppression)
+    // - [^\s&lt;&gt;]+? : Capture URL up to extension
+    // - \.(?:png|jpg|jpeg|gif|webp) : Supported extensions
+    // - [^\s&lt;&gt;]* : Capture any trailing path segments or queries (?cb=... /revision/...)
+    // - (?!&gt;) : Don't match if followed by &gt; (suppression)
+    const imgRegex = /(?<!href="|src="|&lt;)(https?:\/\/[^\s&lt;&gt;]+?\.(?:png|jpg|jpeg|gif|webp)[^\s&lt;&gt;]*)(?!&gt;)/gi;
     html = html.replace(imgRegex, (url) => {
-        return `<div class="attachment-item"><a href="${url}" target="_blank"><img src="${url}" class="log-image" loading="lazy"></a></div>`;
+        const realUrl = url.replace(/&amp;/g, '&'); // Ensure query params work in src
+        return `<div class="attachment-item"><a href="${realUrl}" target="_blank"><img src="${realUrl}" class="log-image" loading="lazy"></a></div>`;
     });
 
     // 8. CUSTOM EMOJIS
