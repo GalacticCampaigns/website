@@ -167,10 +167,16 @@ async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
         mainChannelId = Object.keys(parentCounts).reduce((a, b) => parentCounts[a] > parentCounts[b] ? a : b, null) || channelID;
 
         buildFrequencyBar();
+    
+        // Ensure we pass the autoFilter correctly to the renderer
         renderFeed(autoFilter || 'all');
 
         if (targetMsg) {
             requestAnimationFrame(() => setTimeout(() => jumpToMessage(targetMsg), 400));
+        } else if (autoFilter) {
+            // If we loaded a thread link with no specific message, 
+            // jump to the first message of that thread.
+            requestAnimationFrame(() => setTimeout(() => jumpToMessage(autoFilter), 400));
         } else {
             window.scrollTo(0, 0);
         }
@@ -194,8 +200,12 @@ function renderFeed(filterId) {
     const messages = filterId === 'all' ? filtered : filtered.filter(m => m.channel_id === filterId || (m.thread && m.thread.id === filterId));
 
     // Update History Hash
-    const hash = filterId === 'all' ? mainChannelId : filterId;
-    history.replaceState(null, null, `?c=${campaignSlug}#${hash}`);
+    const currentHash = (filterId === 'all') ? mainChannelId : filterId;
+
+    // Only update the URL if the hash has actually changed to prevent loop glitches
+    if (window.location.hash !== `#${currentHash}`) {
+        history.replaceState(null, null, `?c=${campaignSlug}#${currentHash}`);
+    }
 
     messages.forEach(msg => {
         const isThreadStarter = (msg.thread && msg.thread.id === mainChannelId);
@@ -249,18 +259,26 @@ function parseMarkdown(text) {
     const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
 
     return html
-        .replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (m, name, id) => `<img src="${emojiBase}!${name.replace(/:/g,'')}!_${id}.png" class="emoji">`)
         .replace(/(?:&lt;#(\d+)&gt;|https?:\/\/discord\.com\/channels\/\d+\/(\d+)(?:\/(\d+))?)/g, (match, mentionId, urlChanId, urlMsgId) => {
             const id = mentionId || urlChanId;
             const res = resolveInternalLinkData(id);
+            
             if (res.found) {
-                const href = `{{ '/logs' | relative_url }}?c=${res.slug}#${res.parentId}:${urlMsgId || id}`;
-                return `<a href="${href}" class="channel-link"># ${res.isExternal ? res.campaignName + ' > ' : ''}${res.locationName}</a>`;
+                // If it's a thread, we want the hash to be #ThreadID:MessageID or just #ThreadID
+                const targetHash = (res.filterId !== 'all') ? res.filterId : res.parentId;
+                const jumpId = urlMsgId ? `:${urlMsgId}` : "";
+                
+                const href = `{{ '/logs' | relative_url }}?c=${res.slug}#${targetHash}${jumpId}`;
+                
+                return `<a href="${href}" class="channel-link"># ${res.isExternal ? res.campaignName + ' > ' : ''}${res.locationName}${urlMsgId ? ' ✉️' : ''}</a>`;
             }
             return match;
         })
-        /* FIXED: Bracketed URL Regex */
-        .replace(/\[([^\]]+)\]\((?:&lt;)?(https?:\/\/[^\s&gt;\)]+)(?:&gt;)?\)/g, '<a href="$2" target="_blank" class="external-link">$1</a>')
+        .replace(/\[([^\]]+)\]\((?:&lt;)?(https?:\/\/[^\s&gt;\)]+)(?:&gt;)?\)/g, (match, label, url) => {
+            // This strips &lt; and &gt; if they were captured inside the URL group
+            const cleanUrl = url.replace(/&lt;/g, '').replace(/&gt;/g, '');
+            return `<a href="${cleanUrl}" target="_blank" class="external-link">${label}</a>`;
+        })
         .replace(/^# (.*$)/gim, '<h1>$1</h1>').replace(/^## (.*$)/gim, '<h2>$1</h2>')
         .replace(/`(.*?)`/g, '<code>$1</code>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>')
@@ -270,12 +288,34 @@ function parseMarkdown(text) {
 function resolveInternalLinkData(id) {
     for (let slug in registry.campaigns) {
         const camp = registry.campaigns[slug];
+        
+        // 1. Check if ID is a Chapter
         const chapter = camp.logs.find(l => l.channelID === id);
-        if (chapter) return { found: true, slug: slug, parentId: id, locationName: chapter.title, campaignName: camp.name, isExternal: (slug !== campaignSlug) };
-        const logWithThread = camp.logs.find(l => l.threads.some(t => t.threadID === id));
+        if (chapter) {
+            return { 
+                found: true, 
+                slug: slug, 
+                parentId: id, 
+                filterId: 'all', // Show everything
+                locationName: chapter.title, 
+                campaignName: camp.name, 
+                isExternal: (slug !== campaignSlug) 
+            };
+        }
+
+        // 2. Check if ID is a Thread
+        const logWithThread = camp.logs.find(l => l.threads && l.threads.some(t => t.threadID === id));
         if (logWithThread) {
             const thread = logWithThread.threads.find(t => t.threadID === id);
-            return { found: true, slug: slug, parentId: logWithThread.channelID, locationName: `${logWithThread.title} > ${thread.displayName}`, campaignName: camp.name, isExternal: (slug !== campaignSlug) };
+            return { 
+                found: true, 
+                slug: slug, 
+                parentId: logWithThread.channelID, 
+                filterId: id, // Pass the Thread ID as the filter
+                locationName: `${logWithThread.title} > ${thread.displayName}`, 
+                campaignName: camp.name, 
+                isExternal: (slug !== campaignSlug) 
+            };
         }
     }
     return { found: false };
