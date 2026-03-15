@@ -383,13 +383,13 @@
           "threads": []
         },
         {
-          "title": "wv ch3 the-karthon-gamble",
+          "title": "Chapter 3: The Karthon Gamble",
           "channelID": "1375296954300366910",
           "fileName": "wv_ch3_the-karthon-gamble.json",
           "isActive": true,
           "isNSFW": false,
           "preview": "",
-          "order": 3.0,
+          "order": 3,
           "messageCount": 982,
           "lastMessageTimestamp": "2026-01-23T01:36:13.812+00:00",
           "threads": [
@@ -403,13 +403,13 @@
           ]
         },
         {
-          "title": "wv ch4 stillness-between-storms",
+          "title": "Chapter 4: Stillness Between Storms",
           "channelID": "1464072269071651051",
           "fileName": "wv_ch4_stillness-between-storms.json",
           "isActive": true,
           "isNSFW": false,
           "preview": "",
-          "order": 4.0,
+          "order": 4,
           "messageCount": 142,
           "lastMessageTimestamp": "2026-03-14T18:31:43.627+00:00",
           "threads": []
