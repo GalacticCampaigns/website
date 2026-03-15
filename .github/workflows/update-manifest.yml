@@ -27,7 +27,9 @@ jobs:
       - name: Run Hydrator
         shell: pwsh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Use your secret PAT for the API calls so it can see private repos
+          # If a campaign is public, this token still works perfectly.
+          GH_TOKEN: ${{ secrets.CAMPAIGN_SYNC_TOKEN }}
         run: |
           # 1. Resolve Campaign ID (Check payload first, then manual input)
           $id = "${{ github.event.client_payload.campaign_id }}"
