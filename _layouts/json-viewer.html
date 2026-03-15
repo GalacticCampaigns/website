@@ -187,7 +187,14 @@ async function init() {
 
         if (!activeCampaign) throw new Error("Unknown Campaign ID.");
 
-        remoteBase = `https://raw.githubusercontent.com/${activeCampaign.repository}/${activeCampaign.branch}/${activeCampaign.dataPath}`;
+        /* --- 🛠️ PATH FIX: Safe Cleaning for remoteBase --- */
+        // Strip leading ./ and trailing slashes so joining is predictable
+        const cleanDataPath = activeCampaign.dataPath.replace(/^\.\//, "").replace(/\/$/, "");
+        const pathSuffix = cleanDataPath ? `${cleanDataPath}/` : "";
+        
+        // This builds: https://raw.githubusercontent.com/user/repo/branch/OptionalFolder/
+        remoteBase = `https://raw.githubusercontent.com/${activeCampaign.repository}/${activeCampaign.branch}/${pathSuffix}`;
+        
         document.getElementById('back-to-archives').href = `{{ '/archives' | relative_url }}?c=${campaignSlug}`;
 
         const picker = document.getElementById('chapter-picker');
@@ -202,21 +209,22 @@ async function init() {
 
         const hash = window.location.hash.substring(1);
         const hashParts = hash.split(':');
-        const chanId = hashParts[0];
-        const msgId = hashParts[1]; // Extract msgId if present
+        let chanId = hashParts[0];
+        let msgId = hashParts[1];
 
-        if (chanId) {
-            const entry = activeCampaign.logs.find(m => m.channelID === chanId);
+        // Deep Search for Thread/Post IDs if the Chapter ID isn't found immediately
+        if (chanId && !activeCampaign.logs.find(m => m.channelID === chanId)) {
+            const entry = activeCampaign.logs.find(l => l.threads.some(t => t.threadID === chanId));
             if (entry) {
-                picker.value = chanId;
-                // Pass both IDs to loadChapter
-                await loadChapter(chanId, msgId); 
-                return;
+                msgId = chanId;
+                chanId = entry.channelID;
             }
         }
 
-
-        if (activeCampaign.logs.length > 0) {
+        if (chanId) {
+            picker.value = chanId;
+            await loadChapter(chanId, msgId);
+        } else if (activeCampaign.logs.length > 0) {
             picker.value = activeCampaign.logs[0].channelID;
             loadChapter(activeCampaign.logs[0].channelID);
         }
@@ -230,6 +238,7 @@ async function loadChapter(channelID, targetMsg = null) {
     const logEntry = activeCampaign.logs.find(l => l.channelID === channelID);
     if (!logEntry) return;
 
+    // paths.json already has a trailing slash in your manifest, so this joins cleanly
     const jsonUrl = `${remoteBase}${activeCampaign.paths.json}${logEntry.fileName}`;
     const output = document.getElementById('viewer-output');
     output.innerHTML = "<em>Decrypting Data Stream...</em>";
@@ -241,19 +250,27 @@ async function loadChapter(channelID, targetMsg = null) {
 
         fullData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        // ... [Keep your channelMap/mainChannelId logic here] ...
+        // Re-map frequencies for the current file
+        channelMap = {};
+        let parentCounts = {};
+        fullData.forEach(m => {
+            if (m.thread) {
+                channelMap[m.thread.id] = m.thread.name.toUpperCase();
+                if (m.thread.parent_id) {
+                    parentCounts[m.thread.parent_id] = (parentCounts[m.thread.parent_id] || 0) + 1;
+                }
+            }
+        });
+
+        mainChannelId = Object.keys(parentCounts).reduce((a, b) => parentCounts[a] > parentCounts[b] ? a : b, null);
+        if (!mainChannelId && fullData.length > 0) mainChannelId = fullData[0].channel_id;
 
         buildFrequencyBar();
-        
-        // 1. Render the feed
         renderFeed('all');
 
-        // 2. Resolve the jump with a slight delay to ensure DOM paint
         if (targetMsg) {
-            if (EnableDebugMode) console.log(`[DEBUG] Attempting jump to: ${targetMsg}`);
-            // Use requestAnimationFrame for better timing than a flat setTimeout
             requestAnimationFrame(() => {
-                setTimeout(() => jumpToMessage(targetMsg), 300);
+                setTimeout(() => jumpToMessage(targetMsg), 400);
             });
         } else {
             window.scrollTo(0, 0);
@@ -328,43 +345,49 @@ function renderFeed(filterId) {
 function parseMarkdown(text) {
     if (!text) return "";
     
-    // Initial escape
+    // Initial escape to prevent HTML injection while preserving Discord's < > usage
     let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     
     // Construct base path for emojis
     const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
 
     return html
-        /* --- 1. Discord Custom Emojis (!name!_id format) --- */
+        /* --- 1. Custom Emojis (!name!_id format) --- */
         .replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (match, name, id) => {
             const cleanName = name.replace(/:/g, '');
-            // Correct format: !name!_id.png
             return `<img src="${emojiBase}!${cleanName}!_${id}.png" class="emoji" title="${cleanName}">`;
         })
 
-        /* --- 2. Discord Channel/Post References <#ID> --- */
-        .replace(/&lt;#(\d+)&gt;/g, (match, id) => {
-            const location = resolveDiscordReference(id);
-            let targetSlug = campaignSlug;
-            let found = false;
-            for (let s in registry.campaigns) {
-                if (registry.campaigns[s].logs.some(l => l.channelID === id || l.threads.some(t => t.threadID === id))) {
-                    targetSlug = s;
-                    found = true;
-                    break;
-                }
+        /* --- 2. Unified Discord Link Resolver --- */
+        // Catches: <#ID>, https://discord.com/channels/SID/CID, and .../SID/CID/MID
+        .replace(/(?:&lt;#(\d+)&gt;|https?:\/\/discord\.com\/channels\/\d+\/(\d+)(?:\/(\d+))?)/g, (match, mentionId, urlChanId, urlMsgId) => {
+            const targetChanId = mentionId || urlChanId;
+            const targetMsgId = urlMsgId || null;
+
+            // Scans the registry to see if this ID belongs to a known campaign/chapter
+            let result = resolveInternalLinkData(targetChanId);
+            
+            if (result.found) {
+                const jumpId = targetMsgId || targetChanId;
+                const href = `{{ '/logs' | relative_url }}?c=${result.slug}#${result.parentId}:${jumpId}`;
+                
+                // Breadcrumb: "Campaign > Channel > ✉️"
+                const breadcrumb = `${result.isExternal ? result.campaignName + ' > ' : ''}${result.locationName}`;
+                const icon = targetMsgId ? ' <span style="font-size:0.8em">✉️</span>' : '';
+                
+                return `<a href="${href}" class="channel-link"># ${breadcrumb}${icon}</a>`;
             }
-            const href = found ? `{{ '/logs' | relative_url }}?c=${targetSlug}#${id}` : "javascript:void(0)";
-            return `<a href="${href}" class="channel-link"># ${location} <span style="font-size:0.8em">✉️</span></a>`;
+
+            // Fallback for non-internal Discord links
+            const externalUrl = mentionId ? `https://discord.com/channels/@me/${mentionId}` : match;
+            return `<a href="${externalUrl}" target="_blank" class="external-link"># Unknown Discord Signal 📡</a>`;
         })
 
-        /* --- 3. External Links Handling --- */
-        // Handles: [Text](<https://link>) and [Text](https://link)
-        .replace(/\[(.*?)\]\(&lt;?(https?:\/\/[^\s&gt;]+?)&gt;?\)/g, (match, label, url) => {
-            return `<a href="${url}" target="_blank" class="external-link">${label}</a>`;
-        })
+        /* --- 3. External Markdown Links --- */
+        // Handles [Text](URL) and [Text](<URL>) while stripping the brackets
+        .replace(/\[([^\]]+)\]\((?:&lt;)?(https?:\/\/[^\s&gt;\)]+)(?:&gt;)?\)/g, '<a href="$2" target="_blank" class="external-link">$1</a>')
 
-        /* --- 4. Headers (h1 - h6) --- */
+        /* --- 4. Headers (H1 - H6) --- */
         .replace(/^# (.*$)/gim, '<h1>$1</h1>')
         .replace(/^## (.*$)/gim, '<h2>$1</h2>')
         .replace(/^### (.*$)/gim, '<h3>$1</h3>')
@@ -373,7 +396,7 @@ function parseMarkdown(text) {
         .replace(/^###### (.*$)/gim, '<h6>$1</h6>')
         .replace(/^-# (.*$)/gim, '<small class="subtext">$1</small>')
 
-        /* --- 5. Formatting --- */
+        /* --- 5. Text Formatting --- */
         .replace(/`(.*?)`/g, '<code>$1</code>')
         .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</strong></i>')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -382,30 +405,34 @@ function parseMarkdown(text) {
         .replace(/\n/g, '<br>');
 }
 
-
-function resolveDiscordReference(refId) {
-    if (channelMap[refId]) return channelMap[refId];
-
-    const localMatch = activeCampaign.logs.find(l => l.channelID === refId);
-    if (localMatch) return localMatch.title;
-
-    for (let log of activeCampaign.logs) {
-        const threadMatch = log.threads.find(t => t.threadID === refId);
-        if (threadMatch) return `${log.title} > ${threadMatch.displayName}`;
-    }
+/**
+ * Helper: Resolves a Discord ID into Campaign/Chapter context
+ * Used by parseMarkdown and resolveDiscordReference
+ */
+function resolveInternalLinkData(id) {
+    let data = { found: false, slug: "", parentId: "", locationName: "", campaignName: "", isExternal: false };
 
     for (let slug in registry.campaigns) {
-        if (slug === campaignSlug) continue;
         const camp = registry.campaigns[slug];
-        const globalMatch = camp.logs.find(l => l.channelID === refId);
-        if (globalMatch) return `${camp.name} > ${globalMatch.title}`;
+        
+        // Check Chapters
+        const chapter = camp.logs.find(l => l.channelID === id);
+        if (chapter) {
+            return { found: true, slug: slug, parentId: id, locationName: chapter.title, campaignName: camp.name, isExternal: (slug !== campaignSlug) };
+        }
 
-        for (let log of camp.logs) {
-            const gThread = log.threads.find(t => t.threadID === refId);
-            if (gThread) return `${camp.name} > ${log.title} > ${gThread.displayName}`;
+        // Check Threads
+        const logWithThread = camp.logs.find(l => l.threads && l.threads.some(t => t.threadID === id));
+        if (logWithThread) {
+            const thread = logWithThread.threads.find(t => t.threadID === id);
+            return { 
+                found: true, slug: slug, parentId: logWithThread.channelID, 
+                locationName: `${logWithThread.title} > ${thread.displayName}`, 
+                campaignName: camp.name, isExternal: (slug !== campaignSlug) 
+            };
         }
     }
-    return "Unknown Frequency";
+    return data;
 }
 
 function renderAttachments(msg, logEntry) {
