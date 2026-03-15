@@ -291,7 +291,8 @@ function parseMarkdown(text) {
     const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
 
     // 2. Handle Naked External Image URLs (Auto-Embed)
-    const imgRegex = /(https?:\/\/[^\s<]+?\.(?:png|jpg|jpeg|gif|webp)(?:\?[^\s<]+)?)/gi;
+    // Regex now greedily captures everything after the extension to handle Wikia paths and query params
+    const imgRegex = /(https?:\/\/[^\s<]+?\.(?:png|jpg|jpeg|gif|webp)[^\s<]*)/gi;
     html = html.replace(imgRegex, (url) => {
         return `<div class="attachment-item"><a href="${url}" target="_blank"><img src="${url}" class="log-image" loading="lazy"></a></div>`;
     });
