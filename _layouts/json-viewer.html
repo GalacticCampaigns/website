@@ -287,15 +287,16 @@ function parseMarkdown(text) {
     if (!text) return "";
 
     // 1. Initial escape for security
+    // Converts <URL> to &lt;URL&gt;
     let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
 
-    // 2. Multi-line Code Blocks (Triple Backticks) - Process early to avoid internal parsing
+    // 2. Multi-line Code Blocks (Triple Backticks)
     const tripleTick = "\x60\x60\x60";
     const codeBlockRegex = new RegExp(tripleTick + '(?:[a-z]+)?\\n?([\\s\\S]+?)\\n?' + tripleTick, 'g');
     html = html.replace(codeBlockRegex, '<pre><code>$1</code></pre>');
 
-    // 3. Blockquotes (> text) - Line by line
+    // 3. Blockquotes (> text)
     html = html.split('\n').map(line => {
         if (line.startsWith('&gt; ')) {
             return `<blockquote>${line.substring(5)}</blockquote>`;
@@ -304,7 +305,6 @@ function parseMarkdown(text) {
     }).join('\n');
 
     // 4. Headers (H1 - H6) & Subtext (-#)
-    // Multiline 'm' flag is essential here
     html = html
         .replace(/^# (.*$)/gm, '<h1>$1</h1>')
         .replace(/^## (.*$)/gm, '<h2>$1</h2>')
@@ -314,12 +314,15 @@ function parseMarkdown(text) {
         .replace(/^###### (.*$)/gm, '<h6>$1</h6>')
         .replace(/^-# (.*$)/gm, '<small class="subtext">$1</small>');
 
-    // 5. EXTERNAL MARKDOWN LINKS [text](url) and [text](<url>)
-    // This regex looks for optional &lt; and &gt; inside the parentheses
-    // it captures the label in group 1 and the URL in group 2
-    const mdLinkRegex = /\[([^\]]+)\]\((?:&lt;)?(https?:\/\/[^\s&gt;\)]+?)(?:&gt;)?\)/g;
-    html = html.replace(mdLinkRegex, (match, label, url) => {
-        return `<a href="${url}" target="_blank" class="external-link">${label}</a>`;
+    // 5. FIXED: EXTERNAL MARKDOWN LINKS [text](url) and [text](<url>)
+    // Captures label in $1 and everything inside () in $2
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, url) => {
+        let cleanUrl = url.trim();
+        // Remove escaped angle brackets if they wrap the URL (Discord's <url> syntax)
+        if (cleanUrl.startsWith('&lt;') && cleanUrl.endsWith('&gt;')) {
+            cleanUrl = cleanUrl.substring(4, cleanUrl.length - 4);
+        }
+        return `<a href="${cleanUrl}" target="_blank" class="external-link">${label}</a>`;
     });
 
     // 6. INTERNAL DISCORD LINKS (Mentions & Channel URLs)
@@ -337,11 +340,10 @@ function parseMarkdown(text) {
         return match;
     });
 
-    // 7. Naked External Image URLs (Auto-Embed) 
-    // We now ensure we don't match URLs already inside an <a> tag by checking if it's preceded by =" or >
-    const imgRegex = /(?<!=["']|>) (https?:\/\/[^\s<]+?\.(?:png|jpg|jpeg|gif|webp)[^\s<]*)/gi;
-    // Note: JS support for lookbehind (?<!) varies; if it fails, the previous logic is used:
-    html = html.replace(/(?<!href=")(https?:\/\/[^\s&lt;&gt;]+?\.(?:png|jpg|jpeg|gif|webp)[^\s&lt;&gt;]*)/gi, (url) => {
+    // 7. Naked External Image URLs (Auto-Embed)
+    // Guard against URLs already wrapped in href="" using negative lookbehind
+    const imgRegex = /(?<!href=")(https?:\/\/[^\s&lt;&gt;]+?\.(?:png|jpg|jpeg|gif|webp)[^\s&lt;&gt;]*)/gi;
+    html = html.replace(imgRegex, (url) => {
         return `<div class="attachment-item"><a href="${url}" target="_blank"><img src="${url}" class="log-image" loading="lazy"></a></div>`;
     });
 
@@ -351,12 +353,12 @@ function parseMarkdown(text) {
         return `<img src="${emojiBase}!${cleanName}!_${id}.png" class="emoji" title="${cleanName}">`;
     });
 
-    // 9. Inline Formatting
+    // 9. Inline Formatting (Bold, Italic, Spoiler, Inline Code)
     return html
-        .replace(/`(.*?)`/g, '<code>$1</code>') 
-        .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</i></strong>') 
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
-        .replace(/\*(.*?)\*/g, '<i>$1</i>') 
+        .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</i></strong>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<i>$1</i>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
         .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>')
         .replace(/\n/g, '<br>')
         .replace(/<\/blockquote><br>/g, '</blockquote>')
