@@ -23,10 +23,17 @@ $TargetCampaignObj = $RegistryData.campaigns.$ActiveCampaignKey
 
 if ($null -eq $TargetCampaignObj) { Write-Error "Campaign '${ActiveCampaignKey}' not found."; exit 1 }
 
+# LOGIC: Check for your high-clearance PAT first, then fallback to the default token
+$Token = if ($env:GH_TOKEN) { $env:GH_TOKEN } else { $env:GITHUB_TOKEN }
+
 $RequestHeaders = @{ "Accept" = "application/vnd.github.v3+json" }
-if ($env:GITHUB_TOKEN) { 
-    $RequestHeaders.Add("Authorization", "Bearer $env:GITHUB_TOKEN") 
-    if ($EnableDebugMode) { Write-Host "[DEBUG] Using GITHUB_TOKEN for authentication." -ForegroundColor Gray }
+
+if ($Token) { 
+    $RequestHeaders.Add("Authorization", "Bearer $Token") 
+    if ($EnableDebugMode) { 
+        $Source = if ($env:GH_TOKEN) { "GH_TOKEN (PAT)" } else { "GITHUB_TOKEN (Default)" }
+        Write-Host "[DEBUG] Authenticating via $Source." -ForegroundColor Gray 
+    }
 }
 
 $CleanRemotePath = $TargetCampaignObj.paths.json.Trim('/')
