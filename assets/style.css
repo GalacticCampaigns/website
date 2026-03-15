@@ -81,6 +81,39 @@ a:hover {
     margin: 0 auto; gap: 10px; padding: 0 15px;
     align-items: center; flex-direction: row; flex-wrap: nowrap;
 }
+.nav-links {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0; /* Gap is now handled by link padding and separators */
+}
+
+.nav-links a {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--gh-text);
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-decoration: none;
+    padding: 0 15px; /* Increased padding for better click targets */
+    transition: color 0.3s ease;
+    position: relative;
+}
+
+/* Added: Vertical Separators */
+.nav-links a:not(:last-child)::after {
+    content: "|";
+    position: absolute;
+    right: 0;
+    color: var(--gh-border);
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.nav-links a:hover {
+    color: var(--accent-blue);
+}
+
 
 /* --- 5. BREADCRUMB CONSOLE --- */
 .log-breadcrumb {
@@ -99,8 +132,22 @@ a:hover {
     display: flex; 
     align-items: center; 
     white-space: nowrap; 
-    position: relative; 
+    position: relative;
+    min-width: 0; /* Critical for truncation to work in flexbox */
 }
+
+#thread-indicator {
+    max-width: 250px; /* Adjust this based on preference */
+    overflow: hidden;
+}
+
+#thread-indicator span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+}
+
 
 /* ADDED: Hover effect for the Chapter Name */
 .chapter-trigger {
