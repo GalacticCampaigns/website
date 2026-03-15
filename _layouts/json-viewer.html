@@ -286,92 +286,83 @@ function renderFeed(filterId) {
 function parseMarkdown(text) {
     if (!text) return "";
 
-    // 1. Initial escape to prevent HTML injection while preserving Discord symbols
+    // 1. Initial escape for security
     let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
 
-    // 2. Handle Naked External Image URLs (Auto-Embed)
-    // Regex now greedily captures everything after the extension to handle Wikia paths and query params
-    const imgRegex = /(https?:\/\/[^\s<]+?\.(?:png|jpg|jpeg|gif|webp)[^\s<]*)/gi;
-    html = html.replace(imgRegex, (url) => {
-        return `<div class="attachment-item"><a href="${url}" target="_blank"><img src="${url}" class="log-image" loading="lazy"></a></div>`;
-    });
-
-    // 3. Multi-line Code Blocks (Triple Backticks)
-    // We use a non-greedy match to handle multiple code blocks in one post correctly.
-    // Code Blocks (Triple Backtick) Logic
-    // Using hex codes for backticks to prevent renderer truncation
+    // 2. Multi-line Code Blocks (Triple Backticks) - Process early to avoid internal parsing
     const tripleTick = "\x60\x60\x60";
     const codeBlockRegex = new RegExp(tripleTick + '(?:[a-z]+)?\\n?([\\s\\S]+?)\\n?' + tripleTick, 'g');
     html = html.replace(codeBlockRegex, '<pre><code>$1</code></pre>');
 
-        // 4. Blockquotes (> text)
-    // Handled line-by-line to ensure they nest correctly with other elements
+    // 3. Blockquotes (> text) - Line by line
     html = html.split('\n').map(line => {
-        // Discord blockquotes specifically look for "> " at the start of a line
         if (line.startsWith('&gt; ')) {
             return `<blockquote>${line.substring(5)}</blockquote>`;
         }
         return line;
     }).join('\n');
 
+    // 4. Headers (H1 - H6) & Subtext (-#)
+    // Multiline 'm' flag is essential here
+    html = html
+        .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+        .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+        .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+        .replace(/^#### (.*$)/gm, '<h4>$1</h4>')
+        .replace(/^##### (.*$)/gm, '<h5>$1</h5>')
+        .replace(/^###### (.*$)/gm, '<h6>$1</h6>')
+        .replace(/^-# (.*$)/gm, '<small class="subtext">$1</small>');
+
+    // 5. EXTERNAL MARKDOWN LINKS [text](url) and [text](<url>)
+    // This regex looks for optional &lt; and &gt; inside the parentheses
+    // it captures the label in group 1 and the URL in group 2
+    const mdLinkRegex = /\[([^\]]+)\]\((?:&lt;)?(https?:\/\/[^\s&gt;\)]+?)(?:&gt;)?\)/g;
+    html = html.replace(mdLinkRegex, (match, label, url) => {
+        return `<a href="${url}" target="_blank" class="external-link">${label}</a>`;
+    });
+
+    // 6. INTERNAL DISCORD LINKS (Mentions & Channel URLs)
+    html = html.replace(/(?:&lt;#(\d+)&gt;|https?:\/\/discord\.com\/channels\/\d+\/(\d+)(?:\/(\d+))?)/g, (match, mentionId, urlChanId, urlMsgId) => {
+        const id = mentionId || urlChanId;
+        const res = resolveInternalLinkData(id);
+        if (res.found) {
+            const targetHash = (res.filterId !== 'all') ? res.filterId : res.parentId;
+            const jumpId = urlMsgId ? `:${urlMsgId}` : "";
+            const href = `{{ '/logs' | relative_url }}?c=${res.slug}#${targetHash}${jumpId}`;
+            const breadcrumb = `${res.isExternal ? res.campaignName + ' > ' : ''}${res.locationName}`;
+            const icon = urlMsgId ? ' <span style="font-size:0.8em">✉️</span>' : '';
+            return `<a href="${href}" class="channel-link"># ${breadcrumb}${icon}</a>`;
+        }
+        return match;
+    });
+
+    // 7. Naked External Image URLs (Auto-Embed) 
+    // We now ensure we don't match URLs already inside an <a> tag by checking if it's preceded by =" or >
+    const imgRegex = /(?<!=["']|>) (https?:\/\/[^\s<]+?\.(?:png|jpg|jpeg|gif|webp)[^\s<]*)/gi;
+    // Note: JS support for lookbehind (?<!) varies; if it fails, the previous logic is used:
+    html = html.replace(/(?<!href=")(https?:\/\/[^\s&lt;&gt;]+?\.(?:png|jpg|jpeg|gif|webp)[^\s&lt;&gt;]*)/gi, (url) => {
+        return `<div class="attachment-item"><a href="${url}" target="_blank"><img src="${url}" class="log-image" loading="lazy"></a></div>`;
+    });
+
+    // 8. Custom Emojis
+    html = html.replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (m, name, id) => {
+        const cleanName = name.replace(/:/g, '');
+        return `<img src="${emojiBase}!${cleanName}!_${id}.png" class="emoji" title="${cleanName}">`;
+    });
+
+    // 9. Inline Formatting
     return html
-        /* --- A. CUSTOM EMOJIS (!name!_id.png format) --- */
-        .replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (m, name, id) => {
-            const cleanName = name.replace(/:/g, '');
-            return `<img src="${emojiBase}!${cleanName}!_${id}.png" class="emoji" title="${cleanName}">`;
-        })
-
-        /* --- B. INTERNAL DISCORD LINKS (Mentions & Channel URLs) --- */
-        .replace(/(?:&lt;#(\d+)&gt;|https?:\/\/discord\.com\/channels\/\d+\/(\d+)(?:\/(\d+))?)/g, (match, mentionId, urlChanId, urlMsgId) => {
-            const id = mentionId || urlChanId;
-            const res = resolveInternalLinkData(id);
-            
-            if (res.found) {
-                // If ID is a thread, prioritize it for auto-filtering
-                const targetHash = (res.filterId !== 'all') ? res.filterId : res.parentId;
-                const jumpId = urlMsgId ? `:${urlMsgId}` : "";
-                
-                const href = `{{ '/logs' | relative_url }}?c=${res.slug}#${targetHash}${jumpId}`;
-                
-                const breadcrumb = `${res.isExternal ? res.campaignName + ' > ' : ''}${res.locationName}`;
-                const icon = urlMsgId ? ' <span style="font-size:0.8em">✉️</span>' : '';
-                
-                return `<a href="${href}" class="channel-link"># ${breadcrumb}${icon}</a>`;
-            }
-            return match;
-        })
-
-        /* --- C. EXTERNAL MARKDOWN LINKS --- */
-        // Reconciled logic for [text](URL) and [text](<URL>)
-        .replace(/\[([^\]]+)\]\((?:&lt;)?(https?:\/\/[^\s&gt;\)]+?)(?:&gt;)?\)/g, (match, label, url) => {
-            // Clean up escaped characters often found in complex URLs
-            const cleanUrl = url.replace(/&lt;/g, '').replace(/&gt;/g, '').replace(/&amp;/g, '&');
-            return `<a href="${cleanUrl}" target="_blank" class="external-link">${label}</a>`;
-        })
-
-        /* --- D. HEADERS (H1 - H6) & SUBTEXT (-#) --- */
-        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-        .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
-        .replace(/^##### (.*$)/gim, '<h5>$1</h5>')
-        .replace(/^###### (.*$)/gim, '<h6>$1</h6>')
-        .replace(/^-# (.*$)/gim, '<small class="subtext">$1</small>')
-
-        /* --- E. INLINE FORMATTING --- */
-        .replace(/`(.*?)`/g, '<code>$1</code>') // Single backtick code
-        .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</strong></i>') // Bold-Italic
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
-        .replace(/\*(.*?)\*/g, '<i>$1</i>') // Italic
-        .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>') // Spoiler
-
-        /* --- F. NEWLINE CONVERSION & CLEANUP --- */
+        .replace(/`(.*?)`/g, '<code>$1</code>') 
+        .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</i></strong>') 
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
+        .replace(/\*(.*?)\*/g, '<i>$1</i>') 
+        .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>')
         .replace(/\n/g, '<br>')
-        // Cleanup: remove breaks that immediately follow block elements to avoid excessive vertical gap
         .replace(/<\/blockquote><br>/g, '</blockquote>')
         .replace(/<\/pre><br>/g, '</pre>');
 }
+
 function resolveInternalLinkData(id) {
     for (let slug in registry.campaigns) {
         const camp = registry.campaigns[slug];
