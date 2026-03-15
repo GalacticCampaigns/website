@@ -330,22 +330,38 @@
           ]
         }
       ]
+    },
+    "swWhispers-Void": {
+        "name": "Star Wars: Whispers in the Void",
+        "description": "",
+        "repository": "alicia86/campaigns",
+        "branch": "main",
+        "dataPath": "./swWhispers-Void/",
+        "paths": {
+          "json": "json/",
+          "emoji": "emojis/",
+          "media": "media/",
+          "avatars": "avatars/",
+          "logo": "",
+          "wiki": ""
+        },
+        "logs": []
+    },
+    "template": {
+        "name": "",
+        "description": "",
+        "repository": "",
+        "branch": "",
+        "dataPath": "./",
+        "paths": {
+          "json": "json/",
+          "emoji": "emojis/",
+          "media": "media/",
+          "avatars": "avatars/",
+          "logo": "",
+          "wiki": ""
+        },
+        "logs": []
     }
-  },
-  "swWhispers-Void": {
-      "name": "Star Wars: Whispers in the Void",
-      "description": "",
-      "repository": "alicia86/campaigns",
-      "branch": "main",
-      "dataPath": "./swWhispers-Void/",
-      "paths": {
-        "json": "json/",
-        "emoji": "emojis/",
-        "media": "media/",
-        "avatars": "avatars/",
-        "logo": "",
-        "wiki": ""
-      },
-      "logs": []
   }
 }
