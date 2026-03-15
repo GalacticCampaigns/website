@@ -336,7 +336,7 @@
         "description": "",
         "repository": "alicia86/campaigns",
         "branch": "main",
-        "dataPath": "./swWhispers-Void/",
+        "dataPath": "swWhispers-Void/",
         "paths": {
           "json": "json/",
           "emoji": "emojis/",
