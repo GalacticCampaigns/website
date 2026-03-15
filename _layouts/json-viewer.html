@@ -278,16 +278,10 @@ function renderFeed(filterId) {
     silentLoadAvatars();
 }
 
-// --- 5. MARKDOWN & LINK RESOLUTION ---
-/**
- * Unified Markdown Parser for Galactic Campaigns Viewer
- * Handles Discord-specific syntax, Auto-embedding, and Deep-linking
- */
 function parseMarkdown(text) {
     if (!text) return "";
 
-    // 1. Initial escape for security
-    // Converts <URL> to &lt;URL&gt;
+    // 1. Initial escape to prevent HTML injection
     let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
 
@@ -314,15 +308,16 @@ function parseMarkdown(text) {
         .replace(/^###### (.*$)/gm, '<h6>$1</h6>')
         .replace(/^-# (.*$)/gm, '<small class="subtext">$1</small>');
 
-    // 5. FIXED: EXTERNAL MARKDOWN LINKS [text](url) and [text](<url>)
-    // Captures label in $1 and everything inside () in $2
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, label, url) => {
-        let cleanUrl = url.trim();
-        // Remove escaped angle brackets if they wrap the URL (Discord's <url> syntax)
-        if (cleanUrl.startsWith('&lt;') && cleanUrl.endsWith('&gt;')) {
-            cleanUrl = cleanUrl.substring(4, cleanUrl.length - 4);
-        }
-        return `<a href="${cleanUrl}" target="_blank" class="external-link">${label}</a>`;
+    // 5. EXTERNAL MARKDOWN LINKS [text](url) or [text](<url>)
+    // Regex explanation:
+    // \[([^\]]+)\] matches [label]
+    // \(\s* matches ( plus optional whitespace
+    // (?:&lt;)? optional <
+    // (https?:\/\/[^\s\)]+?) matches the URL (stops at space or closing paren)
+    // (?:&gt;)? optional >
+    // \s*\) matches optional whitespace plus )
+    html = html.replace(/\[([^\]]+)\]\(\s*(?:&lt;)?(https?:\/\/[^\s&gt;\)]+?)(?:&gt;)?\s*\)/g, (match, label, url) => {
+        return `<a href="${url}" target="_blank" class="external-link">${label}</a>`;
     });
 
     // 6. INTERNAL DISCORD LINKS (Mentions & Channel URLs)
@@ -340,20 +335,24 @@ function parseMarkdown(text) {
         return match;
     });
 
-    // 7. Naked External Image URLs (Auto-Embed)
-    // Regex now greedily captures everything after the extension to handle Wikia paths and query params
-    const imgRegex = /(https?:\/\/[^\s<]+?\.(?:png|jpg|jpeg|gif|webp)[^\s<]*)/gi;
+    // 7. NAKED IMAGE AUTO-EMBED
+    // Regex logic:
+    // (?<!href="|src=") -> Negative Lookbehind: Don't match if it's already in a link or image tag
+    // (https?:\/\/\S+?\.(?:png|jpg|jpeg|gif|webp)(?:\?\S+)?) -> Match URL ending in image extension
+    // (?!&gt;) -> Discord Logic: If a URL is wrapped in < >, it does NOT auto-embed. 
+    //             This skips URLs ending in &gt;
+    const imgRegex = /(?<!href="|src="|">)(https?:\/\/\S+?\.(?:png|jpg|jpeg|gif|webp)(?:\?\S+)?)(?!&gt;)/gi;
     html = html.replace(imgRegex, (url) => {
         return `<div class="attachment-item"><a href="${url}" target="_blank"><img src="${url}" class="log-image" loading="lazy"></a></div>`;
     });
 
-    // 8. Custom Emojis
+    // 8. CUSTOM EMOJIS
     html = html.replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (m, name, id) => {
         const cleanName = name.replace(/:/g, '');
         return `<img src="${emojiBase}!${cleanName}!_${id}.png" class="emoji" title="${cleanName}">`;
     });
 
-    // 9. Inline Formatting (Bold, Italic, Spoiler, Inline Code)
+    // 9. INLINE FORMATTING
     return html
         .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</i></strong>')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
