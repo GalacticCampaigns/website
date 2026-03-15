@@ -410,9 +410,17 @@
           "isNSFW": false,
           "preview": "",
           "order": 4,
-          "messageCount": 142,
+          "messageCount": 164,
           "lastMessageTimestamp": "2026-03-14T18:31:43.627+00:00",
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1464634504286175232",
+              "displayName": "Cabin 🔞",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            }
+          ]
         }
       ]
     },
