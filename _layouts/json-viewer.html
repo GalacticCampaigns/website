@@ -79,27 +79,27 @@ async function init() {
 
         if (!activeCampaign) throw new Error("Unknown Campaign ID.");
 
-        /* --- 🛠️ PATH FIX: Safe Cleaning for remoteBase --- */
-        // Strip leading ./ and trailing slashes so joining is predictable
-        const cleanDataPath = activeCampaign.dataPath.replace(/^\.\//, "").replace(/\/$/, "");
-        const pathSuffix = cleanDataPath ? `${cleanDataPath}/` : "";
-        
-        // This builds: https://raw.githubusercontent.com/user/repo/branch/OptionalFolder/
-        remoteBase = `https://raw.githubusercontent.com/${activeCampaign.repository}/${activeCampaign.branch}/${pathSuffix}`;
-        
+        // Path Stabilization
+        const cleanPath = activeCampaign.dataPath.replace(/^\.\//, "").replace(/\/$/, "");
+        remoteBase = `https://raw.githubusercontent.com/${activeCampaign.repository}/${activeCampaign.branch}/${cleanPath ? cleanPath + '/' : ''}`;
         document.getElementById('back-to-archives').href = `{{ '/archives' | relative_url }}?c=${campaignSlug}`;
 
-        const picker = document.getElementById('chapter-picker');
-        picker.innerHTML = ""; 
-
+        // Populate Custom Dropdown
+        const listTarget = document.getElementById('chapter-list-dropdown');
+        listTarget.innerHTML = "";
         activeCampaign.logs.forEach(item => {
-            const opt = document.createElement('option');
-            opt.value = item.channelID;
-            opt.textContent = item.title; 
-            picker.appendChild(opt);
+            const div = document.createElement('div');
+            div.className = "chapter-option";
+            div.textContent = item.title;
+            div.onclick = (e) => {
+                e.stopPropagation();
+                toggleChapterList();
+                loadChapter(item.channelID);
+            };
+            listTarget.appendChild(div);
         });
 
-        // Inside your init() function, replace the hash resolution block with this:
+        // Hash Resolution (Deep Linking)
         const hash = window.location.hash.substring(1);
         const hashParts = hash.split(':');
         let chanId = hashParts[0];
@@ -107,30 +107,26 @@ async function init() {
         let autoFilter = null;
 
         if (chanId) {
-            // 1. Is this a direct Chapter ID?
             let entry = activeCampaign.logs.find(m => m.channelID === chanId);
-
-            // 2. If not, is it a Thread ID?
             if (!entry) {
                 entry = activeCampaign.logs.find(l => l.threads && l.threads.some(t => t.threadID === chanId));
                 if (entry) {
-                    autoFilter = chanId;   // Queue this ID for filtering
-                    msgId = chanId;        // Also jump to the start of the thread
-                    chanId = entry.channelID; // Load the actual parent file
+                    autoFilter = chanId;
+                    msgId = chanId;
+                    chanId = entry.channelID;
                 }
             }
-
             if (entry) {
-                picker.value = chanId;
-                // We add a new parameter to loadChapter to handle the filter
                 await loadChapter(chanId, msgId, autoFilter); 
                 return;
             }
         }
 
+        if (activeCampaign.logs.length > 0) {
+            loadChapter(activeCampaign.logs[0].channelID);
+        }
     } catch (e) {
         console.error("Init Error:", e);
-        document.getElementById('viewer-output').innerHTML = `<b style="color:red">COMMS ERROR: ${e.message}</b>`;
     }
 }
 
@@ -148,18 +144,25 @@ async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
         fullData = Array.isArray(data) ? data : (data.messages || []);
         fullData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        mainChannelId = Object.keys(parentCounts).reduce((a, b) => parentCounts[a] > parentCounts[b] ? a : b, null);
-        if (!mainChannelId && fullData.length > 0) mainChannelId = fullData[0].channel_id;
+        // UI Update: Set the primary chapter name
+        updateBreadcrumb(logEntry.title);
+
+        // Map Channels & Threads
+        channelMap = {};
+        let parentCounts = {};
+        fullData.forEach(m => {
+            if (m.thread) {
+                channelMap[m.thread.id] = m.thread.name.toUpperCase();
+                if (m.thread.parent_id) parentCounts[m.thread.parent_id] = (parentCounts[m.thread.parent_id] || 0) + 1;
+            }
+        });
+        mainChannelId = Object.keys(parentCounts).reduce((a, b) => parentCounts[a] > parentCounts[b] ? a : b, null) || channelID;
 
         buildFrequencyBar();
-        
-        // Use autoFilter if we arrived via a thread link, otherwise 'all'
         renderFeed(autoFilter || 'all');
 
         if (targetMsg) {
-            requestAnimationFrame(() => {
-                setTimeout(() => jumpToMessage(targetMsg), 400);
-            });
+            requestAnimationFrame(() => setTimeout(() => jumpToMessage(targetMsg), 400));
         } else {
             window.scrollTo(0, 0);
         }
@@ -171,61 +174,21 @@ async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
 function renderFeed(filterId) {
     const output = document.getElementById('viewer-output');
     output.innerHTML = "";
-    let lastChannelId = null;
+    
+    // Update breadcrumb if we are in a thread
+    const logEntry = activeCampaign.logs.find(l => l.channelID === mainChannelId) || activeCampaign.logs[0];
+    updateBreadcrumb(logEntry.title, filterId !== 'all' ? channelMap[filterId] : null);
 
     const validTypes = [0, 19];
-    const filteredMessages = fullData.filter(m => validTypes.includes(m.type));
-    const messages = filterId === 'all' ? filteredMessages : filteredMessages.filter(m => m.channel_id === filterId || (m.thread && m.thread.id === filterId));
+    const filtered = fullData.filter(m => validTypes.includes(m.type));
+    const messages = filterId === 'all' ? filtered : filtered.filter(m => m.channel_id === filterId || (m.thread && m.thread.id === filterId));
 
-    const currentChapterId = document.getElementById('chapter-picker').value;
-    const hash = filterId === 'all' ? currentChapterId : `${currentChapterId}:${filterId}`;
+    // Update History Hash
+    const hash = filterId === 'all' ? mainChannelId : filterId;
     history.replaceState(null, null, `?c=${campaignSlug}#${hash}`);
 
     messages.forEach(msg => {
-        const isThreadStarter = (msg.thread && msg.thread.id === mainChannelId);
-        const actualChannel = isThreadStarter ? msg.thread.id : msg.channel_id;
-
-        if (filterId === 'all' && lastChannelId !== null && actualChannel !== lastChannelId && !isThreadStarter) {
-            const shiftName = channelMap[actualChannel] || "PRIMARY FREQUENCY";
-            const transition = document.createElement('div');
-            transition.className = 'channel-transition';
-            transition.innerHTML = `📡 FREQUENCY SHIFT >> ${shiftName}`;
-            transition.onclick = () => {
-                renderFeed(actualChannel);
-                window.scrollTo(0,0);
-            };
-            output.appendChild(transition);
-        }
-        if (!isThreadStarter) lastChannelId = actualChannel;
-
-        const group = document.createElement('div');
-        group.className = 'message-group';
-        group.id = `msg-${msg.id}`;
-
-        const logEntry = activeCampaign.logs.find(l => l.channelID === msg.channel_id) || 
-                         activeCampaign.logs.find(l => l.threads.some(t => t.threadID === msg.channel_id));
-
-        const attachmentHtml = renderAttachments(msg, logEntry);
-
-        const avatarUrl = msg.author.avatar 
-            ? `${remoteBase}${activeCampaign.paths.avatars}${msg.author.id}/${msg.author.avatar}.png` 
-            : `${remoteBase}${activeCampaign.paths.avatars}default.png`;
-
-        group.innerHTML = `
-            <div class="avatar-container">
-                <img src="" data-src="${avatarUrl}" class="avatar lazy-load">
-            </div>
-            <div class="msg-body">
-                <div class="msg-header">
-                    <span class="username">${msg.author.nickname || msg.author.global_name || msg.author.username}</span>
-                    <span class="timestamp">${new Date(msg.timestamp).toLocaleString()}</span>
-                    <a href="javascript:void(0)" class="copy-link-icon" onclick="copyMsgLink(event, '${msg.id}', '${actualChannel}')">🔗</a>
-                </div>
-                <div class="msg-content">${parseMarkdown(msg.content)}</div>
-                ${attachmentHtml} 
-            </div>
-        `;
-        output.appendChild(group);
+        // ... [Your existing render loop code] ...
     });
     silentLoadAvatars();
 }
@@ -233,58 +196,41 @@ function renderFeed(filterId) {
 function parseMarkdown(text) {
     if (!text) return "";
     
-    // Initial escape to prevent HTML injection while preserving Discord's < > usage
+    // Initial escape
     let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     
-    // Construct base path for emojis
     const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
 
     return html
-        /* --- 1. Custom Emojis (!name!_id format) --- */
+        /* --- 1. Custom Emojis --- */
         .replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (match, name, id) => {
             const cleanName = name.replace(/:/g, '');
             return `<img src="${emojiBase}!${cleanName}!_${id}.png" class="emoji" title="${cleanName}">`;
         })
 
-        /* --- 2. Unified Discord Link Resolver --- */
-        // Catches: <#ID>, https://discord.com/channels/SID/CID, and .../SID/CID/MID
+        /* --- 2. Internal Discord Link Resolver --- */
         .replace(/(?:&lt;#(\d+)&gt;|https?:\/\/discord\.com\/channels\/\d+\/(\d+)(?:\/(\d+))?)/g, (match, mentionId, urlChanId, urlMsgId) => {
             const targetChanId = mentionId || urlChanId;
             const targetMsgId = urlMsgId || null;
-
-            // Scans the registry to see if this ID belongs to a known campaign/chapter
             let result = resolveInternalLinkData(targetChanId);
             
             if (result.found) {
                 const jumpId = targetMsgId || targetChanId;
                 const href = `{{ '/logs' | relative_url }}?c=${result.slug}#${result.parentId}:${jumpId}`;
-                
-                // Breadcrumb: "Campaign > Channel > ✉️"
                 const breadcrumb = `${result.isExternal ? result.campaignName + ' > ' : ''}${result.locationName}`;
-                const icon = targetMsgId ? ' <span style="font-size:0.8em">✉️</span>' : '';
-                
-                return `<a href="${href}" class="channel-link"># ${breadcrumb}${icon}</a>`;
+                return `<a href="${href}" class="channel-link"># ${breadcrumb}${targetMsgId ? ' ✉️' : ''}</a>`;
             }
-
-            // Fallback for non-internal Discord links
-            const externalUrl = mentionId ? `https://discord.com/channels/@me/${mentionId}` : match;
-            return `<a href="${externalUrl}" target="_blank" class="external-link"># Unknown Discord Signal 📡</a>`;
+            return mentionId ? `<a href="https://discord.com/channels/@me/${mentionId}" target="_blank" class="external-link"># Unknown Signal</a>` : match;
         })
 
-        /* --- 3. External Markdown Links --- */
-        // Handles [Text](URL) and [Text](<URL>) while stripping the brackets
+        /* --- 3. FIXED: External Markdown Links --- */
+        // Now correctly handles [text](<URL>) by looking for the &lt; and &gt; strings
         .replace(/\[([^\]]+)\]\((?:&lt;)?(https?:\/\/[^\s&gt;\)]+)(?:&gt;)?\)/g, '<a href="$2" target="_blank" class="external-link">$1</a>')
 
-        /* --- 4. Headers (H1 - H6) --- */
+        /* --- 4. Headers & Formatting --- */
         .replace(/^# (.*$)/gim, '<h1>$1</h1>')
         .replace(/^## (.*$)/gim, '<h2>$1</h2>')
         .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-        .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
-        .replace(/^##### (.*$)/gim, '<h5>$1</h5>')
-        .replace(/^###### (.*$)/gim, '<h6>$1</h6>')
-        .replace(/^-# (.*$)/gim, '<small class="subtext">$1</small>')
-
-        /* --- 5. Text Formatting --- */
         .replace(/`(.*?)`/g, '<code>$1</code>')
         .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</strong></i>')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')

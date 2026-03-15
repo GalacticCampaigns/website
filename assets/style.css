@@ -1,4 +1,4 @@
-/* --- CORE VARIABLES --- */
+/* --- 1. CORE VARIABLES --- */
 :root {
     --primary-bg: #1a202c;
     --secondary-bg: #282c34;
@@ -8,14 +8,21 @@
     --accent-blue: #61dafb;
     --accent-blue-hover: #4fa3d1;
     --sw-yellow: #FFC107;
+    
     /* Layout Constants */
     --site-nav-height: 50px;
     --log-nav-height: 60px;
 }
 
-/* --- GLOBAL RESET & STABILIZATION --- */
+/* --- 2. GLOBAL RESET & STABILIZATION --- */
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; overflow-x: hidden; width: 100%; }
+
+html { 
+    scroll-behavior: smooth; 
+    overflow-x: hidden; 
+    width: 100%; 
+}
+
 body {
     margin: 0; padding: 0; width: 100%;
     background-color: var(--primary-bg);
@@ -30,7 +37,28 @@ main {
     overflow: visible !important; 
 }
 
-/* --- NAVIGATION HIERARCHY --- */
+/* --- 3. LINK & ANCHOR FORMATTING --- */
+a {
+    color: var(--accent-blue);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: var(--accent-blue-hover);
+}
+
+/* Special styling for links inside log content */
+.msg-content a {
+    color: var(--accent-blue);
+    border-bottom: 1px solid transparent;
+}
+
+.msg-content a:hover {
+    border-bottom-color: var(--accent-blue);
+}
+
+/* --- 4. NAVIGATION HIERARCHY --- */
 .site-nav {
     position: sticky; top: 0; z-index: 9000;
     background: var(--secondary-bg);
@@ -54,7 +82,7 @@ main {
     align-items: center; flex-direction: row; flex-wrap: nowrap;
 }
 
-/* --- BREADCRUMB CONSOLE --- */
+/* --- 5. BREADCRUMB CONSOLE --- */
 .log-breadcrumb {
     display: flex; align-items: center; flex-grow: 1;
     min-width: 0; overflow: hidden;
@@ -79,12 +107,14 @@ main {
 }
 .chapter-option:hover { background: var(--sw-yellow); color: #000; }
 
-/* --- DISCORD MESSAGE FEED --- */
+/* --- 6. DISCORD MESSAGE FEED --- */
 .message-group { 
     display: flex; padding: 15px 10px; 
     border-bottom: 1px solid rgba(74, 79, 87, 0.3); 
     transition: background 0.3s; 
 }
+
+/* Auto-scrolled highlight */
 .message-group:target, .highlight-flash { 
     background: rgba(210, 153, 34, 0.15) !important; 
     border-left: 3px solid var(--sw-yellow); 
@@ -94,6 +124,7 @@ main {
     width: 42px; height: 42px; margin-right: 15px; 
     flex-shrink: 0; background: #1c2128; border-radius: 4px; overflow: hidden; 
 }
+
 .avatar { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.3s; }
 .avatar.loaded { opacity: 1; }
 
@@ -101,28 +132,77 @@ main {
 .timestamp { color: var(--text-muted); font-size: 0.75rem; font-family: monospace; }
 .msg-content { font-size: 0.95rem; word-wrap: break-word; }
 
-/* --- MARKDOWN & ATTACHMENTS --- */
-blockquote { border-left: 4px solid var(--gh-border); margin: 8px 0; padding: 2px 15px; background: rgba(255, 255, 255, 0.05); color: var(--text-muted); }
-code { background: rgba(255, 255, 255, 0.1); padding: 0.2rem 0.4rem; border-radius: 3px; font-family: monospace; font-size: 85%; }
-.spoiler { background-color: #4f545c; color: transparent; border-radius: 3px; padding: 0 2px; cursor: help; }
-.spoiler.revealed, .spoiler:hover { background: rgba(255,255,255,0.1); color: inherit; }
+/* --- 7. EXTENDED MARKDOWN & DISCORD ELEMENTS --- */
+blockquote { 
+    border-left: 4px solid var(--gh-border); 
+    margin: 8px 0; padding: 2px 15px; 
+    background: rgba(255, 255, 255, 0.05); color: var(--text-muted); 
+}
 
-.log-image { max-width: 100%; max-height: 500px; border-radius: 4px; border: 1px solid var(--gh-border); cursor: zoom-in; }
-.channel-link { color: var(--sw-yellow); text-decoration: none; border-bottom: 1px dashed var(--sw-yellow); font-family: monospace; }
+code { 
+    background: rgba(255, 255, 255, 0.1); 
+    padding: 0.2rem 0.4rem; border-radius: 3px; 
+    font-family: monospace; font-size: 85%; 
+}
 
-/* --- BUTTONS --- */
+.spoiler { 
+    background-color: #4f545c; color: transparent; 
+    border-radius: 3px; padding: 0 2px; cursor: help; 
+}
+
+.spoiler.revealed, .spoiler:hover { 
+    background: rgba(255,255,255,0.1); color: inherit; 
+}
+
+/* Discord Channel References & Mentions */
+.channel-link { 
+    color: var(--sw-yellow); 
+    text-decoration: none; 
+    border-bottom: 1px dashed var(--sw-yellow); 
+    font-family: monospace; 
+    padding: 0 2px;
+    background: rgba(255, 193, 7, 0.05);
+}
+
+.channel-link:hover {
+    background: var(--sw-yellow);
+    color: var(--primary-bg);
+}
+
+/* Images & Attachments */
+.log-image { 
+    max-width: 100%; max-height: 500px; 
+    border-radius: 4px; border: 1px solid var(--gh-border); 
+    cursor: zoom-in; transition: transform 0.2s;
+}
+
+.log-image:hover { transform: scale(1.01); border-color: var(--accent-blue); }
+
+/* --- 8. UI COMPONENTS (Buttons) --- */
 .toc-open-btn, .freq-btn {
     background: var(--secondary-bg) !important; color: var(--accent-blue) !important;
     border: 1px solid var(--accent-blue) !important; padding: 8px 16px;
     font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 0.75rem;
-}
-.toc-open-btn:hover, .freq-btn:hover, .freq-btn.active {
-    background: var(--accent-blue) !important; color: var(--primary-bg) !important;
+    display: inline-flex; align-items: center; gap: 8px;
+    text-transform: uppercase;
 }
 
-/* --- RESPONSIVE --- */
+.toc-open-btn:hover, .freq-btn:hover, .freq-btn.active {
+    background: var(--accent-blue) !important; color: var(--primary-bg) !important;
+    box-shadow: 0 0 10px rgba(97, 218, 251, 0.3);
+}
+
+/* --- 9. RESPONSIVE STABILIZATION --- */
 @media (max-width: 900px) {
-    .nav-inner { gap: 6px; }
-    .avatar-container { width: 32px; height: 32px; }
-    .nav-brand { font-size: 0.8rem; }
+    .frozen-nav { height: 55px; }
+    .nav-inner { gap: 6px; padding: 0 10px; }
+    .avatar-container { width: 32px; height: 32px; margin-right: 10px; }
+    .username { font-size: 0.9rem; }
+    .log-breadcrumb { font-size: 0.85rem; }
+}
+
+@media (max-width: 600px) {
+    .timestamp { display: none; } /* Hide time on very small screens to keep rows single-line */
+    .username { display: block; width: 100%; margin-bottom: 2px; }
+    .nav-inner { gap: 4px; }
 }
