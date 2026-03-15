@@ -332,36 +332,73 @@
       ]
     },
     "swWhispers-Void": {
-        "name": "Star Wars: Whispers in the Void",
-        "description": "",
-        "repository": "alicia86/campaigns",
-        "branch": "main",
-        "dataPath": "swWhispers-Void/",
-        "paths": {
-          "json": "json/",
-          "emoji": "emojis/",
-          "media": "media/",
-          "avatars": "avatars/",
-          "logo": "",
-          "wiki": ""
+      "name": "Star Wars: Whispers in the Void",
+      "description": "",
+      "repository": "alicia86/campaigns",
+      "branch": "main",
+      "dataPath": "swWhispers-Void/",
+      "paths": {
+        "json": "json/",
+        "emoji": "emojis/",
+        "media": "media/",
+        "avatars": "avatars/",
+        "logo": "",
+        "wiki": ""
+      },
+      "logs": [
+        {
+          "title": "bluebook-wes 1",
+          "channelID": "1200635186119979019",
+          "fileName": "bluebook-wes_1.json",
+          "isActive": true,
+          "isNSFW": false,
+          "preview": "",
+          "order": 0,
+          "messageCount": 644,
+          "lastMessageTimestamp": "2024-06-23T19:02:38.258+00:00",
+          "threads": []
         },
-        "logs": []
+        {
+          "title": "ch1 descending-into-darkness",
+          "channelID": "1347407802980634726",
+          "fileName": "ch1_descending-into-darkness.json",
+          "isActive": true,
+          "isNSFW": false,
+          "preview": "",
+          "order": 1.0,
+          "messageCount": 372,
+          "lastMessageTimestamp": "2025-04-02T21:24:58.885+00:00",
+          "threads": []
+        },
+        {
+          "title": "ch2 amidst-the-ashes",
+          "channelID": "1357106240332759070",
+          "fileName": "ch2_amidst-the-ashes.json",
+          "isActive": true,
+          "isNSFW": false,
+          "preview": "",
+          "order": 2.0,
+          "messageCount": 466,
+          "lastMessageTimestamp": "2025-05-23T02:18:07.061+00:00",
+          "threads": []
+        }
+      ]
     },
     "template": {
-        "name": "",
-        "description": "",
-        "repository": "",
-        "branch": "",
-        "dataPath": "./",
-        "paths": {
-          "json": "json/",
-          "emoji": "emojis/",
-          "media": "media/",
-          "avatars": "avatars/",
-          "logo": "",
-          "wiki": ""
-        },
-        "logs": []
+      "name": "",
+      "description": "",
+      "repository": "",
+      "branch": "",
+      "dataPath": "./",
+      "paths": {
+        "json": "json/",
+        "emoji": "emojis/",
+        "media": "media/",
+        "avatars": "avatars/",
+        "logo": "",
+        "wiki": ""
+      },
+      "logs": []
     }
   }
 }
