@@ -61,6 +61,7 @@ layout: default
 </div>
 
 <script>
+// --- 1. GLOBAL STATE ---
 let registry = null;
 let activeCampaign = null;
 let campaignSlug = "";
@@ -69,22 +70,25 @@ let channelMap = {};
 let mainChannelId = null;
 let remoteBase = "";
 
+// --- 2. INITIALIZATION ---
 async function init() {
     try {
         const res = await fetch("{{ '/assets/campaign-registry.json' | relative_url }}");
         registry = await res.json();
+        
         const params = new URLSearchParams(window.location.search);
         campaignSlug = params.get('c') || registry.activeCampaign;
         activeCampaign = registry.campaigns[campaignSlug];
 
         if (!activeCampaign) throw new Error("Unknown Campaign ID.");
 
-        // Path Stabilization
+        // Path Stabilization for Public Repos
         const cleanPath = activeCampaign.dataPath.replace(/^\.\//, "").replace(/\/$/, "");
         remoteBase = `https://raw.githubusercontent.com/${activeCampaign.repository}/${activeCampaign.branch}/${cleanPath ? cleanPath + '/' : ''}`;
+        
         document.getElementById('back-to-archives').href = `{{ '/archives' | relative_url }}?c=${campaignSlug}`;
 
-        // Populate Custom Dropdown
+        // Populate Custom Breadcrumb Dropdown
         const listTarget = document.getElementById('chapter-list-dropdown');
         listTarget.innerHTML = "";
         activeCampaign.logs.forEach(item => {
@@ -99,7 +103,7 @@ async function init() {
             listTarget.appendChild(div);
         });
 
-        // Hash Resolution (Deep Linking)
+        // Hash Resolution (Deep Linking for Chapters or Threads)
         const hash = window.location.hash.substring(1);
         const hashParts = hash.split(':');
         let chanId = hashParts[0];
@@ -109,6 +113,7 @@ async function init() {
         if (chanId) {
             let entry = activeCampaign.logs.find(m => m.channelID === chanId);
             if (!entry) {
+                // Check if the ID provided is actually a Thread ID
                 entry = activeCampaign.logs.find(l => l.threads && l.threads.some(t => t.threadID === chanId));
                 if (entry) {
                     autoFilter = chanId;
@@ -127,9 +132,11 @@ async function init() {
         }
     } catch (e) {
         console.error("Init Error:", e);
+        document.getElementById('viewer-output').innerHTML = `<b style="color:red">COMMS ERROR: ${e.message}</b>`;
     }
 }
 
+// --- 3. DATA LOADING ---
 async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
     const logEntry = activeCampaign.logs.find(l => l.channelID === channelID);
     if (!logEntry) return;
@@ -144,10 +151,10 @@ async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
         fullData = Array.isArray(data) ? data : (data.messages || []);
         fullData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-        // UI Update: Set the primary chapter name
+        // Set Chapter Title in Breadcrumb
         updateBreadcrumb(logEntry.title);
 
-        // Map Channels & Threads
+        // Map Threads & Frequencies
         channelMap = {};
         let parentCounts = {};
         fullData.forEach(m => {
@@ -156,6 +163,8 @@ async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
                 if (m.thread.parent_id) parentCounts[m.thread.parent_id] = (parentCounts[m.thread.parent_id] || 0) + 1;
             }
         });
+
+        // Resolve Primary Channel
         mainChannelId = Object.keys(parentCounts).reduce((a, b) => parentCounts[a] > parentCounts[b] ? a : b, null) || channelID;
 
         buildFrequencyBar();
@@ -171,11 +180,13 @@ async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
     }
 }
 
+// --- 4. RENDERING ENGINE ---
 function renderFeed(filterId) {
     const output = document.getElementById('viewer-output');
     output.innerHTML = "";
-    
-    // Update breadcrumb if we are in a thread
+    let lastChannelId = null;
+
+    // Update Breadcrumb with Thread Name if filtering
     const logEntry = activeCampaign.logs.find(l => l.channelID === mainChannelId) || activeCampaign.logs[0];
     updateBreadcrumb(logEntry.title, filterId !== 'all' ? channelMap[filterId] : null);
 
@@ -188,141 +199,107 @@ function renderFeed(filterId) {
     history.replaceState(null, null, `?c=${campaignSlug}#${hash}`);
 
     messages.forEach(msg => {
-        // ... [Your existing render loop code] ...
+        const isThreadStarter = (msg.thread && msg.thread.id === mainChannelId);
+        const actualChannel = isThreadStarter ? msg.thread.id : msg.channel_id;
+
+        // Visual "Frequency Shift" indicators
+        if (filterId === 'all' && lastChannelId !== null && actualChannel !== lastChannelId && !isThreadStarter) {
+            const shiftName = channelMap[actualChannel] || "PRIMARY FREQUENCY";
+            const transition = document.createElement('div');
+            transition.className = 'channel-transition';
+            transition.innerHTML = `📡 FREQUENCY SHIFT >> ${shiftName}`;
+            transition.onclick = () => { renderFeed(actualChannel); window.scrollTo(0,0); };
+            output.appendChild(transition);
+        }
+        if (!isThreadStarter) lastChannelId = actualChannel;
+
+        const group = document.createElement('div');
+        group.className = 'message-group';
+        group.id = `msg-${msg.id}`;
+
+        const logRef = activeCampaign.logs.find(l => l.channelID === msg.channel_id) || 
+                       activeCampaign.logs.find(l => l.threads.some(t => t.threadID === msg.channel_id));
+
+        const avatarUrl = msg.author.avatar 
+            ? `${remoteBase}${activeCampaign.paths.avatars}${msg.author.id}/${msg.author.avatar}.png` 
+            : `${remoteBase}${activeCampaign.paths.avatars}default.png`;
+
+        group.innerHTML = `
+            <div class="avatar-container">
+                <img src="" data-src="${avatarUrl}" class="avatar lazy-load">
+            </div>
+            <div class="msg-body">
+                <div class="msg-header">
+                    <span class="username">${msg.author.nickname || msg.author.global_name || msg.author.username}</span>
+                    <span class="timestamp">${new Date(msg.timestamp).toLocaleString()}</span>
+                    <a href="javascript:void(0)" class="copy-link-icon" onclick="copyMsgLink(event, '${msg.id}', '${actualChannel}')">🔗</a>
+                </div>
+                <div class="msg-content">${parseMarkdown(msg.content)}</div>
+                ${renderAttachments(msg, logRef)} 
+            </div>
+        `;
+        output.appendChild(group);
     });
     silentLoadAvatars();
 }
 
+// --- 5. MARKDOWN & LINK RESOLUTION ---
 function parseMarkdown(text) {
     if (!text) return "";
-    
-    // Initial escape
     let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    
     const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
 
     return html
-        /* --- 1. Custom Emojis --- */
-        .replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (match, name, id) => {
-            const cleanName = name.replace(/:/g, '');
-            return `<img src="${emojiBase}!${cleanName}!_${id}.png" class="emoji" title="${cleanName}">`;
-        })
-
-        /* --- 2. Internal Discord Link Resolver --- */
+        .replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (m, name, id) => `<img src="${emojiBase}!${name.replace(/:/g,'')}!_${id}.png" class="emoji">`)
         .replace(/(?:&lt;#(\d+)&gt;|https?:\/\/discord\.com\/channels\/\d+\/(\d+)(?:\/(\d+))?)/g, (match, mentionId, urlChanId, urlMsgId) => {
-            const targetChanId = mentionId || urlChanId;
-            const targetMsgId = urlMsgId || null;
-            let result = resolveInternalLinkData(targetChanId);
-            
-            if (result.found) {
-                const jumpId = targetMsgId || targetChanId;
-                const href = `{{ '/logs' | relative_url }}?c=${result.slug}#${result.parentId}:${jumpId}`;
-                const breadcrumb = `${result.isExternal ? result.campaignName + ' > ' : ''}${result.locationName}`;
-                return `<a href="${href}" class="channel-link"># ${breadcrumb}${targetMsgId ? ' ✉️' : ''}</a>`;
+            const id = mentionId || urlChanId;
+            const res = resolveInternalLinkData(id);
+            if (res.found) {
+                const href = `{{ '/logs' | relative_url }}?c=${res.slug}#${res.parentId}:${urlMsgId || id}`;
+                return `<a href="${href}" class="channel-link"># ${res.isExternal ? res.campaignName + ' > ' : ''}${res.locationName}</a>`;
             }
-            return mentionId ? `<a href="https://discord.com/channels/@me/${mentionId}" target="_blank" class="external-link"># Unknown Signal</a>` : match;
+            return match;
         })
-
-        /* --- 3. FIXED: External Markdown Links --- */
-        // Now correctly handles [text](<URL>) by looking for the &lt; and &gt; strings
+        /* FIXED: Bracketed URL Regex */
         .replace(/\[([^\]]+)\]\((?:&lt;)?(https?:\/\/[^\s&gt;\)]+)(?:&gt;)?\)/g, '<a href="$2" target="_blank" class="external-link">$1</a>')
-
-        /* --- 4. Headers & Formatting --- */
-        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-        .replace(/`(.*?)`/g, '<code>$1</code>')
-        .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</strong></i>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<i>$1</i>')
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>').replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/`(.*?)`/g, '<code>$1</code>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>')
         .replace(/\n/g, '<br>');
 }
 
-/**
- * Helper: Resolves a Discord ID into Campaign/Chapter context
- * Used by parseMarkdown and resolveDiscordReference
- */
 function resolveInternalLinkData(id) {
-    let data = { found: false, slug: "", parentId: "", locationName: "", campaignName: "", isExternal: false };
-
     for (let slug in registry.campaigns) {
         const camp = registry.campaigns[slug];
-        
-        // Check Chapters
         const chapter = camp.logs.find(l => l.channelID === id);
-        if (chapter) {
-            return { found: true, slug: slug, parentId: id, locationName: chapter.title, campaignName: camp.name, isExternal: (slug !== campaignSlug) };
-        }
-
-        // Check Threads
-        const logWithThread = camp.logs.find(l => l.threads && l.threads.some(t => t.threadID === id));
+        if (chapter) return { found: true, slug: slug, parentId: id, locationName: chapter.title, campaignName: camp.name, isExternal: (slug !== campaignSlug) };
+        const logWithThread = camp.logs.find(l => l.threads.some(t => t.threadID === id));
         if (logWithThread) {
             const thread = logWithThread.threads.find(t => t.threadID === id);
-            return { 
-                found: true, slug: slug, parentId: logWithThread.channelID, 
-                locationName: `${logWithThread.title} > ${thread.displayName}`, 
-                campaignName: camp.name, isExternal: (slug !== campaignSlug) 
-            };
+            return { found: true, slug: slug, parentId: logWithThread.channelID, locationName: `${logWithThread.title} > ${thread.displayName}`, campaignName: camp.name, isExternal: (slug !== campaignSlug) };
         }
     }
-    return data;
+    return { found: false };
 }
 
-function renderAttachments(msg, logEntry) {
-    if (!msg.attachments || msg.attachments.length === 0 || !logEntry) return "";
-
-    let html = '<div class="msg-attachments">';
-    msg.attachments.forEach(att => {
-        const folderName = logEntry.fileName.replace('.json', '');
-        const localSrc = `${remoteBase}${activeCampaign.paths.media}${folderName}/${att.filename}`;
-
-        if (att.content_type && att.content_type.startsWith('image/')) {
-            html += `
-                <div class="attachment-item">
-                    <a href="${localSrc}" target="_blank">
-                        <img src="${localSrc}" class="log-image" loading="lazy" alt="Attachment">
-                    </a>
-                </div>`;
+// --- 6. UI HELPERS (Breadcrumb & Nav) ---
+function updateBreadcrumb(chapterTitle, threadTitle = null) {
+    const chapEl = document.getElementById('active-chapter-name');
+    const threadEl = document.getElementById('thread-indicator');
+    if (chapEl) chapEl.textContent = chapterTitle.toUpperCase();
+    if (threadEl) {
+        if (threadTitle) {
+            threadEl.style.display = 'flex';
+            threadEl.innerHTML = `<span class="nav-arrow">❯</span><span>${threadTitle.toUpperCase()}</span>`;
         } else {
-            html += `
-                <div class="attachment-item">
-                    <a href="${localSrc}" target="_blank" class="file-link">
-                        📄 Download ${att.filename}
-                    </a>
-                </div>`;
+            threadEl.style.display = 'none';
         }
-    });
-    html += '</div>';
-    return html;
+    }
 }
 
-function copyMsgLink(event, msgId, actualChannel) {
-    event.preventDefault();
-    
-    // If the actualChannel is NOT the main chapter ID, it's a thread.
-    // We use the ThreadID:MessageID format to ensure it auto-filters on click.
-    const url = `${window.location.origin}${window.location.pathname}?c=${campaignSlug}#${actualChannel}:${msgId}`;
-    
-    navigator.clipboard.writeText(url).then(() => {
-        const icon = event.target;
-        const original = icon.innerText;
-        icon.innerText = "COPIED";
-        icon.style.color = "var(--sw-yellow)";
-        setTimeout(() => {
-            icon.innerText = original;
-            icon.style.color = "";
-        }, 1500);
-    });
-}
-
-function onPickerChange(chanId) {
-    loadChapter(chanId);
-}
-
-function toggleFrequencies() {
-    const bar = document.getElementById('frequency-selector');
-    bar.style.display = (bar.style.display === 'none' || bar.style.display === '') ? 'block' : 'none';
+function toggleChapterList() {
+    const dropdown = document.getElementById('chapter-list-dropdown');
+    if (dropdown) dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
 }
 
 function buildFrequencyBar() {
@@ -332,46 +309,80 @@ function buildFrequencyBar() {
     const uniqueChannels = [...new Set(fullData.map(m => m.channel_id))].filter(id => id !== mainChannelId);
 
     if (uniqueChannels.length === 0) { 
-        bar.style.display = 'none'; 
-        toggleBtn.style.display = 'none'; 
+        if (bar) bar.style.display = 'none'; 
+        if (toggleBtn) toggleBtn.style.display = 'none'; 
         return; 
     }
 
-    toggleBtn.style.display = 'block';
-    let html = `<div class="comms-status">📡 Encrypted Frequencies Detected:</div>`;
-    html += `<button class="freq-btn" onclick="renderFeed('all')">COMBINED FEED</button>`;
+    if (toggleBtn) toggleBtn.style.display = 'block';
+    let html = `<div class="comms-status">📡 Encrypted Frequencies:</div>`;
+    html += `<button class="freq-btn" onclick="renderFeed('all')">COMBINED</button>`;
     uniqueChannels.forEach(id => {
         html += `<button class="freq-btn" onclick="renderFeed('${id}')">${channelMap[id] || "SUB-CHANNEL"}</button>`;
     });
-    target.innerHTML = html;
+    if (target) target.innerHTML = html;
+}
+
+function toggleFrequencies() {
+    const bar = document.getElementById('frequency-selector');
+    if (bar) bar.style.display = (bar.style.display === 'none' || bar.style.display === '') ? 'block' : 'none';
+}
+
+// --- 7. UTILITIES ---
+function renderAttachments(msg, logRef) {
+    if (!msg.attachments || msg.attachments.length === 0 || !logRef) return "";
+    const folder = logRef.fileName.replace('.json', '');
+    let html = '<div class="msg-attachments">';
+    msg.attachments.forEach(att => {
+        const src = `${remoteBase}${activeCampaign.paths.media}${folder}/${att.filename}`;
+        if (att.content_type && att.content_type.startsWith('image/')) {
+            html += `<div class="attachment-item"><a href="${src}" target="_blank"><img src="${src}" class="log-image" loading="lazy"></a></div>`;
+        } else {
+            html += `<div class="attachment-item"><a href="${src}" target="_blank" class="file-link">📄 ${att.filename}</a></div>`;
+        }
+    });
+    return html + '</div>';
 }
 
 function jumpToMessage(msgId) {
-    if (!msgId) return;
-    
-    // Support both raw Snowflake and prefixed ID
     const cleanId = msgId.startsWith('msg-') ? msgId : `msg-${msgId}`;
     const target = document.getElementById(cleanId);
-    
     if (target) {
         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
         target.classList.add('highlight-flash');
         setTimeout(() => target.classList.remove('highlight-flash'), 3000);
-    } else {
-        console.warn(`[HOLONET] Target signal ${cleanId} not found in current sector.`);
     }
 }
 
 function silentLoadAvatars() {
     document.querySelectorAll('.lazy-load').forEach(img => {
-        const realSrc = img.getAttribute('data-src');
+        const src = img.getAttribute('data-src');
         const probe = new Image();
-        probe.src = realSrc;
-        probe.onload = () => { img.src = realSrc; img.classList.add('loaded'); };
+        probe.src = src;
+        probe.onload = () => { img.src = src; img.classList.add('loaded'); };
         probe.onerror = () => { img.src = `${remoteBase}${activeCampaign.paths.avatars}default.png`; img.classList.add('loaded'); };
     });
 }
 
+function copyMsgLink(event, msgId, actualChannel) {
+    event.preventDefault();
+    const url = `${window.location.origin}${window.location.pathname}?c=${campaignSlug}#${actualChannel}:${msgId}`;
+    navigator.clipboard.writeText(url).then(() => {
+        const icon = event.target;
+        icon.innerText = "COPIED";
+        setTimeout(() => icon.innerText = "🔗", 1500);
+    });
+}
+
+// Global click listener to close the custom dropdown
+window.onclick = (e) => {
+    if (!e.target.closest('.chapter-trigger')) {
+        const d = document.getElementById('chapter-list-dropdown');
+        if (d) d.style.display = 'none';
+    }
+};
+
 document.addEventListener("DOMContentLoaded", init);
 </script>
+
 
