@@ -221,8 +221,28 @@ a:hover {
     margin-bottom: 0.5rem;
 }
 
-.subtext { display: block; font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+.subtext { display: block; font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; opacity: 0.8;}
 .emoji { height: 1.3em; vertical-align: middle; margin: 0 2px; }
+
+​/* Multi-line Code Blocks */
+pre {
+background: #0d1117;
+border: 1px solid var(--gh-border);
+border-radius: 6px;
+padding: 16px;
+margin: 10px 0;
+overflow-x: auto;
+width: 100%;
+}
+​pre code {
+background: transparent;
+padding: 0;
+display: block;
+line-height: 1.45;
+color: var(--gh-text);
+font-size: 0.85rem;
+white-space: pre; /* Essential for preserving formatting */
+}
 
 blockquote { 
     border-left: 4px solid var(--gh-border); 

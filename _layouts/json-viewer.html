@@ -72,66 +72,92 @@ let remoteBase = "";
 // --- 2. INITIALIZATION ---
 async function init() {
     try {
+        // 1. Fetch the Registry
         const res = await fetch("{{ '/assets/campaign-registry.json' | relative_url }}");
         registry = await res.json();
         
+        // 2. Identify the Active Campaign
         const params = new URLSearchParams(window.location.search);
         campaignSlug = params.get('c') || registry.activeCampaign;
         activeCampaign = registry.campaigns[campaignSlug];
 
         if (!activeCampaign) throw new Error("Unknown Campaign ID.");
 
-        // Path Stabilization for Public Repos
+        // 3. Stabilize Remote Paths
         const cleanPath = activeCampaign.dataPath.replace(/^\.\//, "").replace(/\/$/, "");
         remoteBase = `https://raw.githubusercontent.com/${activeCampaign.repository}/${activeCampaign.branch}/${cleanPath ? cleanPath + '/' : ''}`;
         
-        document.getElementById('back-to-archives').href = `{{ '/archives' | relative_url }}?c=${campaignSlug}`;
+        // Update the 'Back to Archives' link
+        const backBtn = document.getElementById('back-to-archives');
+        if (backBtn) backBtn.href = `{{ '/archives' | relative_url }}?c=${campaignSlug}`;
 
-        // Populate Custom Breadcrumb Dropdown
+        // 4. Build Custom Breadcrumb Dropdown
         const listTarget = document.getElementById('chapter-list-dropdown');
-        listTarget.innerHTML = "";
-        activeCampaign.logs.forEach(item => {
-            const div = document.createElement('div');
-            div.className = "chapter-option";
-            div.textContent = item.title;
-            div.onclick = (e) => {
-                e.stopPropagation();
-                toggleChapterList();
-                loadChapter(item.channelID);
-            };
-            listTarget.appendChild(div);
-        });
+        if (listTarget) {
+            listTarget.innerHTML = "";
+            activeCampaign.logs.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "chapter-option";
+                div.textContent = item.title;
+                div.onclick = (e) => {
+                    e.stopPropagation();
+                    toggleChapterList(); // Close menu
+                    loadChapter(item.channelID); // Load new chapter
+                };
+                listTarget.appendChild(div);
+            });
+        }
 
-        // Hash Resolution (Deep Linking for Chapters or Threads)
-        const hash = window.location.hash.substring(1);
-        const hashParts = hash.split(':');
-        let chanId = hashParts[0];
-        let msgId = hashParts[1] || null;
-        let autoFilter = null;
+        // 5. --- SHARED LINK & HASH RESOLUTION ---
+        const rawHash = window.location.hash.substring(1);
+        let chanId = null;
+        let msgId = null;
+        let autoFilter = 'all';
 
-        if (chanId) {
-            let entry = activeCampaign.logs.find(m => m.channelID === chanId);
-            if (!entry) {
-                // Check if the ID provided is actually a Thread ID
-                entry = activeCampaign.logs.find(l => l.threads && l.threads.some(t => t.threadID === chanId));
-                if (entry) {
-                    autoFilter = chanId;
-                    msgId = chanId;
-                    chanId = entry.channelID;
+        if (rawHash) {
+            const hashParts = rawHash.split(':');
+            const primaryId = hashParts[0]; // Could be Chapter ID or Thread ID
+            msgId = hashParts[1] || null;
+
+            // Deep Search: Is this ID a Chapter or a Thread?
+            let targetChapter = activeCampaign.logs.find(l => l.channelID === primaryId);
+            
+            if (targetChapter) {
+                // It's a direct Chapter link
+                chanId = primaryId;
+                autoFilter = 'all';
+            } else {
+                // Check if it's a Thread ID instead
+                const parentLog = activeCampaign.logs.find(l => 
+                    l.threads && l.threads.some(t => t.threadID === primaryId)
+                );
+                
+                if (parentLog) {
+                    targetChapter = parentLog;
+                    chanId = parentLog.channelID;
+                    autoFilter = primaryId; // Filter the view to this thread
+                    // If no specific message ID was provided, jump to the thread start
+                    if (!msgId) msgId = primaryId; 
                 }
             }
-            if (entry) {
-                await loadChapter(chanId, msgId, autoFilter); 
-                return;
+
+            if (targetChapter) {
+                await loadChapter(chanId, msgId, autoFilter);
+                return; // Initialization complete via deep-link
             }
         }
 
+        // 6. Default Fallback: Load the first log in the list
         if (activeCampaign.logs.length > 0) {
-            loadChapter(activeCampaign.logs[0].channelID);
+            await loadChapter(activeCampaign.logs[0].channelID);
         }
+
     } catch (e) {
         console.error("Init Error:", e);
-        document.getElementById('viewer-output').innerHTML = `<b style="color:red">COMMS ERROR: ${e.message}</b>`;
+        const output = document.getElementById('viewer-output');
+        if (output) {
+            output.innerHTML = `<b style="color:var(--sw-yellow)">SYSTEM ERROR:</b> ${e.message}`;
+        }
     }
 }
 
@@ -172,11 +198,11 @@ async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
         renderFeed(autoFilter || 'all');
 
         if (targetMsg) {
-            requestAnimationFrame(() => setTimeout(() => jumpToMessage(targetMsg), 400));
-        } else if (autoFilter) {
-            // If we loaded a thread link with no specific message, 
-            // jump to the first message of that thread.
-            requestAnimationFrame(() => setTimeout(() => jumpToMessage(autoFilter), 400));
+            // We use a slightly longer delay (500ms) for shared links 
+            // to account for browser "painting" long chapters.
+            requestAnimationFrame(() => {
+                setTimeout(() => jumpToMessage(targetMsg), 500);
+            });
         } else {
             window.scrollTo(0, 0);
         }
@@ -253,73 +279,98 @@ function renderFeed(filterId) {
 }
 
 // --- 5. MARKDOWN & LINK RESOLUTION ---
+/**
+ * Unified Markdown Parser for Galactic Campaigns Viewer
+ * Handles Discord-specific syntax, Auto-embedding, and Deep-linking
+ */
 function parseMarkdown(text) {
     if (!text) return "";
-    
+
     // 1. Initial escape to prevent HTML injection while preserving Discord symbols
     let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    
-    // Construct base path for emojis
     const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
 
+    // 2. Handle Naked External Image URLs (Auto-Embed)
+    const imgRegex = /(https?:\/\/[^\s<]+?\.(?:png|jpg|jpeg|gif|webp)(?:\?[^\s<]+)?)/gi;
+    html = html.replace(imgRegex, (url) => {
+        return `<div class="attachment-item"><a href="${url}" target="_blank"><img src="${url}" class="log-image" loading="lazy"></a></div>`;
+    });
+
+    // 3. Multi-line Code Blocks (Triple Backticks)
+    // We use a non-greedy match to handle multiple code blocks in one post correctly.
+    // Code Blocks (Triple Backtick) Logic
+    // Using hex codes for backticks to prevent renderer truncation
+    const tripleTick = "\x60\x60\x60";
+    const codeBlockRegex = new RegExp(tripleTick + '(?:[a-z]+)?\\n?([\\s\\S]+?)\\n?' + tripleTick, 'g');
+    html = html.replace(codeBlockRegex, '<pre><code>$1</code></pre>');
+
+        // 4. Blockquotes (> text)
+    // Handled line-by-line to ensure they nest correctly with other elements
+    html = html.split('\n').map(line => {
+        // Discord blockquotes specifically look for "> " at the start of a line
+        if (line.startsWith('&gt; ')) {
+            return `<blockquote>${line.substring(5)}</blockquote>`;
+        }
+        return line;
+    }).join('\n');
+
     return html
-        /* --- A. CUSTOM EMOJIS (!name!_id format) --- */
-        .replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (match, name, id) => {
+        /* --- A. CUSTOM EMOJIS (!name!_id.png format) --- */
+        .replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (m, name, id) => {
             const cleanName = name.replace(/:/g, '');
             return `<img src="${emojiBase}!${cleanName}!_${id}.png" class="emoji" title="${cleanName}">`;
         })
 
-        /* --- B. INTERNAL DISCORD LINK RESOLVER (Mentions & URLs) --- */
+        /* --- B. INTERNAL DISCORD LINKS (Mentions & Channel URLs) --- */
         .replace(/(?:&lt;#(\d+)&gt;|https?:\/\/discord\.com\/channels\/\d+\/(\d+)(?:\/(\d+))?)/g, (match, mentionId, urlChanId, urlMsgId) => {
             const id = mentionId || urlChanId;
             const res = resolveInternalLinkData(id);
             
             if (res.found) {
-                // Determine the correct hash: Thread ID takes priority for auto-filtering
+                // If ID is a thread, prioritize it for auto-filtering
                 const targetHash = (res.filterId !== 'all') ? res.filterId : res.parentId;
                 const jumpId = urlMsgId ? `:${urlMsgId}` : "";
                 
                 const href = `{{ '/logs' | relative_url }}?c=${res.slug}#${targetHash}${jumpId}`;
                 
-                // Construct the visual label (e.g., "Campaign > Chapter > Thread")
                 const breadcrumb = `${res.isExternal ? res.campaignName + ' > ' : ''}${res.locationName}`;
                 const icon = urlMsgId ? ' <span style="font-size:0.8em">✉️</span>' : '';
                 
                 return `<a href="${href}" class="channel-link"># ${breadcrumb}${icon}</a>`;
             }
-            
-            // Fallback for non-internal Discord mentions
-            return mentionId ? `<a href="https://discord.com/channels/@me/${mentionId}" target="_blank" class="external-link"># Unknown Signal</a>` : match;
+            return match;
         })
 
-        /* --- C. FIXED: EXTERNAL LINKS --- */
-        // Correctly handles [Text](URL) and [Text](<URL>) by stripping escaped brackets
-        .replace(/\[([^\]]+)\]\((?:&lt;)?(https?:\/\/[^\s&gt;\)]+)(?:&gt;)?\)/g, (match, label, url) => {
-            const cleanUrl = url.replace(/&lt;/g, '').replace(/&gt;/g, '');
+        /* --- C. EXTERNAL MARKDOWN LINKS --- */
+        // Reconciled logic for [text](URL) and [text](<URL>)
+        .replace(/\[([^\]]+)\]\((?:&lt;)?(https?:\/\/[^\s&gt;\)]+?)(?:&gt;)?\)/g, (match, label, url) => {
+            // Clean up escaped characters often found in complex URLs
+            const cleanUrl = url.replace(/&lt;/g, '').replace(/&gt;/g, '').replace(/&amp;/g, '&');
             return `<a href="${cleanUrl}" target="_blank" class="external-link">${label}</a>`;
         })
 
-        /* --- D. HEADERS (H1 - H6) --- */
+        /* --- D. HEADERS (H1 - H6) & SUBTEXT (-#) --- */
         .replace(/^# (.*$)/gim, '<h1>$1</h1>')
         .replace(/^## (.*$)/gim, '<h2>$1</h2>')
         .replace(/^### (.*$)/gim, '<h3>$1</h3>')
         .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
         .replace(/^##### (.*$)/gim, '<h5>$1</h5>')
         .replace(/^###### (.*$)/gim, '<h6>$1</h6>')
-        .replace(/^-# (.*$)/gim, '<small class="msg-subtext">$1</small>')
+        .replace(/^-# (.*$)/gim, '<small class="subtext">$1</small>')
 
-        /* --- E. FORMATTING (Code, Bold, Italic, Spoilers) --- */
-        .replace(/`(.*?)`/g, '<code>$1</code>')
-        .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</strong></i>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.*?)\*/g, '<i>$1</i>')
-        .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>')
-        
-        /* --- F. NEWLINES --- */
-        .replace(/\n/g, '<br>');
+        /* --- E. INLINE FORMATTING --- */
+        .replace(/`(.*?)`/g, '<code>$1</code>') // Single backtick code
+        .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</strong></i>') // Bold-Italic
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+        .replace(/\*(.*?)\*/g, '<i>$1</i>') // Italic
+        .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>') // Spoiler
+
+        /* --- F. NEWLINE CONVERSION & CLEANUP --- */
+        .replace(/\n/g, '<br>')
+        // Cleanup: remove breaks that immediately follow block elements to avoid excessive vertical gap
+        .replace(/<\/blockquote><br>/g, '</blockquote>')
+        .replace(/<\/pre><br>/g, '</pre>');
 }
-
-
 function resolveInternalLinkData(id) {
     for (let slug in registry.campaigns) {
         const camp = registry.campaigns[slug];
