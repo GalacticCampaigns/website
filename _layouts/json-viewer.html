@@ -333,17 +333,17 @@ function parseMarkdown(text) {
         return match;
     });
 
-    // 7. NAKED IMAGE AUTO-EMBED
-    // Logic: 
-    // - (?<!href="|src="|&lt;) : Don't match if preceded by a tag or &lt; (suppression)
-    // - [^\s&lt;&gt;]+? : Capture URL up to extension
-    // - \.(?:png|jpg|jpeg|gif|webp) : Supported extensions
-    // - [^\s&lt;&gt;]* : Capture any trailing path segments or queries (?cb=... /revision/...)
-    // - (?!&gt;) : Don't match if followed by &gt; (suppression)
-    const imgRegex = /(?<!href="|src="|&lt;)(https?:\/\/[^\s&lt;&gt;]+?\.(?:png|jpg|jpeg|gif|webp)[^\s&lt;&gt;]*)(?!&gt;)/gi;
+    // 7. Naked External Image URLs (Auto-Embed)
+    // Logic:
+    // - (?<!href=") : Prevents wrapping URLs that are already part of a markdown link
+    // - (?<!&lt;)  : Prevents embedding if the URL is wrapped in < > (Discord suppression)
+    // - The second half captures the extension AND any trailing meta-data/query params
+    const imgRegex = /(?<!href=")(?<!&lt;)(https?:\/\/[^\s&lt;&gt;"]+?\.(?:png|jpg|jpeg|gif|webp)[^\s&lt;&gt;"]*)(?!&gt;)/gi;
+    
     html = html.replace(imgRegex, (url) => {
-        const realUrl = url.replace(/&amp;/g, '&'); // Ensure query params work in src
-        return `<div class="attachment-item"><a href="${realUrl}" target="_blank"><img src="${realUrl}" class="log-image" loading="lazy"></a></div>`;
+        // Unescape &amp; back to & so query parameters in the URL work correctly in the browser
+        const cleanSrc = url.replace(/&amp;/g, '&');
+        return `<div class="attachment-item"><a href="${cleanSrc}" target="_blank"><img src="${cleanSrc}" class="log-image" loading="lazy"></a></div>`;
     });
 
     // 8. CUSTOM EMOJIS
