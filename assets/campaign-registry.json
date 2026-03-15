@@ -417,7 +417,7 @@
               "threadID": "1464634504286175232",
               "displayName": "Cabin 🔞",
               "isActive": true,
-              "isNSFW": false,
+              "isNSFW": true,
               "messageCount": 1
             }
           ]
