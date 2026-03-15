@@ -255,35 +255,69 @@ function renderFeed(filterId) {
 // --- 5. MARKDOWN & LINK RESOLUTION ---
 function parseMarkdown(text) {
     if (!text) return "";
+    
+    // 1. Initial escape to prevent HTML injection while preserving Discord symbols
     let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    
+    // Construct base path for emojis
     const emojiBase = `${remoteBase}${activeCampaign.paths.emoji}`;
 
     return html
+        /* --- A. CUSTOM EMOJIS (!name!_id format) --- */
+        .replace(/&lt;a?(:.*?:)(\d+)&gt;/g, (match, name, id) => {
+            const cleanName = name.replace(/:/g, '');
+            return `<img src="${emojiBase}!${cleanName}!_${id}.png" class="emoji" title="${cleanName}">`;
+        })
+
+        /* --- B. INTERNAL DISCORD LINK RESOLVER (Mentions & URLs) --- */
         .replace(/(?:&lt;#(\d+)&gt;|https?:\/\/discord\.com\/channels\/\d+\/(\d+)(?:\/(\d+))?)/g, (match, mentionId, urlChanId, urlMsgId) => {
             const id = mentionId || urlChanId;
             const res = resolveInternalLinkData(id);
             
             if (res.found) {
-                // If it's a thread, we want the hash to be #ThreadID:MessageID or just #ThreadID
+                // Determine the correct hash: Thread ID takes priority for auto-filtering
                 const targetHash = (res.filterId !== 'all') ? res.filterId : res.parentId;
                 const jumpId = urlMsgId ? `:${urlMsgId}` : "";
                 
                 const href = `{{ '/logs' | relative_url }}?c=${res.slug}#${targetHash}${jumpId}`;
                 
-                return `<a href="${href}" class="channel-link"># ${res.isExternal ? res.campaignName + ' > ' : ''}${res.locationName}${urlMsgId ? ' ✉️' : ''}</a>`;
+                // Construct the visual label (e.g., "Campaign > Chapter > Thread")
+                const breadcrumb = `${res.isExternal ? res.campaignName + ' > ' : ''}${res.locationName}`;
+                const icon = urlMsgId ? ' <span style="font-size:0.8em">✉️</span>' : '';
+                
+                return `<a href="${href}" class="channel-link"># ${breadcrumb}${icon}</a>`;
             }
-            return match;
+            
+            // Fallback for non-internal Discord mentions
+            return mentionId ? `<a href="https://discord.com/channels/@me/${mentionId}" target="_blank" class="external-link"># Unknown Signal</a>` : match;
         })
+
+        /* --- C. FIXED: EXTERNAL LINKS --- */
+        // Correctly handles [Text](URL) and [Text](<URL>) by stripping escaped brackets
         .replace(/\[([^\]]+)\]\((?:&lt;)?(https?:\/\/[^\s&gt;\)]+)(?:&gt;)?\)/g, (match, label, url) => {
-            // This strips &lt; and &gt; if they were captured inside the URL group
             const cleanUrl = url.replace(/&lt;/g, '').replace(/&gt;/g, '');
             return `<a href="${cleanUrl}" target="_blank" class="external-link">${label}</a>`;
         })
-        .replace(/^# (.*$)/gim, '<h1>$1</h1>').replace(/^## (.*$)/gim, '<h2>$1</h2>')
-        .replace(/`(.*?)`/g, '<code>$1</code>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+
+        /* --- D. HEADERS (H1 - H6) --- */
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^#### (.*$)/gim, '<h4>$1</h4>')
+        .replace(/^##### (.*$)/gim, '<h5>$1</h5>')
+        .replace(/^###### (.*$)/gim, '<h6>$1</h6>')
+
+        /* --- E. FORMATTING (Code, Bold, Italic, Spoilers) --- */
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><i>$1</strong></i>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<i>$1</i>')
         .replace(/\|\|(.*?)\|\|/g, '<span class="spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>')
+        
+        /* --- F. NEWLINES --- */
         .replace(/\n/g, '<br>');
 }
+
 
 function resolveInternalLinkData(id) {
     for (let slug in registry.campaigns) {
