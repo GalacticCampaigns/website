@@ -3,108 +3,26 @@ layout: default
 ---
 
 <style>
-/* 1. CONTAINER & STICKY STABILIZATION */
-.log-container-json { 
-    width: 100%; 
-    max-width: 900px; 
-    margin: 0 auto; 
-    padding-top: 20px;
-    overflow: visible !important; 
-}
-#chapter-picker {
-    flex: 1; /* Grow to fill center space */
-    min-width: 0; /* Allows the select to shrink smaller than its text content */
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    overflow: hidden;
-}
+/* 1. CONTAINER STABILIZATION */
+.log-container-json { width: 100%; padding-top: 20px; }
 
-/* --- 2. SECONDARY FREQUENCY BAR --- */
+/* 2. SECONDARY FREQUENCY BAR */
 .frequency-nav-bar { 
     position: sticky; 
     top: calc(var(--site-nav-height) + var(--log-nav-height)); 
-    z-index: 7000; 
-    background: var(--secondary-bg);
-    border-bottom: 1px solid var(--gh-border);
-    padding: 12px 0;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-    display: none;
+    z-index: 7000; background: var(--secondary-bg);
+    border-bottom: 1px solid var(--gh-border); padding: 12px 0;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5); display: none;
 }
 
-.freq-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 15px;
-}
-
-.freq-btn {
-    padding: 6px 12px;
-    background: #1c2128;
-    border: 1px solid var(--gh-border);
-    color: var(--gh-text);
-    border-radius: 4px;
-    font-size: 0.7rem;
-    cursor: pointer;
-    font-family: monospace;
-}
-
-.freq-btn.active {
-    border-color: var(--accent-blue);
-    color: var(--accent-blue);
-    background: rgba(88,166,255,0.1);
-}
+.freq-container { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; max-width: 900px; margin: 0 auto; padding: 0 15px; }
 
 .comms-status { 
-    width: 100%; 
-    padding-bottom: 8px; 
-    font-size: 0.6rem; 
-    color: var(--sw-yellow); 
-    font-family: monospace; 
-    text-transform: uppercase; 
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    margin-bottom: 5px;
+    width: 100%; padding-bottom: 8px; font-size: 0.6rem; color: var(--sw-yellow); 
+    font-family: monospace; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.05); margin-bottom: 5px;
 }
 
-/* 3. MESSAGE FEED STYLING */
-.message-group { 
-    display: flex; 
-    padding: 15px 10px; 
-    border-bottom: 1px solid rgba(48, 54, 61, 0.2); 
-    transition: background 0.3s; 
-}
-
-.avatar-container { 
-    width: 42px; 
-    height: 42px; 
-    margin-right: 15px; 
-    flex-shrink: 0; 
-    background: #1c2128; 
-    border-radius: 4px; 
-    overflow: hidden; 
-}
-
-.avatar { 
-    width: 100%; 
-    height: 100%; 
-    object-fit: cover; 
-    opacity: 0; 
-    transition: opacity 0.3s; 
-}
-
-.avatar.loaded { opacity: 1; }
-
-.msg-body { flex-grow: 1; min-width: 0; }
-.username { color: var(--accent-blue); font-weight: bold; margin-right: 10px; }
-.msg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.timestamp { font-size: 0.75rem; color: var(--text-muted); }
-.copy-link-icon { text-decoration: none; font-size: 0.8rem; opacity: 0.3; transition: 0.2s; }
-.copy-link-icon:hover { opacity: 1; }
-
-/* 4. TRANSITIONS & HIGHLIGHTS */
+/* 3. TRANSITIONS */
 .channel-transition { 
     display: flex; align-items: center; justify-content: center; 
     margin: 40px 0 20px; padding: 15px; 
@@ -112,50 +30,24 @@ layout: default
     color: var(--accent-blue); font-family: monospace; font-size: 0.75rem; 
     letter-spacing: 2px; text-transform: uppercase; cursor: pointer; 
 }
-
-.channel-link {
-    color: var(--sw-yellow);
-    text-decoration: none;
-    background: rgba(255, 193, 7, 0.05);
-    padding: 0 4px;
-    border-radius: 3px;
-    border-bottom: 1px dashed var(--sw-yellow);
-    font-family: monospace;
-    font-size: 0.9em;
-}
-
-.channel-link:hover {
-    background: var(--sw-yellow);
-    color: var(--primary-bg);
-}
-
-.message-group:target, .highlight-flash { 
-    background: rgba(210, 153, 34, 0.15) !important; 
-    border-left: 3px solid var(--sw-yellow); 
-}
-
-/* 5. MOBILE OVERRIDES */
-@media (max-width: 900px) {
-    .log-container-json { 
-        padding: 5px; 
-    }
-    
-    /* Logic: Site Nav (50px) + Mobile Frozen Nav (60px) = 110px. 
-       This ensures the Frequency Bar anchors perfectly to the bottom of the chapter picker.
-    */
-    .frequency-nav-bar { 
-        top: 110px; 
-    } 
-}
-
 </style>
+
 
 <header class="frozen-nav">
     <div class="nav-inner">
         <a href="javascript:void(0)" id="back-to-archives" class="toc-open-btn" style="text-decoration: none;">⇠</a>
-        <select id="chapter-picker" class="toc-open-btn" onchange="onPickerChange(this.value)" style="background: #1c2128; flex-grow: 1; min-width: 0;">
-            <option value="">-- LOADING DATAPAD --</option>
-        </select>
+
+        <div class="log-breadcrumb">
+            <div class="breadcrumb-item chapter-trigger" onclick="toggleChapterList()">
+                <span id="active-chapter-name">LOADING...</span>
+                <span class="nav-arrow">❯</span>
+                <div id="chapter-list-dropdown" class="custom-nav-dropdown"></div>
+            </div>
+            
+            <div class="breadcrumb-item" id="thread-indicator" style="display: none;">
+                </div>
+        </div>
+
         <button id="thread-toggle" class="toc-open-btn" onclick="toggleFrequencies()" style="display:none;">📡</button>
     </div>
 </header>
@@ -207,38 +99,45 @@ async function init() {
             picker.appendChild(opt);
         });
 
+        // Inside your init() function, replace the hash resolution block with this:
         const hash = window.location.hash.substring(1);
         const hashParts = hash.split(':');
         let chanId = hashParts[0];
-        let msgId = hashParts[1];
+        let msgId = hashParts[1] || null;
+        let autoFilter = null;
 
-        // Deep Search for Thread/Post IDs if the Chapter ID isn't found immediately
-        if (chanId && !activeCampaign.logs.find(m => m.channelID === chanId)) {
-            const entry = activeCampaign.logs.find(l => l.threads.some(t => t.threadID === chanId));
+        if (chanId) {
+            // 1. Is this a direct Chapter ID?
+            let entry = activeCampaign.logs.find(m => m.channelID === chanId);
+
+            // 2. If not, is it a Thread ID?
+            if (!entry) {
+                entry = activeCampaign.logs.find(l => l.threads && l.threads.some(t => t.threadID === chanId));
+                if (entry) {
+                    autoFilter = chanId;   // Queue this ID for filtering
+                    msgId = chanId;        // Also jump to the start of the thread
+                    chanId = entry.channelID; // Load the actual parent file
+                }
+            }
+
             if (entry) {
-                msgId = chanId;
-                chanId = entry.channelID;
+                picker.value = chanId;
+                // We add a new parameter to loadChapter to handle the filter
+                await loadChapter(chanId, msgId, autoFilter); 
+                return;
             }
         }
 
-        if (chanId) {
-            picker.value = chanId;
-            await loadChapter(chanId, msgId);
-        } else if (activeCampaign.logs.length > 0) {
-            picker.value = activeCampaign.logs[0].channelID;
-            loadChapter(activeCampaign.logs[0].channelID);
-        }
     } catch (e) {
         console.error("Init Error:", e);
         document.getElementById('viewer-output').innerHTML = `<b style="color:red">COMMS ERROR: ${e.message}</b>`;
     }
 }
 
-async function loadChapter(channelID, targetMsg = null) {
+async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
     const logEntry = activeCampaign.logs.find(l => l.channelID === channelID);
     if (!logEntry) return;
 
-    // paths.json already has a trailing slash in your manifest, so this joins cleanly
     const jsonUrl = `${remoteBase}${activeCampaign.paths.json}${logEntry.fileName}`;
     const output = document.getElementById('viewer-output');
     output.innerHTML = "<em>Decrypting Data Stream...</em>";
@@ -247,26 +146,15 @@ async function loadChapter(channelID, targetMsg = null) {
         const response = await fetch(jsonUrl);
         const data = await response.json();
         fullData = Array.isArray(data) ? data : (data.messages || []);
-
         fullData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-        // Re-map frequencies for the current file
-        channelMap = {};
-        let parentCounts = {};
-        fullData.forEach(m => {
-            if (m.thread) {
-                channelMap[m.thread.id] = m.thread.name.toUpperCase();
-                if (m.thread.parent_id) {
-                    parentCounts[m.thread.parent_id] = (parentCounts[m.thread.parent_id] || 0) + 1;
-                }
-            }
-        });
 
         mainChannelId = Object.keys(parentCounts).reduce((a, b) => parentCounts[a] > parentCounts[b] ? a : b, null);
         if (!mainChannelId && fullData.length > 0) mainChannelId = fullData[0].channel_id;
 
         buildFrequencyBar();
-        renderFeed('all');
+        
+        // Use autoFilter if we arrived via a thread link, otherwise 'all'
+        renderFeed(autoFilter || 'all');
 
         if (targetMsg) {
             requestAnimationFrame(() => {
@@ -463,14 +351,22 @@ function renderAttachments(msg, logEntry) {
     return html;
 }
 
-function copyMsgLink(event, msgId, chanId) {
+function copyMsgLink(event, msgId, actualChannel) {
     event.preventDefault();
-    const chapterId = document.getElementById('chapter-picker').value;
-    const url = `${window.location.origin}${window.location.pathname}?c=${campaignSlug}#${chapterId}:${msgId}`;
+    
+    // If the actualChannel is NOT the main chapter ID, it's a thread.
+    // We use the ThreadID:MessageID format to ensure it auto-filters on click.
+    const url = `${window.location.origin}${window.location.pathname}?c=${campaignSlug}#${actualChannel}:${msgId}`;
+    
     navigator.clipboard.writeText(url).then(() => {
         const icon = event.target;
-        icon.innerText = "CHECK";
-        setTimeout(() => icon.innerText = "🔗", 1000);
+        const original = icon.innerText;
+        icon.innerText = "COPIED";
+        icon.style.color = "var(--sw-yellow)";
+        setTimeout(() => {
+            icon.innerText = original;
+            icon.style.color = "";
+        }, 1500);
     });
 }
 

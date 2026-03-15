@@ -4,90 +4,17 @@ title: Home
 ---
 
 <style>
-/* 1. DASHBOARD LAYOUT */
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: 30px;
-    margin-top: 40px;
-}
+.dashboard-grid { display: grid; grid-template-columns: 1fr 300px; gap: 30px; margin-top: 40px; }
+.log-list { list-style: none; padding: 0; }
+.log-list li { padding: 15px 10px; border-bottom: 1px solid var(--gh-border); border-radius: 4px; transition: 0.2s; }
+.log-list li:hover { background: rgba(97, 218, 251, 0.05); }
 
-/* 2. LOG LIST STYLING */
-.log-list {
-    list-style: none;
-    padding: 0;
-}
+.chapter-title { font-weight: bold; color: var(--accent-blue); font-size: 1.1rem; text-transform: uppercase; }
+.campaign-tag { font-size: 0.7rem; background: rgba(97, 218, 251, 0.1); color: var(--accent-blue); padding: 2px 6px; border-radius: 3px; }
+.signal-meta { font-family: monospace; font-size: 0.75rem; color: var(--sw-yellow); letter-spacing: 1px; }
+.preview-text { opacity: 0.7; font-style: italic; font-size: 0.9rem; margin-top: 5px; }
 
-.log-list li {
-    padding: 15px 10px;
-    border-bottom: 1px solid var(--gh-border);
-    transition: 0.2s;
-    border-radius: 4px;
-}
-
-.log-list li:hover {
-    background: rgba(97, 218, 251, 0.05);
-}
-
-.log-list a {
-    text-decoration: none;
-    display: block;
-}
-
-/* 3. INFO ROW STYLING */
-.log-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.chapter-title {
-    font-weight: bold;
-    color: var(--accent-blue);
-    font-size: 1.1rem;
-    text-transform: uppercase;
-}
-
-.campaign-tag {
-    font-size: 0.7rem;
-    background: rgba(97, 218, 251, 0.1);
-    color: var(--accent-blue);
-    padding: 2px 6px;
-    border-radius: 3px;
-    text-transform: uppercase;
-    margin-right: 8px;
-}
-
-.signal-meta {
-    margin: 5px 0;
-    font-family: monospace;
-    font-size: 0.75rem;
-    color: var(--sw-yellow);
-    letter-spacing: 1px;
-}
-
-.preview-text {
-    margin-top: 5px;
-    opacity: 0.7;
-    font-style: italic;
-    font-size: 0.9rem;
-    color: var(--gh-text);
-}
-
-.hub-welcome {
-    text-align: center;
-    padding: 40px 20px;
-    border: 1px dashed var(--gh-border);
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-
-/* 4. RESPONSIVE */
-@media (max-width: 800px) {
-    .dashboard-grid { grid-template-columns: 1fr; }
-}
+@media (max-width: 800px) { .dashboard-grid { grid-template-columns: 1fr; } }
 </style>
 
 <div id="hub-view" class="hub-welcome" style="display: none;">
