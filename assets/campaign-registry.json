@@ -381,6 +381,38 @@
           "messageCount": 466,
           "lastMessageTimestamp": "2025-05-23T02:18:07.061+00:00",
           "threads": []
+        },
+        {
+          "title": "wv ch3 the-karthon-gamble",
+          "channelID": "1375296954300366910",
+          "fileName": "wv_ch3_the-karthon-gamble.json",
+          "isActive": true,
+          "isNSFW": false,
+          "preview": "",
+          "order": 3.0,
+          "messageCount": 982,
+          "lastMessageTimestamp": "2026-01-23T01:36:13.812+00:00",
+          "threads": [
+            {
+              "threadID": "1377978443060482080",
+              "displayName": "Gamma Data Packet",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            }
+          ]
+        },
+        {
+          "title": "wv ch4 stillness-between-storms",
+          "channelID": "1464072269071651051",
+          "fileName": "wv_ch4_stillness-between-storms.json",
+          "isActive": true,
+          "isNSFW": false,
+          "preview": "",
+          "order": 4.0,
+          "messageCount": 142,
+          "lastMessageTimestamp": "2026-03-14T18:31:43.627+00:00",
+          "threads": []
         }
       ]
     },
