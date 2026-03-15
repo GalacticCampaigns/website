@@ -216,6 +216,29 @@ a:hover {
 .msg-content { font-size: 0.95rem; word-wrap: break-word; }
 
 /* --- 7. EXTENDED MARKDOWN & DISCORD ELEMENTS --- */
+/* Subtext / Small Headers (-# syntax) */
+.msg-subtext {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    line-height: 1.2;
+}
+
+/* Emoji Scaling */
+.emoji {
+    height: 1.35em;
+    width: auto;
+    vertical-align: middle;
+    margin: 0 2px;
+    object-fit: contain;
+}
+
+/* Ensure standard headers inside logs don't have massive margins */
+.msg-content h1, .msg-content h2, .msg-content h3, .msg-content h4, .msg-content h5, .msg-content h6  {
+    margin: 10px 0 5px 0;
+}
+
 blockquote { 
     border-left: 4px solid var(--gh-border); 
     margin: 8px 0; padding: 2px 15px; 
