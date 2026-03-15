@@ -341,8 +341,8 @@ function parseMarkdown(text) {
     });
 
     // 7. Naked External Image URLs (Auto-Embed)
-    // Guard against URLs already wrapped in href="" using negative lookbehind
-    const imgRegex = /(?<!href=")(https?:\/\/[^\s&lt;&gt;]+?\.(?:png|jpg|jpeg|gif|webp)[^\s&lt;&gt;]*)/gi;
+    // Regex now greedily captures everything after the extension to handle Wikia paths and query params
+    const imgRegex = /(https?:\/\/[^\s<]+?\.(?:png|jpg|jpeg|gif|webp)[^\s<]*)/gi;
     html = html.replace(imgRegex, (url) => {
         return `<div class="attachment-item"><a href="${url}" target="_blank"><img src="${url}" class="log-image" loading="lazy"></a></div>`;
     });
