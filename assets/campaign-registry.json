@@ -50,7 +50,15 @@
           "order": 0,
           "messageCount": 1,
           "lastMessageTimestamp": "2025-06-12T19:27:19.913+00:00",
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1382803271185469562",
+              "displayName": "Prelude: The Stray Fortune (Krynn)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 0
+            }
+          ]
         },
         {
           "title": "PRELUDE: Ghost of the <i>Devastation<i> (Vearos)",
@@ -86,7 +94,15 @@
           "order": 0,
           "messageCount": 1,
           "lastMessageTimestamp": "2025-06-12T01:37:02.532+00:00",
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1381783926871298098",
+              "displayName": "Prelude: The Echo in the Stone (Vena)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 0
+            }
+          ]
         },
         {
           "title": "CHAPTER 1: AWAKENING",
@@ -275,8 +291,8 @@
           "isNSFW": false,
           "preview": "",
           "order": 4,
-          "messageCount": 476,
-          "lastMessageTimestamp": "2026-03-08T15:48:52.182+00:00",
+          "messageCount": 517,
+          "lastMessageTimestamp": "2026-03-15T15:57:35.365+00:00",
           "threads": [
             {
               "threadID": "1463304534892871844",
