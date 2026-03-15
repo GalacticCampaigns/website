@@ -40,17 +40,16 @@ layout: default
         <div class="log-breadcrumb">
             <div class="breadcrumb-item chapter-trigger" onclick="toggleChapterList()">
                 <span id="active-chapter-name">LOADING...</span>
-                <span class="nav-arrow">❯</span>
                 <div id="chapter-list-dropdown" class="custom-nav-dropdown"></div>
             </div>
             
-            <div class="breadcrumb-item" id="thread-indicator" style="display: none;">
-                </div>
+            <div class="breadcrumb-item" id="thread-indicator"></div>
         </div>
 
         <button id="thread-toggle" class="toc-open-btn" onclick="toggleFrequencies()" style="display:none;">📡</button>
     </div>
 </header>
+
 
 <div id="frequency-selector" class="frequency-nav-bar">
     <div class="freq-container" id="freq-buttons-target"></div>
@@ -286,13 +285,21 @@ function resolveInternalLinkData(id) {
 function updateBreadcrumb(chapterTitle, threadTitle = null) {
     const chapEl = document.getElementById('active-chapter-name');
     const threadEl = document.getElementById('thread-indicator');
-    if (chapEl) chapEl.textContent = chapterTitle.toUpperCase();
+    
+    if (chapEl) {
+        // Wrap in a span to allow for specific hover styling if needed
+        chapEl.innerHTML = `${chapterTitle.toUpperCase()} <span style="font-size: 0.7em; opacity: 0.5; margin-left: 5px;">▼</span>`;
+    }
+    
     if (threadEl) {
         if (threadTitle) {
             threadEl.style.display = 'flex';
+            // We only add ONE arrow here, and it only appears if threadTitle exists
             threadEl.innerHTML = `<span class="nav-arrow">❯</span><span>${threadTitle.toUpperCase()}</span>`;
         } else {
+            // Completely hide and empty the element when no thread is selected
             threadEl.style.display = 'none';
+            threadEl.innerHTML = '';
         }
     }
 }
