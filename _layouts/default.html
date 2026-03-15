@@ -185,6 +185,10 @@
 </main>
 
 <footer style="margin-top: 80px; padding: 40px 20px; text-align: center; border-top: 1px solid var(--gh-border); font-size: 0.8rem; color: var(--text-muted);">
+    <div style="margin-bottom: 15px; display: flex; justify-content: center; gap: 20px;">
+        <a href="{{ '/PrivacyPolicy' | relative_url }}" style="color: var(--text-muted); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.3s;" onmouseover="this.style.borderColor='var(--accent-blue)'" onmouseout="this.style.borderColor='transparent'">Privacy Policy</a>
+        <a href="{{ '/TermsofService' | relative_url }}" style="color: var(--text-muted); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.3s;" onmouseover="this.style.borderColor='var(--accent-blue)'" onmouseout="this.style.borderColor='transparent'">Terms of Service</a>
+    </div>
     <p>Logged into Galactic Registry Engine v3.0</p>
     <p>Last Data Sync: {{ site.time | date: "%Y-%m-%d %H:%M:%S" }} UTC</p>
 </footer>
