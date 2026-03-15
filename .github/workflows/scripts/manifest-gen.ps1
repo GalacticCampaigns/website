@@ -223,9 +223,13 @@ foreach ($ManifestLogEntry in $TargetCampaignObj.logs) {
     }
 }
 
-# --- 6. Export (UTF-8 No BOM / Depth 10) ---
-$FinalJsonPayload = $RegistryData | ConvertTo-Json -Depth 10
+# --- 6. Export (Web-Standard UTF-8 No BOM) ---
+$FinalJsonPayload = $RegistryData | ConvertTo-Json -Depth 10 -Compress:($false)
+
+# Create a UTF8 encoding object that explicitly disables the BOM (Byte Order Mark)
 $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($false)
+
+# Write directly to the file to ensure no "Position 3" characters are added
 [System.IO.File]::WriteAllText($ManifestFilePath, $FinalJsonPayload, $Utf8NoBomEncoding)
 
 Write-Host "`n>>> Success: Registry Hydration V2.1.0 Complete." -ForegroundColor Green
