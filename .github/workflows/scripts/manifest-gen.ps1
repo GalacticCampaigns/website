@@ -36,8 +36,18 @@ if ($Token) {
     }
 }
 
-$CleanRemotePath = $TargetCampaignObj.paths.json.Trim('/')
-$GitHubApiUrl = "https://api.github.com/repos/$($TargetCampaignObj.repository)/contents/${CleanRemotePath}?ref=$($TargetCampaignObj.branch)"
+# --- PATH LOGIC FIX START ---
+# We must combine dataPath (e.g., "swWhispers-Void/") with paths.json (e.g., "json/")
+$BaseFolder = $TargetCampaignObj.dataPath.Trim('./').Trim('/')
+$SubFolder = $TargetCampaignObj.paths.json.Trim('/')
+
+# Joins them safely: "swWhispers-Void/json"
+$FullRemotePath = if ([string]::IsNullOrWhiteSpace($BaseFolder)) { $SubFolder } else { "$BaseFolder/$SubFolder" }
+
+$GitHubApiUrl = "https://api.github.com/repos/$($TargetCampaignObj.repository)/contents/$($FullRemotePath)?ref=$($TargetCampaignObj.branch)"
+
+if ($EnableDebugMode) { Write-Host "[DEBUG] API Target URL: $GitHubApiUrl" -ForegroundColor Yellow }
+# --- PATH LOGIC FIX END ---
 
 Write-Host "`n>>> Initializing Hydration: $($TargetCampaignObj.name)" -ForegroundColor Cyan
 
@@ -50,7 +60,6 @@ try {
 }
 
 $GlobalProcessedIDs = New-Object 'System.Collections.Generic.HashSet[string]'
-
 # --- 2. Helper: Hardened Property Lookup (Null-Safe) ---
 function Get-NormalizedProperty($InputObject, $DesiredPropertyName) {
     if ($null -eq $InputObject) { return $null } 
