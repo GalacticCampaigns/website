@@ -347,7 +347,7 @@
       },
       "logs": [
         {
-          "title": "bluebook-wes 1",
+          "title": "PRELUDE: ADVENTURES ON FAKIR",
           "channelID": "1200635186119979019",
           "fileName": "bluebook-wes_1.json",
           "isActive": true,
@@ -359,7 +359,7 @@
           "threads": []
         },
         {
-          "title": "ch1 descending-into-darkness",
+          "title": "Chapter 1: Descending Into Darkness",
           "channelID": "1347407802980634726",
           "fileName": "ch1_descending-into-darkness.json",
           "isActive": true,
@@ -371,7 +371,7 @@
           "threads": []
         },
         {
-          "title": "ch2 amidst-the-ashes",
+          "title": "Chapter 2: Amidst the Ashes",
           "channelID": "1357106240332759070",
           "fileName": "ch2_amidst-the-ashes.json",
           "isActive": true,
