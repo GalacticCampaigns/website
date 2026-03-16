@@ -30,6 +30,17 @@ layout: default
     color: var(--accent-blue); font-family: monospace; font-size: 0.75rem; 
     letter-spacing: 2px; text-transform: uppercase; cursor: pointer; 
 }
+
+.nsfw-badge {
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.nsfw-badge:hover {
+    background-color: #da3633; /* A more "Alert" red */
+    box-shadow: 0 0 10px rgba(218, 54, 51, 0.5);
+    transform: scale(1.05);
+}
 </style>
 
 
@@ -231,20 +242,25 @@ function renderFeed(filterId) {
     const filtered = fullData.filter(m => validTypes.includes(m.type));
     const messages = filterId === 'all' ? filtered : filtered.filter(m => m.channel_id === filterId || (m.thread && m.thread.id === filterId));
 
-    // --- NEW: CHANNEL/THREAD LEVEL NSFW CHECK ---
-    // Check if the current log or specific thread is flagged as NSFW in the registry
+    // --- CHANNEL/THREAD LEVEL NSFW CHECK ---
     const isChannelNSFW = logEntry.isNSFW;
     
     messages.forEach(msg => {
         const isThreadStarter = (msg.thread && msg.thread.id === mainChannelId);
         const actualChannel = isThreadStarter ? msg.thread.id : msg.channel_id;
 
-        // Check if THIS specific message belongs to an NSFW thread
         const threadRef = logEntry.threads ? logEntry.threads.find(t => t.threadID === msg.channel_id) : null;
         const isCurrentMsgNSFW = isChannelNSFW || (threadRef && threadRef.isNSFW);
         
-        // Apply blur class if NSFW and filter is ON
-        const nsfwClass = (isCurrentMsgNSFW && !window.GC_STATE.nsfwEnabled) ? 'nsfw-blur' : (isCurrentMsgNSFW ? 'nsfw-blur off' : '');
+        // 1. Determine if we are currently blurring this specific message
+        const isCurrentlyBlurred = isCurrentMsgNSFW && !window.GC_STATE.nsfwEnabled;
+        const nsfwClass = isCurrentlyBlurred ? 'nsfw-blur' : (isCurrentMsgNSFW ? 'nsfw-blur off' : '');
+
+        // 2. Create the Clickable Badge for the header if it's an NSFW message
+        // This appears regardless of blur state, but we can make it more prominent if blurred
+        const nsfwBadge = isCurrentMsgNSFW 
+            ? `<span class="nsfw-badge" style="cursor:pointer; margin-left:8px;" onclick="showNSFWGateway()" title="Mature Content: Click to Decrypt">NSFW</span>` 
+            : '';
 
         if (filterId === 'all' && lastChannelId !== null && actualChannel !== lastChannelId && !isThreadStarter) {
             const shiftName = channelMap[actualChannel] || "PRIMARY FREQUENCY";
@@ -271,6 +287,7 @@ function renderFeed(filterId) {
             <div class="msg-body">
                 <div class="msg-header">
                     <span class="username">${msg.author.nickname || msg.author.global_name || msg.author.username}</span>
+                    ${nsfwBadge}
                     <span class="timestamp">${new Date(msg.timestamp).toLocaleString()}</span>
                     <a href="javascript:void(0)" class="copy-link-icon" onclick="copyMsgLink(event, '${msg.id}', '${actualChannel}')">🔗</a>
                 </div>
@@ -373,37 +390,61 @@ function toggleFrequencies() {
 function renderAttachments(msg, logRef) {
     if (!msg.attachments || msg.attachments.length === 0 || !logRef) return "";
     
-    // folder name is based on dataPath + log media path
+    // 1. Identify the folder (e.g., "ch1_descending-into-darkness")
     const folder = logRef.fileName.replace('.json', '');
-    const mediaReg = window.GC_STATE.mediaRegistry || []; // This is now a simple array of strings
+    const mediaReg = window.GC_STATE.mediaRegistry || [];
     let html = '<div class="msg-attachments">';
     
     msg.attachments.forEach(att => {
-        const relativePath = `${folder}/${att.filename}`;
-        const src = `${remoteBase}${activeCampaign.paths.media}${relativePath}`;
+        // 2. PATH CONSTRUCTION
+        // Match string: "ch1_descending-into-darkness/image.jpg"
+        const registryMatchPath = `${folder}/${att.filename}`;
         
-        // Simplified check: Does our array of NSFW file paths include this file?
-        const isFileNSFW = mediaReg.includes(relativePath);
+        // Actual Source: "remote_url/Chapter_Logs/media/ch1_descending-into-darkness/image.jpg"
+        const src = `${window.GC_STATE.remoteBase}${window.GC_STATE.currentCampaign.paths.media}${folder}/${att.filename}`;
+        
+        // 3. CHECK NSFW STATUS
+        const isFileNSFW = mediaReg.includes(registryMatchPath);
 
         if (att.content_type && att.content_type.startsWith('image/')) {
+            // 4. SHIELD LOGIC
             if (isFileNSFW && !window.GC_STATE.nsfwEnabled) {
-                // Determine if there is a custom warning for this specific file
-                const warning = (window.GC_STATE.contentWarnings && window.GC_STATE.contentWarnings[relativePath]) 
-                                || "Restricted Data";
+                // Pull custom warning from registry or use default
+                const warning = (window.GC_STATE.contentWarnings && window.GC_STATE.contentWarnings[registryMatchPath]) 
+                                || "RESTRICTED DATA";
 
                 html += `
                 <div class="media-shield">
-                    <span class="shield-icon">⚠️</span>
-                    <span>${warning}</span>
-                    <button class="decrypt-btn" onclick="toggleNSFW()">DECRYPT IMAGE</button>
+                    <div class="shield-overlay">
+                        <span class="shield-icon">⚠</span>
+                        <div class="shield-info">
+                            <span class="shield-label">ENCRYPTION ACTIVE</span>
+                            <span class="shield-text">${warning.toUpperCase()}</span>
+                        </div>
+                        <button class="decrypt-btn" onclick="showNSFWGateway()">DECRYPT</button>
+                    </div>
                 </div>`;
             } else {
-                html += `<div class="attachment-item"><a href="${src}" target="_blank"><img src="${src}" class="log-image" loading="lazy"></a></div>`;
+                // 5. RENDER UNLOCKED IMAGE
+                html += `
+                <div class="attachment-item">
+                    <a href="${src}" target="_blank">
+                        <img src="${src}" class="log-image" loading="lazy" alt="Atmospheric Data">
+                    </a>
+                </div>`;
             }
         } else {
-            html += `<div class="attachment-item"><a href="${src}" target="_blank" class="file-link">📄 ${att.filename}</a></div>`;
+            // 6. RENDER NON-IMAGE FILES (PDFs, etc.)
+            html += `
+            <div class="attachment-item">
+                <a href="${src}" target="_blank" class="file-link">
+                    <span class="file-icon">📄</span> 
+                    <span class="file-name">${att.filename}</span>
+                </a>
+            </div>`;
         }
     });
+    
     return html + '</div>';
 }
 

@@ -198,6 +198,35 @@ function syncNSFWUI() {
     }
 }
 
+function showNSFWGateway() {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('nsfw-gateway');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'nsfw-gateway';
+        modal.className = 'nsfw-gateway';
+        modal.innerHTML = `
+            <div class="gateway-content">
+                <h2>IMPERIAL CLEARANCE REQUIRED</h2>
+                <p>This data stream contains mature themes (NSFW). Do you wish to override the safety filter?</p>
+                <div class="gateway-actions">
+                    <button class="decrypt-btn" onclick="confirmNSFW()">PROCEED</button>
+                    <button class="freq-btn" onclick="closeNSFWGateway()">ABORT</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+    }
+    modal.style.display = 'flex';
+}
+
+function closeNSFWGateway() {
+    document.getElementById('nsfw-gateway').style.display = 'none';
+}
+
+function confirmNSFW() {
+    toggleNSFW(); // Existing function in navigation.js
+    closeNSFWGateway();
+}
 /**
  * --- NEW: NAVIGATION HUD LOGIC ---
  */

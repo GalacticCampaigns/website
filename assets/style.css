@@ -434,3 +434,18 @@ body.nsfw-unlocked .nsfw-blur {
     font-weight: bold;
     vertical-align: middle;
 }
+
+/* NSFW GATEWAY MODAL */
+.nsfw-gateway {
+    display: none; position: fixed; inset: 0; 
+    background: rgba(0,0,0,0.9); z-index: 10000;
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(10px);
+}
+.gateway-content {
+    background: #000; border: 2px solid var(--sw-yellow);
+    padding: 30px; max-width: 400px; text-align: center;
+    box-shadow: 0 0 20px var(--sw-yellow);
+}
+.gateway-content h2 { color: var(--sw-yellow); font-family: 'Press Start 2P', monospace; font-size: 1rem; }
+.gateway-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: center; }
