@@ -231,14 +231,20 @@ function renderFeed(filterId) {
     const filtered = fullData.filter(m => validTypes.includes(m.type));
     const messages = filterId === 'all' ? filtered : filtered.filter(m => m.channel_id === filterId || (m.thread && m.thread.id === filterId));
 
-    const currentHash = (filterId === 'all') ? mainChannelId : filterId;
-    if (window.location.hash.split(':')[0] !== `#${currentHash}`) {
-        history.replaceState(null, null, `?c=${campaignSlug}#${currentHash}`);
-    }
-
+    // --- NEW: CHANNEL/THREAD LEVEL NSFW CHECK ---
+    // Check if the current log or specific thread is flagged as NSFW in the registry
+    const isChannelNSFW = logEntry.isNSFW;
+    
     messages.forEach(msg => {
         const isThreadStarter = (msg.thread && msg.thread.id === mainChannelId);
         const actualChannel = isThreadStarter ? msg.thread.id : msg.channel_id;
+
+        // Check if THIS specific message belongs to an NSFW thread
+        const threadRef = logEntry.threads ? logEntry.threads.find(t => t.threadID === msg.channel_id) : null;
+        const isCurrentMsgNSFW = isChannelNSFW || (threadRef && threadRef.isNSFW);
+        
+        // Apply blur class if NSFW and filter is ON
+        const nsfwClass = (isCurrentMsgNSFW && !window.GC_STATE.nsfwEnabled) ? 'nsfw-blur' : (isCurrentMsgNSFW ? 'nsfw-blur off' : '');
 
         if (filterId === 'all' && lastChannelId !== null && actualChannel !== lastChannelId && !isThreadStarter) {
             const shiftName = channelMap[actualChannel] || "PRIMARY FREQUENCY";
@@ -254,9 +260,6 @@ function renderFeed(filterId) {
         group.className = 'message-group';
         group.id = `msg-${msg.id}`;
 
-        const logRef = activeCampaign.logs.find(l => l.channelID === msg.channel_id) || 
-                       activeCampaign.logs.find(l => l.threads && l.threads.some(t => t.threadID === msg.channel_id));
-
         const avatarUrl = msg.author.avatar 
             ? `${remoteBase}${activeCampaign.paths.avatars}${msg.author.id}/${msg.author.avatar}.png` 
             : `${remoteBase}${activeCampaign.paths.avatars}default.png`;
@@ -271,8 +274,8 @@ function renderFeed(filterId) {
                     <span class="timestamp">${new Date(msg.timestamp).toLocaleString()}</span>
                     <a href="javascript:void(0)" class="copy-link-icon" onclick="copyMsgLink(event, '${msg.id}', '${actualChannel}')">🔗</a>
                 </div>
-                <div class="msg-content">${parseMarkdown(msg.content)}</div>
-                ${renderAttachments(msg, logRef)} 
+                <div class="msg-content ${nsfwClass}">${parseMarkdown(msg.content)}</div>
+                ${renderAttachments(msg, logEntry)} 
             </div>
         `;
         output.appendChild(group);
@@ -369,22 +372,30 @@ function toggleFrequencies() {
 // --- 7. UTILITIES & NSFW ---
 function renderAttachments(msg, logRef) {
     if (!msg.attachments || msg.attachments.length === 0 || !logRef) return "";
+    
+    // folder name is based on dataPath + log media path
     const folder = logRef.fileName.replace('.json', '');
-    const mediaReg = window.GC_STATE.mediaRegistry;
+    const mediaReg = window.GC_STATE.mediaRegistry || []; // This is now a simple array of strings
     let html = '<div class="msg-attachments">';
     
     msg.attachments.forEach(att => {
-        const src = `${remoteBase}${activeCampaign.paths.media}${folder}/${att.filename}`;
-        const isNSFW = mediaReg && mediaReg.nsfw_files && mediaReg.nsfw_files.includes(`${folder}/${att.filename}`);
+        const relativePath = `${folder}/${att.filename}`;
+        const src = `${remoteBase}${activeCampaign.paths.media}${relativePath}`;
+        
+        // Simplified check: Does our array of NSFW file paths include this file?
+        const isFileNSFW = mediaReg.includes(relativePath);
 
         if (att.content_type && att.content_type.startsWith('image/')) {
-            // SHIELD LOGIC
-            if (isNSFW && !window.GC_STATE.nsfwEnabled) {
+            if (isFileNSFW && !window.GC_STATE.nsfwEnabled) {
+                // Determine if there is a custom warning for this specific file
+                const warning = (window.GC_STATE.contentWarnings && window.GC_STATE.contentWarnings[relativePath]) 
+                                || "Restricted Data";
+
                 html += `
                 <div class="media-shield">
                     <span class="shield-icon">⚠️</span>
-                    <span>Restricted Data</span>
-                    <button class="decrypt-btn" onclick="toggleNSFW()">Enable Filter</button>
+                    <span>${warning}</span>
+                    <button class="decrypt-btn" onclick="toggleNSFW()">DECRYPT IMAGE</button>
                 </div>`;
             } else {
                 html += `<div class="attachment-item"><a href="${src}" target="_blank"><img src="${src}" class="log-image" loading="lazy"></a></div>`;

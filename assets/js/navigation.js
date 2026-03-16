@@ -182,6 +182,15 @@ function syncNSFWUI() {
     const isEnabled = window.GC_STATE.nsfwEnabled;
     document.body.classList.toggle('nsfw-unlocked', isEnabled);
     
+    // Toggle the .off class on all blurred elements
+    document.querySelectorAll('.nsfw-blur').forEach(el => {
+        if (isEnabled) {
+            el.classList.add('off');
+        } else {
+            el.classList.remove('off');
+        }
+    });
+
     const btn = document.getElementById('nsfw-toggle-btn');
     if (btn) {
         btn.textContent = isEnabled ? "FILTER: OFF (MATURE)" : "FILTER: ON (SECURE)";

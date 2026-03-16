@@ -372,7 +372,9 @@ code {
     pointer-events: none;
     user-select: none;
     transition: filter 0.4s ease;
+    overflow: hidden
 }
+.nsfw-blur.off { filter: none; }
 
 /* When the global filter is unlocked via the footer toggle */
 body.nsfw-unlocked .nsfw-blur {
