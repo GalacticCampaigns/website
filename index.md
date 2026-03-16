@@ -44,96 +44,86 @@ title: Home
 
 <script>
 document.addEventListener("DOMContentLoaded", async function() {
+    // Wait for the Global Navigation to initialize the registry
+    const registry = await getRegistry();
+    if (!registry) return;
+
     const listContainer = document.getElementById('recent-logs-list');
     const hubView = document.getElementById('hub-view');
     const feedTitle = document.getElementById('feed-title');
     const viewAllLink = document.getElementById('view-all-link');
     const wikiPanel = document.getElementById('wiki-panel');
 
-    const params = new URLSearchParams(window.location.search);
-    const slug = params.get('c');
+    const { slug } = getUrlContext();
+    let displayLogs = [];
 
-    try {
-        const res = await fetch("{{ '/assets/campaign-registry.json' | relative_url }}");
-        const registry = await res.json();
-        let displayLogs = [];
+    if (slug && registry.campaigns[slug]) {
+        // --- CAMPAIGN SPECIFIC VIEW ---
+        const campaign = registry.campaigns[slug];
+        feedTitle.innerText = `${campaign.name}: Recent Transmissions`;
+        viewAllLink.href = `${window.site_baseurl}/archives?c=${slug}`;
+        viewAllLink.style.display = 'flex';
 
-        if (slug && registry.campaigns[slug]) {
-            // --- CAMPAIGN SPECIFIC VIEW ---
-            const campaign = registry.campaigns[slug];
-            feedTitle.innerText = `${campaign.name}: Recent Transmissions`;
-            viewAllLink.href = `{{ '/archives' | relative_url }}?c=${slug}`;
-            viewAllLink.style.display = 'flex';
+        if (campaign.paths && campaign.paths.wiki) {
+            wikiPanel.style.display = 'block';
+            document.getElementById('wiki-cta').href = campaign.paths.wiki;
+        }
 
-            if (campaign.paths && campaign.paths.wiki) {
-                wikiPanel.style.display = 'block';
-                document.getElementById('wiki-cta').href = campaign.paths.wiki;
-            }
+        displayLogs = campaign.logs
+            .filter(l => l.isActive !== false)
+            .sort((a, b) => new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp))
+            .slice(0, 3)
+            .map(l => ({ ...l, campaignSlug: slug, campaignName: campaign.name }));
 
-            // Filter active logs, sort by lastMessageTimestamp, take top 3
-            displayLogs = campaign.logs
+    } else {
+        // --- GLOBAL FEED VIEW ---
+        hubView.style.display = 'block';
+        feedTitle.innerText = "Latest Global Signals";
+        
+        let allLogs = [];
+        Object.keys(registry.campaigns).forEach(cSlug => {
+            const camp = registry.campaigns[cSlug];
+            const logsWithMeta = camp.logs
                 .filter(l => l.isActive !== false)
-                .sort((a, b) => new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp))
-                .slice(0, 3)
-                .map(l => ({ ...l, campaignSlug: slug, campaignName: campaign.name }));
-
-        } else {
-            // --- GLOBAL FEED VIEW ---
-            hubView.style.display = 'block';
-            feedTitle.innerText = "Latest Global Signals";
-            
-            // Flatten all logs from all campaigns
-            let allLogs = [];
-            Object.keys(registry.campaigns).forEach(cSlug => {
-                const camp = registry.campaigns[cSlug];
-                const logsWithMeta = camp.logs
-                    .filter(l => l.isActive !== false)
-                    .map(l => ({ 
-                        ...l, 
-                        campaignSlug: cSlug, 
-                        campaignName: camp.name 
-                    }));
-                allLogs = allLogs.concat(logsWithMeta);
-            });
-
-            // Sort all logs by timestamp, take top 5
-            displayLogs = allLogs
-                .sort((a, b) => new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp))
-                .slice(0, 5);
-        }
-
-        if (displayLogs.length === 0) {
-            listContainer.innerHTML = "<li>No active transmissions found.</li>";
-            return;
-        }
-
-        listContainer.innerHTML = ""; 
-        displayLogs.forEach(log => {
-            const li = document.createElement('li');
-            const viewerPath = log.fileName.endsWith('.json') ? "{{ '/logs' | relative_url }}" : "{{ '/entry' | relative_url }}";
-            
-            // Format timestamp for display
-            const dateObj = new Date(log.lastMessageTimestamp);
-            const dateStr = isNaN(dateObj) ? "" : dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-            li.innerHTML = `
-                <a href="${viewerPath}?c=${log.campaignSlug}#${log.channelID}">
-                    <div class="log-info">
-                        <div>
-                            ${!slug ? `<span class="campaign-tag">${log.campaignName}</span>` : ''}
-                            <span class="chapter-title">${log.title}</span>
-                        </div>
-                        <span class="timestamp" style="font-family: monospace; font-size: 0.8rem; color: var(--text-muted);">${dateStr}</span>
-                    </div>
-                    <p class="preview-text">${log.preview || 'Narrative stream active...'}</p>
-                </a>
-            `;
-            listContainer.appendChild(li);
+                .map(l => ({ 
+                    ...l, 
+                    campaignSlug: cSlug, 
+                    campaignName: camp.name 
+                }));
+            allLogs = allLogs.concat(logsWithMeta);
         });
 
-    } catch (e) {
-        console.error("Dashboard Error:", e);
-        listContainer.innerHTML = "<li><span style='color:var(--sw-yellow);'>📡 UPLINK ERROR:</span> Failed to retrieve transmissions.</li>";
+        displayLogs = allLogs
+            .sort((a, b) => new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp))
+            .slice(0, 5);
     }
+
+    if (displayLogs.length === 0) {
+        listContainer.innerHTML = "<li>No active transmissions found.</li>";
+        return;
+    }
+
+    listContainer.innerHTML = ""; 
+    displayLogs.forEach(log => {
+        const li = document.createElement('li');
+        const viewerPath = log.fileName.endsWith('.json') ? `${window.site_baseurl}/logs` : `${window.site_baseurl}/entry`;
+        
+        const dateObj = new Date(log.lastMessageTimestamp);
+        const dateStr = isNaN(dateObj) ? "" : dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+        li.innerHTML = `
+            <a href="${viewerPath}?c=${log.campaignSlug}#${log.channelID}">
+                <div class="log-info">
+                    <div>
+                        ${!slug ? `<span class="campaign-tag">${log.campaignName}</span>` : ''}
+                        <span class="chapter-title">${log.title}</span>
+                    </div>
+                    <span class="timestamp" style="font-family: monospace; font-size: 0.8rem; color: var(--text-muted);">${dateStr}</span>
+                </div>
+                <p class="preview-text">${log.preview || 'Narrative stream active...'}</p>
+            </a>
+        `;
+        listContainer.appendChild(li);
+    });
 });
 </script>

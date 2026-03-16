@@ -89,14 +89,14 @@ title: Archives
 
 <script>
 document.addEventListener("DOMContentLoaded", async function() {
+    const registry = await getRegistry();
     const target = document.getElementById('archive-list-target');
     const titleEl = document.getElementById('archive-title');
     const statusEl = document.getElementById('archive-status');
     
-    const params = new URLSearchParams(window.location.search);
-    const slug = params.get('c');
+    const { slug } = getUrlContext();
 
-    if (!slug) {
+    if (!slug || !registry || !registry.campaigns[slug]) {
         target.innerHTML = `
             <div class="archive-item" style="border-style: dashed; text-align: center; padding: 40px;">
                 <p style="color: var(--sw-yellow);"><strong>NO FREQUENCY SELECTED</strong></p>
@@ -106,60 +106,39 @@ document.addEventListener("DOMContentLoaded", async function() {
         return;
     }
 
-    try {
-        const response = await fetch("{{ '/assets/campaign-registry.json' | relative_url }}?t=" + Date.now());
-        if (!response.ok) throw new Error("Registry offline.");
+    const campaign = registry.campaigns[slug];
+    titleEl.textContent = `📡 ${campaign.name} Archives`;
+    statusEl.textContent = `Displaying all transmissions for ${campaign.name}...`;
+
+    const sorted = campaign.logs.sort((a, b) => b.order - a.order);
+    target.innerHTML = ""; 
+
+    sorted.forEach(log => {
+        const dateStr = log.lastMessageTimestamp ? new Date(log.lastMessageTimestamp).toLocaleDateString(undefined, {
+            year: 'numeric', month: 'long', day: 'numeric'
+        }) : 'Unknown';
+
+        const viewerBase = log.fileName.endsWith('.json') ? `${window.site_baseurl}/logs` : `${window.site_baseurl}/entry`;
+        const item = document.createElement('div');
+        item.className = "archive-item";
         
-        const registry = await response.json();
-        const campaign = registry.campaigns[slug];
+        const statusBadge = log.isActive === false 
+            ? '<span class="status-badge status-dropped">DROPPED</span>' 
+            : '<span class="status-badge status-active">ACTIVE</span>';
 
-        if (!campaign) throw new Error("Invalid Campaign ID.");
-
-        titleEl.textContent = `📡 ${campaign.name} Archives`;
-        statusEl.textContent = `Displaying all transmissions for ${campaign.name}...`;
-
-        // Sort by Chapter Order (Descending)
-        const sorted = campaign.logs.sort((a, b) => b.order - a.order);
-        
-        target.innerHTML = ""; // Clear loader
-
-        sorted.forEach(log => {
-            const dateStr = log.lastMessageTimestamp ? new Date(log.lastMessageTimestamp).toLocaleDateString(undefined, {
-                year: 'numeric', month: 'long', day: 'numeric'
-            }) : 'Unknown';
-
-            // Determine viewer path based on file extension
-            const viewerBase = log.fileName.endsWith('.json') ? "{{ '/logs' | relative_url }}" : "{{ '/entry' | relative_url }}";
-            
-            const item = document.createElement('div');
-            item.className = "archive-item";
-            
-            // Highlight Dropped IDs (Phase 1 logic)
-            const statusBadge = log.isActive === false 
-                ? '<span class="status-badge status-dropped">DROPPED</span>' 
-                : '<span class="status-badge status-active">ACTIVE</span>';
-
-            item.innerHTML = `
-                <div class="archive-header">
-                    <a href="${viewerBase}?c=${slug}#${log.channelID}" class="archive-link">
-                        ${log.title} ${statusBadge}
-                    </a>
-                    <div class="archive-meta">TRANSMITTED: ${dateStr}</div>
-                </div>
-                <div class="archive-meta">
-                    SIGNAL STRENGTH: <span class="signal-tag">${log.messageCount} POSTS</span>
-                </div>
-                ${log.preview ? `<div class="archive-preview">${log.preview}</div>` : ''}
-            `;
-            target.appendChild(item);
-        });
-
-    } catch (e) {
-        console.error("Archive Load Error:", e);
-        target.innerHTML = `
-            <div class="archive-item" style="border-color: #da3633;">
-                <p style="color: #da3633;"><strong>DATABASE ERROR:</strong> ${e.message}</p>
-            </div>`;
-    }
+        item.innerHTML = `
+            <div class="archive-header">
+                <a href="${viewerBase}?c=${slug}#${log.channelID}" class="archive-link">
+                    ${log.title} ${statusBadge}
+                </a>
+                <div class="archive-meta">TRANSMITTED: ${dateStr}</div>
+            </div>
+            <div class="archive-meta">
+                SIGNAL STRENGTH: <span class="signal-tag">${log.messageCount} POSTS</span>
+            </div>
+            ${log.preview ? `<div class="archive-preview">${log.preview}</div>` : ''}
+        `;
+        target.appendChild(item);
+    });
 });
 </script>

@@ -59,39 +59,44 @@ layout: default
     <div id="viewer-output">{{ content }}</div>
 </div>
 
+<script src="{{ '/assets/js/navigation.js' | relative_url }}"></script>
 <script>
 // --- 1. GLOBAL STATE ---
-let registry = null;
-let activeCampaign = null;
-let campaignSlug = "";
+// Remove local registry/activeCampaign to prevent sync errors
 let fullData = [];
 let channelMap = {}; 
 let mainChannelId = null;
-let remoteBase = "";
 
 // --- 2. INITIALIZATION ---
 async function init() {
     try {
-        // 1. Fetch the Registry
-        const res = await fetch("{{ '/assets/campaign-registry.json' | relative_url }}");
-        registry = await res.json();
-        
-        // 2. Identify the Active Campaign
-        const params = new URLSearchParams(window.location.search);
-        campaignSlug = params.get('c') || registry.activeCampaign;
-        activeCampaign = registry.campaigns[campaignSlug];
+        // 1. Ensure Global State is ready
+        // If navigation.js hasn't finished, we wait for it
+        if (!window.GC_STATE || !window.GC_STATE.isReady) {
+            await updateGlobalNav(); 
+        }
 
-        if (!activeCampaign) throw new Error("Unknown Campaign ID.");
+        // 2. Map Global state to local variables for script compatibility
+        // We use the central registry and current campaign hydrated by navigation.js
+        registry = window.GC_STATE.registry;
+        activeCampaign = window.GC_STATE.currentCampaign;
+        campaignSlug = window.GC_STATE.campaignSlug;
+        remoteBase = window.GC_STATE.remoteBase;
 
-        // 3. Stabilize Remote Paths
-        const cleanPath = activeCampaign.dataPath.replace(/^\.\//, "").replace(/\/$/, "");
-        remoteBase = `https://raw.githubusercontent.com/${activeCampaign.repository}/${activeCampaign.branch}/${cleanPath ? cleanPath + '/' : ''}`;
+        // 3. Get Context from URL
+        const { slug, channelId, messageId } = getUrlContext();
         
-        // Update the 'Back to Archives' link
+        if (!activeCampaign) {
+            throw new Error("No active campaign selected. Please return to the Hub.");
+        }
+
+        // 4. Update the 'Back to Archives' link dynamically
         const backBtn = document.getElementById('back-to-archives');
-        if (backBtn) backBtn.href = `{{ '/archives' | relative_url }}?c=${campaignSlug}`;
+        if (backBtn) {
+            backBtn.href = `${window.site_baseurl}/archives?c=${campaignSlug}`;
+        }
 
-        // 4. Build Custom Breadcrumb Dropdown
+        // 5. Build Custom Breadcrumb Dropdown (Chapter List)
         const listTarget = document.getElementById('chapter-list-dropdown');
         if (listTarget) {
             listTarget.innerHTML = "";
@@ -108,7 +113,7 @@ async function init() {
             });
         }
 
-        // 5. --- SHARED LINK & HASH RESOLUTION ---
+        // 6. --- SHARED LINK & HASH RESOLUTION ---
         const rawHash = window.location.hash.substring(1);
         let chanId = null;
         let msgId = null;
@@ -119,15 +124,15 @@ async function init() {
             const primaryId = hashParts[0]; // Could be Chapter ID or Thread ID
             msgId = hashParts[1] || null;
 
-            // Deep Search: Is this ID a Chapter or a Thread?
+            // Deep Search: Is this ID in the CURRENT active campaign?
             let targetChapter = activeCampaign.logs.find(l => l.channelID === primaryId);
             
             if (targetChapter) {
-                // It's a direct Chapter link
+                // Direct Chapter Link
                 chanId = primaryId;
                 autoFilter = 'all';
             } else {
-                // Check if it's a Thread ID instead
+                // Check if it's a Thread ID in the current campaign
                 const parentLog = activeCampaign.logs.find(l => 
                     l.threads && l.threads.some(t => t.threadID === primaryId)
                 );
@@ -135,28 +140,42 @@ async function init() {
                 if (parentLog) {
                     targetChapter = parentLog;
                     chanId = parentLog.channelID;
-                    autoFilter = primaryId; // Filter the view to this thread
-                    // If no specific message ID was provided, jump to the thread start
+                    autoFilter = primaryId; 
                     if (!msgId) msgId = primaryId; 
+                } else {
+                    // CROSS-CAMPAIGN RESOLUTION
+                    // If the ID isn't here, check if it belongs to another campaign
+                    const crossRef = resolveInternalLinkData(primaryId);
+                    if (crossRef.found && crossRef.slug !== campaignSlug) {
+                        console.log(`Redirecting to campaign: ${crossRef.slug}`);
+                        window.location.href = `${window.site_baseurl}/logs?c=${crossRef.slug}#${rawHash}`;
+                        return;
+                    }
                 }
             }
 
             if (targetChapter) {
                 await loadChapter(chanId, msgId, autoFilter);
-                return; // Initialization complete via deep-link
+                return; // Initialization complete
             }
         }
 
-        // 6. Default Fallback: Load the first log in the list
+        // 7. Default Fallback: Load the first log in the current campaign
         if (activeCampaign.logs.length > 0) {
             await loadChapter(activeCampaign.logs[0].channelID);
+        } else {
+            throw new Error("This campaign contains no log entries.");
         }
 
     } catch (e) {
         console.error("Init Error:", e);
         const output = document.getElementById('viewer-output');
         if (output) {
-            output.innerHTML = `<b style="color:var(--sw-yellow)">SYSTEM ERROR:</b> ${e.message}`;
+            output.innerHTML = `
+                <div style="padding: 20px; border: 1px dashed var(--sw-yellow); text-align: center;">
+                    <b style="color:var(--sw-yellow)">SYSTEM ERROR:</b><br>${e.message}<br><br>
+                    <a href="${window.site_baseurl}/" style="color: var(--text-muted)">Return to Hub</a>
+                </div>`;
         }
     }
 }
@@ -325,14 +344,16 @@ function parseMarkdown(text) {
         if (res.found) {
             const targetHash = (res.filterId !== 'all') ? res.filterId : res.parentId;
             const jumpId = urlMsgId ? `:${urlMsgId}` : "";
-            const href = `{{ '/logs' | relative_url }}?c=${res.slug}#${targetHash}${jumpId}`;
+            
+            // FIX: Use window.site_baseurl instead of Liquid tag
+            const href = `${window.site_baseurl}/logs?c=${res.slug}#${targetHash}${jumpId}`;
+            
             const breadcrumb = `${res.isExternal ? res.campaignName + ' > ' : ''}${res.locationName}`;
             const icon = urlMsgId ? ' <span style="font-size:0.8em">✉️</span>' : '';
             return `<a href="${href}" class="channel-link"># ${breadcrumb}${icon}</a>`;
         }
         return match;
     });
-
     // 7. Naked External Image URLs (Auto-Embed)
         // Regex now greedily captures everything after the extension to handle Wikia paths and query params
             const imgRegex = /(https?:\/\/[^\s<]+?\.(?:png|jpg|jpeg|gif|webp)[^\s<]*)/gi;
@@ -486,11 +507,13 @@ function silentLoadAvatars() {
 
 function copyMsgLink(event, msgId, actualChannel) {
     event.preventDefault();
-    const url = `${window.location.origin}${window.location.pathname}?c=${campaignSlug}#${actualChannel}:${msgId}`;
+    // Use site_baseurl and current campaignSlug from state
+    const url = `${window.location.origin}${window.site_baseurl}/logs?c=${window.GC_STATE.campaignSlug}#${actualChannel}:${msgId}`;
     navigator.clipboard.writeText(url).then(() => {
         const icon = event.target;
+        const original = icon.innerText;
         icon.innerText = "COPIED";
-        setTimeout(() => icon.innerText = "🔗", 1500);
+        setTimeout(() => icon.innerText = original, 1500);
     });
 }
 
@@ -504,5 +527,3 @@ window.onclick = (e) => {
 
 document.addEventListener("DOMContentLoaded", init);
 </script>
-
-

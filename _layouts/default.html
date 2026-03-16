@@ -90,87 +90,17 @@
 </footer>
 
 <script>
-let registryData = null;
-
-function getCampaignSlug() {
-    return new URLSearchParams(window.location.search).get('c');
-}
-
-async function initNavigation() {
-    try {
-        const res = await fetch("{{ '/assets/campaign-registry.json' | relative_url }}");
-        registryData = await res.json();
-        const dropdown = document.getElementById('campaign-dropdown');
-        const currentSlug = getCampaignSlug();
-
-        // Populate Dropdown
-        Object.keys(registryData.campaigns).forEach(slug => {
-            const campaign = registryData.campaigns[slug];
-            const opt = document.createElement('option');
-            opt.value = slug;
-            opt.textContent = campaign.name;
-            dropdown.appendChild(opt);
-        });
-
-        // Apply context
-        if (currentSlug && registryData.campaigns[currentSlug]) {
-            applyCampaignContext(currentSlug);
-        } else {
-            showHubContext();
-        }
-    } catch (e) {
-        console.error("Registry load failed:", e);
-    }
-}
-
-function applyCampaignContext(slug) {
-    const campaign = registryData.campaigns[slug];
-    
-    // Update the Site Logo dynamically
-    const logoImg = document.getElementById('site-logo');
-    if (campaign.paths && campaign.paths.logo) {
-        // Points to the remote repo logo
-        logoImg.src = `${remoteBase}${campaign.paths.logo}`;
-    } else {
-        // Fallback to default site banner
-        logoImg.src = "{{ '/assets/gc_banner.png' | relative_url }}";
-    }
-    
-    // Update Title to Campaign Name
-    document.getElementById('nav-brand-text').textContent = campaign.name;
-    document.getElementById('nav-brand-text').href = `{{ '/' | relative_url }}?c=${slug}`;
-    
-    // Update Flavor
-    document.getElementById('flavor-text').textContent = campaign.description || "Decrypting narrative stream...";
-
-    // Update Links
-    document.getElementById('nav-archives').href = `{{ '/archives' | relative_url }}?c=${slug}`;
-    document.getElementById('nav-archives').style.display = 'inline-block';
-
-    const wikiLink = document.getElementById('nav-wiki');
-    if (campaign.paths && campaign.paths.wiki) {
-        wikiLink.href = campaign.paths.wiki;
-        wikiLink.style.display = 'inline-block';
-    } else {
-        wikiLink.style.display = 'none';
-    }
-}
-
-function showHubContext() {
-    document.getElementById('nav-brand-text').textContent = "Galactic Campaigns";
-    document.getElementById('nav-brand-text').href = "{{ '/' | relative_url }}";
-    document.querySelectorAll('.campaign-link').forEach(el => el.style.display = 'none');
-}
-
+    // Bridge Jekyll variables to External JS
+    window.site_baseurl = "{{ '' | relative_url }}";
+</script>
+<script src="{{ '/assets/js/navigation.js' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M' }}"></script>
+<script>
 function switchCampaign(slug) {
-    if (slug === "hub" || !slug) {
-        window.location.href = "{{ '/' | relative_url }}";
-    } else {
-        window.location.href = `{{ '/' | relative_url }}?c=${slug}`;
-    }
+    const url = (slug === "hub" || !slug) ? window.site_baseurl + "/" : window.site_baseurl + "/?c=" + slug;
+    window.location.href = url;
 }
 
-document.addEventListener("DOMContentLoaded", initNavigation);
+document.addEventListener("DOMContentLoaded", updateGlobalNav);
 </script>
 
 </body>
