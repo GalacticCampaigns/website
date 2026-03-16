@@ -169,26 +169,28 @@ async function updateGlobalNav() {
 }
 
 /**
- * --- NEW: NSFW LOGIC ---
+ * --- NSFW LOGIC ---
  */
 function toggleNSFW() {
     window.GC_STATE.nsfwEnabled = !window.GC_STATE.nsfwEnabled;
     localStorage.setItem('GC_NSFW_ENABLED', window.GC_STATE.nsfwEnabled);
+    
+    // 1. Sync the CSS classes immediately for text blurring
     syncNSFWUI();
-    document.dispatchEvent(new CustomEvent('NSFWStateChanged', { detail: window.GC_STATE.nsfwEnabled }));
+    
+    // 2. Notify the page that it needs to swap media shields
+    document.dispatchEvent(new CustomEvent('NSFWStateChanged', { 
+        detail: { enabled: window.GC_STATE.nsfwEnabled } 
+    }));
 }
 
 function syncNSFWUI() {
     const isEnabled = window.GC_STATE.nsfwEnabled;
     document.body.classList.toggle('nsfw-unlocked', isEnabled);
     
-    // Toggle the .off class on all blurred elements
+    // Handle the .off class for text elements already on screen
     document.querySelectorAll('.nsfw-blur').forEach(el => {
-        if (isEnabled) {
-            el.classList.add('off');
-        } else {
-            el.classList.remove('off');
-        }
+        el.classList.toggle('off', isEnabled);
     });
 
     const btn = document.getElementById('nsfw-toggle-btn');

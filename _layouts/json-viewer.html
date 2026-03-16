@@ -173,11 +173,16 @@ async function init() {
 
 // Listen for global NSFW toggle to re-render attachments
 document.addEventListener('NSFWStateChanged', () => {
-    const { slug, channelId } = getUrlContext();
-    const currentFilter = window.location.hash.substring(1).split(':')[0] || 'all';
-    renderFeed(currentFilter);
+    // If we don't have data loaded yet, don't try to render
+    if (!fullData || fullData.length === 0) return;
+    
+    // Get current context so we don't lose our place
+    const { channelId } = getUrlContext();
+    const currentHash = window.location.hash.substring(1).split(':')[0] || 'all';
+    
+    // Re-render the feed to swap shields for images
+    renderFeed(currentHash);
 });
-
 // Update HUD visibility on scroll
 window.addEventListener('scroll', () => {
     if (window.GC_STATE.hasJumped) {
@@ -232,7 +237,9 @@ async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
 // --- 4. RENDERING ENGINE ---
 function renderFeed(filterId) {
     const output = document.getElementById('viewer-output');
-    output.innerHTML = "";
+    if (!output) return;
+    
+    output.innerHTML = ""; // Clear existing
     let lastChannelId = null;
 
     const logEntry = activeCampaign.logs.find(l => l.channelID === mainChannelId) || activeCampaign.logs[0];
@@ -242,24 +249,30 @@ function renderFeed(filterId) {
     const filtered = fullData.filter(m => validTypes.includes(m.type));
     const messages = filterId === 'all' ? filtered : filtered.filter(m => m.channel_id === filterId || (m.thread && m.thread.id === filterId));
 
-    // --- CHANNEL/THREAD LEVEL NSFW CHECK ---
+    // --- HASH UPDATE LOGIC ---
+    const { messageId } = getUrlContext();
+    const currentHashBase = (filterId === 'all') ? mainChannelId : filterId;
+    const newHash = messageId ? `${currentHashBase}:${messageId}` : currentHashBase;
+
+    // Only update if the base channel has actually changed to prevent scroll jumping
+    if (window.location.hash !== `#${newHash}`) {
+        history.replaceState(null, null, `?c=${campaignSlug}#${newHash}`);
+    }
+
+    // --- RENDER LOOP ---
     const isChannelNSFW = logEntry.isNSFW;
     
     messages.forEach(msg => {
         const isThreadStarter = (msg.thread && msg.thread.id === mainChannelId);
         const actualChannel = isThreadStarter ? msg.thread.id : msg.channel_id;
-
         const threadRef = logEntry.threads ? logEntry.threads.find(t => t.threadID === msg.channel_id) : null;
         const isCurrentMsgNSFW = isChannelNSFW || (threadRef && threadRef.isNSFW);
         
-        // 1. Determine if we are currently blurring this specific message
         const isCurrentlyBlurred = isCurrentMsgNSFW && !window.GC_STATE.nsfwEnabled;
         const nsfwClass = isCurrentlyBlurred ? 'nsfw-blur' : (isCurrentMsgNSFW ? 'nsfw-blur off' : '');
 
-        // 2. Create the Clickable Badge for the header if it's an NSFW message
-        // This appears regardless of blur state, but we can make it more prominent if blurred
         const nsfwBadge = isCurrentMsgNSFW 
-            ? `<span class="nsfw-badge" style="cursor:pointer; margin-left:8px;" onclick="showNSFWGateway()" title="Mature Content: Click to Decrypt">NSFW</span>` 
+            ? `<span class="nsfw-badge" style="cursor:pointer; margin-left:8px;" onclick="showNSFWGateway()">NSFW</span>` 
             : '';
 
         if (filterId === 'all' && lastChannelId !== null && actualChannel !== lastChannelId && !isThreadStarter) {
@@ -390,26 +403,20 @@ function toggleFrequencies() {
 function renderAttachments(msg, logRef) {
     if (!msg.attachments || msg.attachments.length === 0 || !logRef) return "";
     
-    // 1. Identify the folder (e.g., "ch1_descending-into-darkness")
     const folder = logRef.fileName.replace('.json', '');
     const mediaReg = window.GC_STATE.mediaRegistry || [];
     let html = '<div class="msg-attachments">';
     
     msg.attachments.forEach(att => {
-        // 2. PATH CONSTRUCTION
-        // Match string: "ch1_descending-into-darkness/image.jpg"
         const registryMatchPath = `${folder}/${att.filename}`;
-        
-        // Actual Source: "remote_url/Chapter_Logs/media/ch1_descending-into-darkness/image.jpg"
         const src = `${window.GC_STATE.remoteBase}${window.GC_STATE.currentCampaign.paths.media}${folder}/${att.filename}`;
         
-        // 3. CHECK NSFW STATUS
-        const isFileNSFW = mediaReg.includes(registryMatchPath);
+        // BETTER CHECK: Look for the filename/folder combo anywhere in the registry strings
+        // This solves the "media/" prefix mismatch automatically
+        const isFileNSFW = mediaReg.some(entry => entry.endsWith(registryMatchPath));
 
         if (att.content_type && att.content_type.startsWith('image/')) {
-            // 4. SHIELD LOGIC
             if (isFileNSFW && !window.GC_STATE.nsfwEnabled) {
-                // Pull custom warning from registry or use default
                 const warning = (window.GC_STATE.contentWarnings && window.GC_STATE.contentWarnings[registryMatchPath]) 
                                 || "RESTRICTED DATA";
 
@@ -425,26 +432,12 @@ function renderAttachments(msg, logRef) {
                     </div>
                 </div>`;
             } else {
-                // 5. RENDER UNLOCKED IMAGE
-                html += `
-                <div class="attachment-item">
-                    <a href="${src}" target="_blank">
-                        <img src="${src}" class="log-image" loading="lazy" alt="Atmospheric Data">
-                    </a>
-                </div>`;
+                html += `<div class="attachment-item"><a href="${src}" target="_blank"><img src="${src}" class="log-image" loading="lazy"></a></div>`;
             }
         } else {
-            // 6. RENDER NON-IMAGE FILES (PDFs, etc.)
-            html += `
-            <div class="attachment-item">
-                <a href="${src}" target="_blank" class="file-link">
-                    <span class="file-icon">📄</span> 
-                    <span class="file-name">${att.filename}</span>
-                </a>
-            </div>`;
+            html += `<div class="attachment-item"><a href="${src}" target="_blank" class="file-link">📄 ${att.filename}</a></div>`;
         }
     });
-    
     return html + '</div>';
 }
 
@@ -470,12 +463,31 @@ function silentLoadAvatars() {
 
 function copyMsgLink(event, msgId, actualChannel) {
     event.preventDefault();
-    const url = `${window.location.origin}${window.site_baseurl}/logs?c=${window.GC_STATE.campaignSlug}#${actualChannel}:${msgId}`;
+    
+    // 1. Ensure we use the current campaign slug from the global state
+    const slug = window.GC_STATE.campaignSlug;
+    
+    // 2. Construct the "Snub" (The specific frequency + message ID)
+    // actualChannel is passed from renderFeed and is already the correct ID
+    const snub = `${actualChannel}:${msgId}`;
+    
+    // 3. Build the absolute URL
+    const url = `${window.location.origin}${window.site_baseurl}/logs?c=${slug}#${snub}`;
+    
+    // 4. Copy to Clipboard
     navigator.clipboard.writeText(url).then(() => {
         const icon = event.target;
         const original = icon.innerText;
         icon.innerText = "COPIED";
-        setTimeout(() => icon.innerText = original, 1500);
+        
+        // Visual feedback
+        icon.style.color = "var(--sw-yellow)";
+        setTimeout(() => {
+            icon.innerText = original;
+            icon.style.color = "";
+        }, 1500);
+    }).catch(err => {
+        console.error("Link capture failed:", err);
     });
 }
 
