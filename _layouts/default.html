@@ -27,12 +27,15 @@
 .site-logo { max-height: 150px; filter: drop-shadow(0 0 20px rgba(97, 218, 251, 0.15)); }
 .flavor-text { color: var(--sw-yellow); font-style: italic; margin-top: 20px; font-family: monospace; font-size: 0.85rem; }
 
-/* 3. FOOTER */
-.site-footer {
-    margin-top: 80px; padding: 40px 20px; text-align: center;
-    border-top: 1px solid var(--gh-border); font-size: 0.8rem;
-    color: var(--text-muted); background: rgba(13, 17, 23, 0.3);
+/* 3. FOOTER SPECIFIC STYLES */
+.nsfw-toggle-container { margin-top: 20px; }
+#nsfw-toggle-btn {
+    background: transparent; border: 1px solid var(--gh-border); color: var(--text-muted);
+    padding: 6px 12px; font-family: monospace; font-size: 0.75rem; cursor: pointer;
+    transition: all 0.3s; border-radius: 4px; text-transform: uppercase;
 }
+#nsfw-toggle-btn:hover { border-color: var(--sw-yellow); color: var(--sw-yellow); }
+#nsfw-toggle-btn.active { border-color: #ff4444; color: #ff4444; box-shadow: 0 0 10px rgba(255, 68, 68, 0.2); }
 
 @media (max-width: 900px) {
     .hero-section { padding: 40px 15px; }
@@ -40,9 +43,12 @@
 }
 </style>
 
-
 </head>
-<body>
+<body class="mode-sfw"> <div class="comms-hud">
+    <button class="hud-btn" id="hud-return" title="Return to Position" onclick="returnToPosition()" style="display:none;">↩</button>
+    <button class="hud-btn" onclick="jumpToTop()" title="Jump to Top">▲</button>
+    <button class="hud-btn" onclick="jumpToBottom()" title="Jump to Bottom">▼</button>
+</div>
 
 <nav class="site-nav">
     <div class="nav-inner" style="display:flex; width:100%; align-items:center; justify-content: space-between;">
@@ -54,7 +60,7 @@
                 <select id="campaign-dropdown" onchange="switchCampaign(this.value)">
                     <option value="" disabled selected></option>
                     <option value="hub">-- Global Hub --</option>
-                    </select>
+                </select>
                 <span class="selector-arrow">▼</span>
             </div>
         </div>
@@ -67,10 +73,10 @@
     </div>
 </nav>
 
-<header class="hero-section" style="text-align: center; padding: 40px 20px;">
+<header class="hero-section">
     <div class="container-hero">
-        <img src="{{ '/assets/gc_banner.png' | relative_url }}" alt="Logo" id="site-logo" class="site-logo" style="max-height: 150px; width: auto;">
-        <p id="flavor-text" class="flavor-text" style="color: var(--sw-yellow); font-style: italic; margin-top: 15px;">
+        <img src="{{ '/assets/gc_banner.png' | relative_url }}" alt="Logo" id="site-logo" class="site-logo">
+        <p id="flavor-text" class="flavor-text">
             Select a frequency to begin decryption.
         </p>
     </div>
@@ -80,17 +86,21 @@
     {{ content }}
 </main>
 
-<footer style="margin-top: 80px; padding: 40px 20px; text-align: center; border-top: 1px solid var(--gh-border); font-size: 0.8rem; color: var(--text-muted);">
+<footer class="site-footer" style="margin-top: 80px; padding: 40px 20px; text-align: center; border-top: 1px solid var(--gh-border); font-size: 0.8rem; color: var(--text-muted);">
     <div style="margin-bottom: 15px; display: flex; justify-content: center; gap: 20px;">
-        <a href="{{ '/PrivacyPolicy' | relative_url }}" style="color: var(--text-muted); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.3s;" onmouseover="this.style.borderColor='var(--accent-blue)'" onmouseout="this.style.borderColor='transparent'">Privacy Policy</a>
-        <a href="{{ '/TermsofService' | relative_url }}" style="color: var(--text-muted); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color 0.3s;" onmouseover="this.style.borderColor='var(--accent-blue)'" onmouseout="this.style.borderColor='transparent'">Terms of Service</a>
+        <a href="{{ '/PrivacyPolicy' | relative_url }}" style="color: var(--text-muted); text-decoration: none;">Privacy Policy</a>
+        <a href="{{ '/TermsofService' | relative_url }}" style="color: var(--text-muted); text-decoration: none;">Terms of Service</a>
     </div>
-    <p>Logged into Galactic Registry Engine v3.0</p>
+
+    <div class="nsfw-toggle-container">
+        <button id="nsfw-toggle-btn" onclick="toggleNSFW()">FILTER: ON (SECURE)</button>
+    </div>
+
+    <p style="margin-top:20px;">Logged into Galactic Registry Engine v3.0</p>
     <p>Last Data Sync: {{ site.time | date: "%Y-%m-%d %H:%M:%S" }} UTC</p>
 </footer>
 
 <script>
-    // Bridge Jekyll variables to External JS
     window.site_baseurl = "{{ '' | relative_url }}";
 </script>
 <script src="{{ '/assets/js/navigation.js' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M' }}"></script>
@@ -99,8 +109,6 @@ function switchCampaign(slug) {
     const url = (slug === "hub" || !slug) ? window.site_baseurl + "/" : window.site_baseurl + "/?c=" + slug;
     window.location.href = url;
 }
-
-document.addEventListener("DOMContentLoaded", updateGlobalNav);
 </script>
 
 </body>

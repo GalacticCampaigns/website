@@ -315,5 +315,120 @@ code {
 @media (max-width: 600px) {
     .timestamp { display: none; } /* Hide time on very small screens to keep rows single-line */
     .username { display: block; width: 100%; margin-bottom: 2px; }
-    .nav-inner { gap: 4px; }
+    .nav-inner { gap: 4px; }    
+    .comms-hud {        bottom: 20px;         right: 20px;    }
+    .hud-btn {        width: 40px;        height: 40px;        font-size: 1rem;    }
+}
+/* --- 10. FLOATING COMMS HUD --- */
+.comms-hud {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 9999;
+}
+
+.hud-btn {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: var(--secondary-bg);
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.hud-btn:hover {
+    background: var(--accent-blue);
+    color: var(--primary-bg);
+    transform: translateY(-3px);
+    box-shadow: 0 0 15px rgba(97, 218, 251, 0.4);
+}
+
+#hud-return {
+    border-color: var(--sw-yellow);
+    color: var(--sw-yellow);
+}
+
+#hud-return:hover {
+    background: var(--sw-yellow);
+    color: var(--primary-bg);
+}
+
+/* --- 11. NSFW & CONTENT SHIELDING --- */
+
+/* Text-based blurs for Archive/Hub previews */
+.nsfw-blur {
+    filter: blur(8px);
+    pointer-events: none;
+    user-select: none;
+    transition: filter 0.4s ease;
+}
+
+/* When the global filter is unlocked via the footer toggle */
+body.nsfw-unlocked .nsfw-blur {
+    filter: blur(0);
+    pointer-events: auto;
+    user-select: auto;
+}
+
+/* Media Shielding (Placeholder for blocked images) */
+.media-shield {
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 16 / 9;
+    background: #0d1117;
+    border: 1px dashed #ff4444;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin: 10px 0;
+    border-radius: 4px;
+    color: #ff4444;
+    font-family: monospace;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.shield-icon {
+    font-size: 2rem;
+    opacity: 0.8;
+}
+
+.decrypt-btn {
+    background: transparent;
+    border: 1px solid #ff4444;
+    color: #ff4444;
+    padding: 5px 15px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.decrypt-btn:hover {
+    background: #ff4444;
+    color: white;
+}
+
+/* NSFW Badge for List Items */
+.nsfw-badge {
+    background: #ff4444;
+    color: white;
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-right: 8px;
+    font-weight: bold;
+    vertical-align: middle;
 }

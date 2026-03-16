@@ -1,0 +1,22 @@
+{
+  "activeCampaign": "template",
+  "campaigns": {    
+    "template": {
+      "name": "",
+      "description": "",
+      "repository": "",
+      "branch": "",
+      "dataPath": "./",
+      "paths": {
+        "json": "json/",
+        "emoji": "emojis/",
+        "media": "media/",
+        "avatars": "avatars/",
+        "logo": "",
+        "wiki": "",
+        "mediaRegistry": ""
+      },
+      "logs": []
+    }
+  }
+}

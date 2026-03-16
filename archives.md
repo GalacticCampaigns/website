@@ -113,6 +113,8 @@ document.addEventListener("DOMContentLoaded", async function() {
     const sorted = campaign.logs.sort((a, b) => b.order - a.order);
     target.innerHTML = ""; 
 
+    // Locate the sorted.forEach loop in archives.md and replace the item.innerHTML section:
+
     sorted.forEach(log => {
         const dateStr = log.lastMessageTimestamp ? new Date(log.lastMessageTimestamp).toLocaleDateString(undefined, {
             year: 'numeric', month: 'long', day: 'numeric'
@@ -126,17 +128,21 @@ document.addEventListener("DOMContentLoaded", async function() {
             ? '<span class="status-badge status-dropped">DROPPED</span>' 
             : '<span class="status-badge status-active">ACTIVE</span>';
 
+        // NEW: Check for NSFW flag
+        const nsfwClass = log.isNSFW ? 'nsfw-blur' : '';
+        const nsfwBadge = log.isNSFW ? '<span class="nsfw-badge">NSFW</span>' : '';
+
         item.innerHTML = `
             <div class="archive-header">
                 <a href="${viewerBase}?c=${slug}#${log.channelID}" class="archive-link">
-                    ${log.title} ${statusBadge}
+                    ${nsfwBadge}${log.title} ${statusBadge}
                 </a>
                 <div class="archive-meta">TRANSMITTED: ${dateStr}</div>
             </div>
             <div class="archive-meta">
                 SIGNAL STRENGTH: <span class="signal-tag">${log.messageCount} POSTS</span>
             </div>
-            ${log.preview ? `<div class="archive-preview">${log.preview}</div>` : ''}
+            ${log.preview ? `<div class="archive-preview ${nsfwClass}">${log.preview}</div>` : ''}
         `;
         target.appendChild(item);
     });

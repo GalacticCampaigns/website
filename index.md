@@ -103,6 +103,8 @@ document.addEventListener("DOMContentLoaded", async function() {
         return;
     }
 
+    // Locate the loop at the bottom of index.md and replace the li.innerHTML section:
+
     listContainer.innerHTML = ""; 
     displayLogs.forEach(log => {
         const li = document.createElement('li');
@@ -111,16 +113,21 @@ document.addEventListener("DOMContentLoaded", async function() {
         const dateObj = new Date(log.lastMessageTimestamp);
         const dateStr = isNaN(dateObj) ? "" : dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
+        // NEW: Check for NSFW flag
+        const nsfwClass = log.isNSFW ? 'nsfw-blur' : '';
+        const nsfwBadge = log.isNSFW ? '<span class="nsfw-badge">NSFW</span>' : '';
+
         li.innerHTML = `
             <a href="${viewerPath}?c=${log.campaignSlug}#${log.channelID}">
                 <div class="log-info">
                     <div>
                         ${!slug ? `<span class="campaign-tag">${log.campaignName}</span>` : ''}
+                        ${nsfwBadge}
                         <span class="chapter-title">${log.title}</span>
                     </div>
                     <span class="timestamp" style="font-family: monospace; font-size: 0.8rem; color: var(--text-muted);">${dateStr}</span>
                 </div>
-                <p class="preview-text">${log.preview || 'Narrative stream active...'}</p>
+                <p class="preview-text ${nsfwClass}">${log.preview || 'Narrative stream active...'}</p>
             </a>
         `;
         listContainer.appendChild(li);

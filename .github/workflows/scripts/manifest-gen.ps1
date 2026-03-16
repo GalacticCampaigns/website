@@ -44,6 +44,21 @@ $SubFolder = $TargetCampaignObj.paths.json.Trim('/')
 # Joins them safely: "swWhispers-Void/json"
 $FullRemotePath = if ([string]::IsNullOrWhiteSpace($BaseFolder)) { $SubFolder } else { "$BaseFolder/$SubFolder" }
 
+# --- NEW: MEDIA REGISTRY DETECTION ---
+# We check the root of the dataPath for the registry file
+$MediaRegistryFileName = "media-registry.json"
+$MediaRegistryRemotePath = if ([string]::IsNullOrWhiteSpace($BaseFolder)) { $MediaRegistryFileName } else { "$BaseFolder/$MediaRegistryFileName" }
+$MediaApiUrl = "https://api.github.com/repos/$($TargetCampaignObj.repository)/contents/$($MediaRegistryRemotePath)?ref=$($TargetCampaignObj.branch)"
+
+try {
+    $MediaCheck = Invoke-RestMethod -Uri $MediaApiUrl -Method Get -Headers $RequestHeaders
+    $TargetCampaignObj.paths.mediaRegistry = $MediaRegistryFileName
+    if ($EnableDebugMode) { Write-Host "[DEBUG] Media Registry detected and linked." -ForegroundColor Green }
+} catch {
+    $TargetCampaignObj.paths.mediaRegistry = $null
+    if ($EnableDebugMode) { Write-Host "[DEBUG] No Media Registry found at $MediaRegistryRemotePath" -ForegroundColor Gray }
+}
+
 $GitHubApiUrl = "https://api.github.com/repos/$($TargetCampaignObj.repository)/contents/$($FullRemotePath)?ref=$($TargetCampaignObj.branch)"
 
 if ($EnableDebugMode) { Write-Host "[DEBUG] API Target URL: $GitHubApiUrl" -ForegroundColor Yellow }

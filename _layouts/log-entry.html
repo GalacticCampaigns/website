@@ -9,7 +9,7 @@ layout: default
     background-color: transparent !important;
     color: var(--gh-text) !important;
     font-family: 'Open Sans', sans-serif !important;
-    padding-bottom: 120px; /* Space for sticky footer */
+    padding-bottom: 120px; 
   }
   .markdown-body h1, .markdown-body h2, .markdown-body h3 {
     border-bottom: 1px solid var(--gh-border) !important;
@@ -85,7 +85,7 @@ layout: default
         </div>
     </header>
 
-    <div class="markdown-body">
+    <div id="markdown-container" class="markdown-body">
         {{ content }}
     </div>
 
@@ -123,28 +123,40 @@ layout: default
   </article>
 </div>
 
+<script src="{{ '/assets/js/navigation.js' | relative_url }}"></script>
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
+    // 0. Ensure global state is loaded
+    if (!window.GC_STATE || !window.GC_STATE.isReady) {
+        await updateGlobalNav(); 
+    }
+
     const sidebar = document.getElementById('toc-sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     const openBtn = document.getElementById('toc-open-trigger'); 
     const closeBtn = document.querySelector('.toc-close');
     const tocTarget = document.getElementById('toc-target');
+    const markdownContainer = document.getElementById('markdown-container');
     
-    // 1. Maintain Campaign Slug across links
+    // 1. Maintain Campaign Context
     const params = new URLSearchParams(window.location.search);
     const slug = params.get('c');
     
     if (slug) {
-        // Update Back Button
         document.getElementById('dynamic-back-btn').href = `{{ '/archives' | relative_url }}?c=${slug}`;
-        
-        // Update Pagination Links so the slug follows the user
         document.querySelectorAll('.pagination-link').forEach(link => {
             const url = new URL(link.href);
             url.searchParams.set('c', slug);
             link.href = url.toString();
         });
+
+        // Apply NSFW Shielding if current log entry is flagged
+        const activeCampaign = window.GC_STATE.currentCampaign;
+        const currentLog = activeCampaign?.logs.find(l => window.location.pathname.includes(l.fileName.replace('.md', '')));
+        
+        if (currentLog && currentLog.isNSFW) {
+            markdownContainer.classList.add('nsfw-blur');
+        }
     } else {
         document.getElementById('dynamic-back-btn').href = `{{ '/archives' | relative_url }}`;
     }
