@@ -460,6 +460,14 @@ body.nsfw-unlocked .nsfw-blur,
     vertical-align: middle;
     text-transform: uppercase;
     letter-spacing: 1px;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.nsfw-badge:hover {
+    background-color: #da3633; /* A more "Alert" red */
+    box-shadow: 0 0 10px rgba(218, 54, 51, 0.5);
+    transform: scale(1.05);
 }
 
 /* NSFW GATEWAY MODAL */

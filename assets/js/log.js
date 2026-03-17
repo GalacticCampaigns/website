@@ -167,18 +167,14 @@ function renderFeed(filterId) {
     output.innerHTML = "";
     let lastRenderedChannelId = null;
 
-    // Determine the log entry for global context
     const logEntry = activeCampaign.logs.find(l => l.channelID === mainChannelId) || activeCampaign.logs[0];
-    
-    // Update Breadcrumbs
     const displayTitle = (filterId === 'all') ? "Combined Feed" : (filterId === mainChannelId ? "Primary Feed" : channelMap[filterId]);
     updateBreadcrumb(logEntry.title, filterId !== 'all' ? displayTitle : null);
 
-    // Filter by valid types (Narrative)
     const validTypes = [0, 19];
     const filteredTimeline = fullData.filter(m => validTypes.includes(m.type));
 
-    // Update URL Hash for state persistence
+    // Update URL Hash
     const { messageId } = getUrlContext();
     const currentHashBase = filterId; 
     const newHash = messageId ? `${currentHashBase}:${messageId}` : currentHashBase;
@@ -192,59 +188,56 @@ function renderFeed(filterId) {
         const isThreadStarter = (msg.thread && msg.thread.id === mainChannelId);
         const actualChannel = isThreadStarter ? msg.thread.id : msg.channel_id;
         
-        // 1. Visibility Logic
         let shouldShowContent = false;
         let shouldShowTransition = false;
 
+        // --- View Logic ---
         if (filterId === 'all') {
-            // Combined: Show everything
             shouldShowContent = true;
             shouldShowTransition = (actualChannel !== lastRenderedChannelId);
         } else if (filterId === mainChannelId) {
-            // Primary Feed: Show primary content, only shifts for threads
             if (actualChannel === mainChannelId) {
                 shouldShowContent = true;
             } else {
                 shouldShowTransition = (actualChannel !== lastRenderedChannelId);
             }
         } else {
-            // Thread View: Show thread content, only shifts back to Primary
             if (actualChannel === filterId) {
                 shouldShowContent = true;
             } else if (actualChannel === mainChannelId) {
-                // Threads only link back to primary, not other side-threads
                 shouldShowTransition = (actualChannel !== lastRenderedChannelId);
             }
         }
 
-        // 2. Render Transition Marker (Frequency Shift)
+        // --- Frequency Shift Logic ---
         if (shouldShowTransition && lastRenderedChannelId !== null) {
             const shiftName = channelMap[actualChannel] || "PRIMARY FREQUENCY";
             const transition = document.createElement('div');
             transition.className = 'channel-transition';
-            
-            // If in a non-combined view, this link switches the view. 
-            // If in combined, it just jumps to the message.
             transition.innerHTML = `📡 FREQUENCY SHIFT >> ${shiftName}`;
+            
+            // THE FIX: Switch feed AND jump to the specific message
             transition.onclick = () => {
                 if (filterId === 'all') {
+                    // Already in combined, just scroll to the post
                     jumpToMessage(msg.id);
                 } else {
+                    // Switch to the target feed
                     renderFeed(actualChannel);
+                    // Wait for the render to complete, then jump
                     requestAnimationFrame(() => {
-                        setTimeout(() => jumpToMessage(msg.id), 300);
+                        setTimeout(() => jumpToMessage(msg.id), 100);
                     });
                 }
             };
             output.appendChild(transition);
         }
 
-        // Update tracking for transitions
         if (shouldShowContent || shouldShowTransition) {
             lastRenderedChannelId = actualChannel;
         }
 
-        // 3. Render Message Content
+        // --- Message Rendering ---
         if (shouldShowContent) {
             const threadRef = logEntry.threads ? logEntry.threads.find(t => t.threadID === msg.channel_id) : null;
             const isPostNSFW = detectNSFW(msg);
@@ -429,10 +422,20 @@ function renderAttachments(msg, logRef) {
 function jumpToMessage(msgId) {
     const cleanId = msgId.startsWith('msg-') ? msgId : `msg-${msgId}`;
     const target = document.getElementById(cleanId);
+    
     if (target) {
+        // Scroll to the element
         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Add a "Ping" effect (CSS animation)
         target.classList.add('highlight-flash');
-        setTimeout(() => target.classList.remove('highlight-flash'), 3000);
+        
+        // Remove highlight after a few seconds
+        setTimeout(() => {
+            target.classList.remove('highlight-flash');
+        }, 3000);
+    } else {
+        console.warn(`Jump failed: ${cleanId} not found in current feed.`);
     }
 }
 

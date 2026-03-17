@@ -31,15 +31,14 @@ layout: default
     letter-spacing: 2px; text-transform: uppercase; cursor: pointer; 
 }
 
-.nsfw-badge {
-    transition: all 0.2s ease;
-    user-select: none;
+
+@keyframes highlightPing {
+    0% { background-color: rgba(255, 215, 0, 0.3); border-left: 4px solid var(--sw-yellow); }
+    100% { background-color: transparent; border-left: 4px solid transparent; }
 }
 
-.nsfw-badge:hover {
-    background-color: #da3633; /* A more "Alert" red */
-    box-shadow: 0 0 10px rgba(218, 54, 51, 0.5);
-    transform: scale(1.05);
+.highlight-flash {
+    animation: highlightPing 3s ease-out;
 }
 </style>
 
