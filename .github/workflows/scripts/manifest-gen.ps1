@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Campaign Registry Hydrator V2.3.0
+    Campaign Registry Hydrator V2.3.1
 .DESCRIPTION
-    Combines the stable ID resolution of V2.1.0 with NSFW detection 
-    and hardened GitHub Actions syntax.
+    Updated to aggregate thread counts into main channel tally and 
+    list processed threads during execution.
 #>
 param (
     [string]$RequestedCampaignSlug,
@@ -74,11 +74,10 @@ function Get-NormalizedProperty($InputObject, $DesiredPropertyName) {
     return $null
 }
 
-# --- 3. ID Resolver Hierarchy (Restored from Working V2.1.0) ---
+# --- 3. ID Resolver Hierarchy ---
 function Resolve-ChannelIDFromMessages($MessageCollection) {
     if ($null -eq $MessageCollection -or $MessageCollection.Count -eq 0) { return $null }
 
-    # Priority 1: The "Parent 1" Rule
     foreach ($CurrentMsg in $MessageCollection) {
         $ThreadParentCheck = Get-NormalizedProperty $CurrentMsg.thread "parent_id"
         if ($null -ne $ThreadParentCheck -and $ThreadParentCheck -eq "1") {
@@ -86,14 +85,12 @@ function Resolve-ChannelIDFromMessages($MessageCollection) {
         }
     }
 
-    # Priority 2: Majority Rule
     $ValidIDList = $MessageCollection | ForEach-Object { Get-NormalizedProperty $_ "channel_id" } | 
                    Where-Object { $_ -ne "1" -and $_ -ne "0" -and -not [string]::IsNullOrWhiteSpace($_) }
     if ($null -ne $ValidIDList) {
         return ($ValidIDList | Group-Object | Sort-Object Count -Descending | Select-Object -First 1).Name
     }
 
-    # Priority 3: Snowflake Parent Fallback
     foreach ($CurrentMsg in $MessageCollection) {
         $ParentSnowflake = Get-NormalizedProperty $CurrentMsg.thread "parent_id"
         if ($null -ne $ParentSnowflake -and $ParentSnowflake.Length -gt 10 -and $ParentSnowflake -ne "1") {
@@ -109,11 +106,9 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
     try {
         if ($EnableDebugMode) { Write-Host "`n[DEBUG] --- Processing: ${CurrentFileName} ---" -ForegroundColor Cyan }
         
-        # USE DOWNLOAD_URL (Raw) to bypass Base64 API limits and issues
         $FileWebResponse = Invoke-WebRequest -Uri $RemoteFileRef.download_url -Headers $RequestHeaders -UseBasicParsing
         $FileStringContent = $FileWebResponse.Content
 
-        # Detect and strip UTF-8 BOM (\ufeff)
         if ($FileStringContent.StartsWith([char]0xfeff)) {
             $FileStringContent = $FileStringContent.Substring(1)
             if ($EnableDebugMode) { Write-Host "[DEBUG] BOM stripped." -ForegroundColor Yellow }
@@ -125,7 +120,7 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
 
         # --- NSFW SCANNER ---
         $GlobalNsfwCounter = 0
-        $NsfwEmojiMatch = [char]::ConvertFromUtf32(0x1F51E) # Literal 🔞
+        $NsfwEmojiMatch = [char]::ConvertFromUtf32(0x1F51E) 
 
         foreach ($msg in $MessageList) {
             $isPostNsfw = $false
@@ -137,7 +132,6 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
                 }
             }
             if ($isPostNsfw) {
-                # Injects isNSFW key into the object for density calculation
                 if (-not ($msg.PSObject.Properties.Name -contains "isNSFW")) {
                     $msg | Add-Member -MemberType NoteProperty -Name "isNSFW" -Value $true -Force
                 }
@@ -148,27 +142,20 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
         $NsfwRatio = if ($MessageList.Count -gt 0) { $GlobalNsfwCounter / $MessageList.Count } else { 0 }
         $AutoFlagLog = $NsfwRatio -ge 0.9
 
-        # Resolve ID using the working V2.1.0 logic
         $ResolvedTargetChannelID = Resolve-ChannelIDFromMessages $MessageList
-        
         if ($null -eq $ResolvedTargetChannelID) {
             Write-Warning "!! Skipping ${CurrentFileName}: Could not resolve ID."
             continue
         }
 
-        # Match to Manifest
-        $ExistingRecord = $TargetCampaignObj.logs | Where-Object { [string]$_.channelID -eq $ResolvedTargetChannelID }
-        if ($null -eq $ExistingRecord) {
-            $ExistingRecord = $TargetCampaignObj.logs | Where-Object { $_.fileName -ieq $CurrentFileName }
-        }
-
-        # Logic for message tallies
+        # --- REVISED TALLY LOGIC ---
+        # We count ALL narrative messages in the file (Channel + Threads)
         $NarrativeTypeRegex = "^(0|19|Default|Reply)$"
-        $PrimaryChapterMessages = $MessageList | Where-Object { 
-            $StringifiedType = [string]$_.type
-            return ($StringifiedType -match $NarrativeTypeRegex -and (Get-NormalizedProperty $_ "channel_id" -eq $ResolvedTargetChannelID -or $null -eq $_.thread))
+        $AllNarrativeMessages = $MessageList | Where-Object { 
+            [string]$_.type -match $NarrativeTypeRegex
         }
-        $NarrativeTally = if ($null -ne $PrimaryChapterMessages) { $PrimaryChapterMessages.Count } else { 0 }
+        $NarrativeTally = if ($null -ne $AllNarrativeMessages) { $AllNarrativeMessages.Count } else { 0 }
+        
         $NewestTimestamp = ($MessageList | Sort-Object timestamp -Descending | Select-Object -First 1).timestamp
 
         # Thread Discovery
@@ -176,6 +163,12 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
             $tId = Get-NormalizedProperty $_.thread "id"
             return (-not [string]::IsNullOrWhiteSpace($tId) -and $tId -ne $ResolvedTargetChannelID)
         } | Group-Object { [string]$_.thread.id }
+
+        # Match to Manifest
+        $ExistingRecord = $TargetCampaignObj.logs | Where-Object { [string]$_.channelID -eq $ResolvedTargetChannelID }
+        if ($null -eq $ExistingRecord) {
+            $ExistingRecord = $TargetCampaignObj.logs | Where-Object { $_.fileName -ieq $CurrentFileName }
+        }
 
         if ($null -eq $ExistingRecord) {
             $HighestOrder = if ($TargetCampaignObj.logs.Count -gt 0) { ($TargetCampaignObj.logs | Measure-Object -Property order -Maximum).Maximum } else { -1 }
@@ -195,10 +188,14 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
             if ($ExistingRecord.isNSFW -eq $false) { $ExistingRecord.isNSFW = $AutoFlagLog }
         }
 
-        # Update Thread Array
+        # --- THREAD PROCESSING & DEBUGGING ---
         $UpdatedThreadList = New-Object System.Collections.Generic.List[PSObject]
         foreach ($CurrentGroup in $DiscoveredThreadGroups) {
             $tID = [string]$CurrentGroup.Name
+            $tName = $CurrentGroup.Group[0].thread.name
+            
+            if ($EnableDebugMode) { Write-Host "  [THREAD] Found: $tName ($tID)" -ForegroundColor DarkGray }
+
             $StoredT = $ExistingRecord.threads | Where-Object { [string]$_.threadID -eq $tID }
             $TCount = ($CurrentGroup.Group | Where-Object { [string]$_.type -match $NarrativeTypeRegex }).Count
             $TNsfwCount = ($CurrentGroup.Group | Where-Object { $_.isNSFW -eq $true }).Count
@@ -210,15 +207,17 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
                 $UpdatedThreadList.Add($StoredT)
             } else {
                 $UpdatedThreadList.Add([PSCustomObject]@{ 
-                    threadID = $tID; displayName = $CurrentGroup.Group[0].thread.name; 
+                    threadID = $tID; displayName = $tName; 
                     isActive = $true; isNSFW = $TIsNsfw; messageCount = $TCount 
                 })
             }
+
         }
+        
         $ExistingRecord.threads = $UpdatedThreadList.ToArray()
         [void]$GlobalProcessedIDs.Add($ResolvedTargetChannelID)
 
-        Write-Host "  [OK] Processed: ${CurrentFileName} | NSFW: $([Math]::Round($NsfwRatio*100,1))%" -ForegroundColor Gray
+        Write-Host "  [OK] Processed: ${CurrentFileName} | Total Narrative: $NarrativeTally | NSFW: $([Math]::Round($NsfwRatio*100,1))%" -ForegroundColor Gray
 
     } catch { 
         Write-Warning "!! Critical error in ${CurrentFileName}: $($_.Exception.Message)" 
