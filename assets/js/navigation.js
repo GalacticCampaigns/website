@@ -169,26 +169,28 @@ async function updateGlobalNav() {
 }
 
 /**
- * --- NSFW LOGIC ---
+ * Logic to handle NSFW toggle requests from UI components.
+ * Forces a prompt for enabling, but allows instant disabling.
  */
+function handleNSFWClick() {
+    if (window.GC_STATE.nsfwEnabled) {
+        toggleNSFW(); // Secure mode: Lock down immediately.
+    } else {
+        showProtocolOverride(); // Mature mode: Request authorization.
+    }
+}
+
 function toggleNSFW() {
     window.GC_STATE.nsfwEnabled = !window.GC_STATE.nsfwEnabled;
     localStorage.setItem('GC_NSFW_ENABLED', window.GC_STATE.nsfwEnabled);
-    
-    // 1. Sync the CSS classes immediately for text blurring
     syncNSFWUI();
-    
-    // 2. Notify the page that it needs to swap media shields
-    document.dispatchEvent(new CustomEvent('NSFWStateChanged', { 
-        detail: { enabled: window.GC_STATE.nsfwEnabled } 
-    }));
+    document.dispatchEvent(new CustomEvent('NSFWStateChanged'));
 }
 
 function syncNSFWUI() {
     const isEnabled = window.GC_STATE.nsfwEnabled;
     document.body.classList.toggle('nsfw-unlocked', isEnabled);
     
-    // Handle the .off class for text elements already on screen
     document.querySelectorAll('.nsfw-blur').forEach(el => {
         el.classList.toggle('off', isEnabled);
     });
@@ -197,11 +199,11 @@ function syncNSFWUI() {
     if (btn) {
         btn.textContent = isEnabled ? "FILTER: OFF (MATURE)" : "FILTER: ON (SECURE)";
         btn.classList.toggle('active', isEnabled);
+        btn.setAttribute('onclick', 'handleNSFWClick()');
     }
 }
 
-function showNSFWGateway() {
-    // Create modal if it doesn't exist
+function showProtocolOverride() {
     let modal = document.getElementById('nsfw-gateway');
     if (!modal) {
         modal = document.createElement('div');
@@ -209,10 +211,10 @@ function showNSFWGateway() {
         modal.className = 'nsfw-gateway';
         modal.innerHTML = `
             <div class="gateway-content">
-                <h2>IMPERIAL CLEARANCE REQUIRED</h2>
-                <p>This data stream contains mature themes (NSFW). Do you wish to override the safety filter?</p>
+                <div class="terminal-header">SYSTEM ALERT: PROTOCOL OVERRIDE</div>
+                <p>Sensitive data detected. Proceeding will bypass secure filters and expose mature content. Confirm authorization?</p>
                 <div class="gateway-actions">
-                    <button class="decrypt-btn" onclick="confirmNSFW()">PROCEED</button>
+                    <button class="decrypt-btn" onclick="confirmNSFW()">EXECUTE OVERRIDE</button>
                     <button class="freq-btn" onclick="closeNSFWGateway()">ABORT</button>
                 </div>
             </div>`;
@@ -222,13 +224,15 @@ function showNSFWGateway() {
 }
 
 function closeNSFWGateway() {
-    document.getElementById('nsfw-gateway').style.display = 'none';
+    const modal = document.getElementById('nsfw-gateway');
+    if (modal) modal.style.display = 'none';
 }
 
 function confirmNSFW() {
-    toggleNSFW(); // Existing function in navigation.js
+    if (!window.GC_STATE.nsfwEnabled) toggleNSFW();
     closeNSFWGateway();
 }
+
 /**
  * --- NEW: NAVIGATION HUD LOGIC ---
  */

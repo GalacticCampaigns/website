@@ -234,12 +234,11 @@ async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
     }
 }
 
-// --- 4. RENDERING ENGINE ---
 function renderFeed(filterId) {
     const output = document.getElementById('viewer-output');
     if (!output) return;
     
-    output.innerHTML = ""; // Clear existing
+    output.innerHTML = "";
     let lastChannelId = null;
 
     const logEntry = activeCampaign.logs.find(l => l.channelID === mainChannelId) || activeCampaign.logs[0];
@@ -249,30 +248,28 @@ function renderFeed(filterId) {
     const filtered = fullData.filter(m => validTypes.includes(m.type));
     const messages = filterId === 'all' ? filtered : filtered.filter(m => m.channel_id === filterId || (m.thread && m.thread.id === filterId));
 
-    // --- HASH UPDATE LOGIC ---
     const { messageId } = getUrlContext();
     const currentHashBase = (filterId === 'all') ? mainChannelId : filterId;
     const newHash = messageId ? `${currentHashBase}:${messageId}` : currentHashBase;
 
-    // Only update if the base channel has actually changed to prevent scroll jumping
     if (window.location.hash !== `#${newHash}`) {
         history.replaceState(null, null, `?c=${campaignSlug}#${newHash}`);
     }
 
-    // --- RENDER LOOP ---
     const isChannelNSFW = logEntry.isNSFW;
     
     messages.forEach(msg => {
         const isThreadStarter = (msg.thread && msg.thread.id === mainChannelId);
         const actualChannel = isThreadStarter ? msg.thread.id : msg.channel_id;
         const threadRef = logEntry.threads ? logEntry.threads.find(t => t.threadID === msg.channel_id) : null;
-        const isCurrentMsgNSFW = isChannelNSFW || (threadRef && threadRef.isNSFW);
+        
+        // --- UPDATED: Per-Post Check ---
+        const isCurrentMsgNSFW = isChannelNSFW || (threadRef && threadRef.isNSFW) || msg.isNSFW;
         
         const isCurrentlyBlurred = isCurrentMsgNSFW && !window.GC_STATE.nsfwEnabled;
         const nsfwClass = isCurrentlyBlurred ? 'nsfw-blur' : (isCurrentMsgNSFW ? 'nsfw-blur off' : '');
-
         const nsfwBadge = isCurrentMsgNSFW 
-            ? `<span class="nsfw-badge" style="cursor:pointer; margin-left:8px;" onclick="showNSFWGateway()">NSFW</span>` 
+            ? `<span class="nsfw-badge" style="cursor:pointer; margin-left:8px;" onclick="handleNSFWClick()">NSFW</span>` 
             : '';
 
         if (filterId === 'all' && lastChannelId !== null && actualChannel !== lastChannelId && !isThreadStarter) {
@@ -411,9 +408,9 @@ function renderAttachments(msg, logRef) {
         const registryMatchPath = `${folder}/${att.filename}`;
         const src = `${window.GC_STATE.remoteBase}${window.GC_STATE.currentCampaign.paths.media}${folder}/${att.filename}`;
         
-        // BETTER CHECK: Look for the filename/folder combo anywhere in the registry strings
-        // This solves the "media/" prefix mismatch automatically
-        const isFileNSFW = mediaReg.some(entry => entry.endsWith(registryMatchPath));
+        // --- FUZZY MATCH + MESSAGE OVERRIDE ---
+        const isFileInRegistry = mediaReg.some(entry => entry.endsWith(registryMatchPath));
+        const isFileNSFW = isFileInRegistry || msg.isNSFW;
 
         if (att.content_type && att.content_type.startsWith('image/')) {
             if (isFileNSFW && !window.GC_STATE.nsfwEnabled) {
@@ -428,7 +425,7 @@ function renderAttachments(msg, logRef) {
                             <span class="shield-label">ENCRYPTION ACTIVE</span>
                             <span class="shield-text">${warning.toUpperCase()}</span>
                         </div>
-                        <button class="decrypt-btn" onclick="showNSFWGateway()">DECRYPT</button>
+                        <button class="decrypt-btn" onclick="handleNSFWClick()">DECRYPT</button>
                     </div>
                 </div>`;
             } else {

@@ -366,86 +366,129 @@ code {
 
 /* --- 11. NSFW & CONTENT SHIELDING --- */
 
-/* Text-based blurs for Archive/Hub previews */
+/* Text-based blurs */
 .nsfw-blur {
-    filter: blur(8px);
+    filter: blur(12px); /* Increased slightly for better security */
     pointer-events: none;
     user-select: none;
-    transition: filter 0.4s ease;
-    overflow: hidden
+    transition: filter 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    display: inline-block; /* Prevents blur bleed on block containers */
+    backface-visibility: hidden; /* Fixes browser "shimmer" */
 }
-.nsfw-blur.off { filter: none; }
 
-/* When the global filter is unlocked via the footer toggle */
-body.nsfw-unlocked .nsfw-blur {
-    filter: blur(0);
+/* Removal of blur via Global Toggle or Individual '.off' class */
+body.nsfw-unlocked .nsfw-blur, 
+.nsfw-blur.off { 
+    filter: blur(0) !important;
     pointer-events: auto;
     user-select: auto;
 }
 
-/* Media Shielding (Placeholder for blocked images) */
+/* Media Shielding */
 .media-shield {
     width: 100%;
     max-width: 500px;
+    min-height: 200px; /* Fallback for varied aspect ratios */
     aspect-ratio: 16 / 9;
-    background: #0d1117;
-    border: 1px dashed #ff4444;
+    background: #0a0c10;
+    border: 1px dashed #da3633;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 15px;
-    margin: 10px 0;
+    margin: 15px 0;
     border-radius: 4px;
-    color: #ff4444;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Added: Scanline Effect for flavor */
+.media-shield::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size: 100% 4px, 3px 100%;
+    pointer-events: none;
+    opacity: 0.3;
+}
+
+.shield-overlay {
+    display: flex; 
+    align-items: center; 
+    gap: 20px;
+    z-index: 2; /* Sit above scanlines */
+}
+
+.shield-icon { font-size: 2rem; color: #da3633; text-shadow: 0 0 10px rgba(218, 54, 51, 0.5); }
+.shield-info { display: flex; flex-direction: column; text-align: left; }
+.shield-label { font-size: 0.6rem; color: var(--text-muted); letter-spacing: 2px; }
+.shield-text { color: #da3633; font-weight: bold; font-family: monospace; font-size: 0.9rem; }
+
+.decrypt-btn {
+    background: rgba(218, 54, 51, 0.1);
+    border: 1px solid #da3633;
+    color: #da3633;
+    padding: 8px 20px;
+    font-size: 0.75rem;
     font-family: monospace;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
-.shield-icon {
-    font-size: 2rem;
-    opacity: 0.8;
-}
-
-.decrypt-btn {
-    background: transparent;
-    border: 1px solid #ff4444;
-    color: #ff4444;
-    padding: 5px 15px;
-    font-size: 0.7rem;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
 .decrypt-btn:hover {
-    background: #ff4444;
-    color: white;
+    background: #da3633;
+    color: #fff;
+    box-shadow: 0 0 15px rgba(218, 54, 51, 0.4);
 }
 
-/* NSFW Badge for List Items */
+/* NSFW Badge */
 .nsfw-badge {
-    background: #ff4444;
+    background: #da3633;
     color: white;
-    font-size: 0.6rem;
-    padding: 2px 6px;
+    font-size: 0.65rem;
+    padding: 2px 8px;
     border-radius: 3px;
     margin-right: 8px;
-    font-weight: bold;
+    font-weight: 800;
     vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 /* NSFW GATEWAY MODAL */
 .nsfw-gateway {
-    display: none; position: fixed; inset: 0; 
-    background: rgba(0,0,0,0.9); z-index: 10000;
-    align-items: center; justify-content: center;
+    display: none; 
+    position: fixed; 
+    inset: 0; 
+    background: rgba(0, 0, 0, 0.9); 
+    z-index: 100000;
+    align-items: center; 
+    justify-content: center;
     backdrop-filter: blur(10px);
 }
+
 .gateway-content {
-    background: #000; border: 2px solid var(--sw-yellow);
-    padding: 30px; max-width: 400px; text-align: center;
-    box-shadow: 0 0 20px var(--sw-yellow);
+    background: #000; 
+    border: 1px solid var(--sw-yellow);
+    padding: 40px; 
+    max-width: 450px; 
+    width: 90%;
+    text-align: center; 
+    box-shadow: 0 0 40px rgba(255, 193, 7, 0.15);
 }
-.gateway-content h2 { color: var(--sw-yellow); font-family: 'Press Start 2P', monospace; font-size: 1rem; }
-.gateway-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: center; }
+
+.terminal-header {
+    color: var(--sw-yellow); 
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 1rem; 
+    margin-bottom: 25px;
+    letter-spacing: 3px; 
+    border-bottom: 1
