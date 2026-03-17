@@ -74,28 +74,32 @@ async function updateGlobalNav() {
         window.GC_STATE.campaignSlug = slug;
         window.GC_STATE.currentCampaign = campaign;
         
-        // --- PATH CALCULATION ---
-        // 1. Clean dataPath: Remove "./", ensure trailing slash only if path exists
+        // 1. Clean the dataPath
         let cleanDataPath = (campaign.dataPath || "").replace(/^\.\//, "");
-        if (cleanDataPath && !cleanDataPath.endsWith('/')) cleanDataPath += '/';
+        if (cleanDataPath && !cleanDataPath.endsWith('/')) {
+            cleanDataPath += '/';
+        }
 
-        // 2. Set Remote Base (for raw GitHub assets like logos/avatars)
-        window.GC_STATE.remoteBase = `https://raw.githubusercontent.com/${campaign.repository}/${campaign.branch}/${cleanDataPath}`;
+        // 2. Build the GitHub Raw URL base
+        // This creates: https://raw.githubusercontent.com/user/repo/branch/folder/
+        const gitHubBase = `https://raw.githubusercontent.com/${campaign.repository}/${campaign.branch}/${cleanDataPath}`;
+        window.GC_STATE.remoteBase = gitHubBase;
 
-        // 3. Set Local Media Registry Path (relative to the site root)
-        const mediaRegistryPath = `${window.GC_STATE.remoteBase}media-registry.json`;
-        
-        // --- FETCH CAMPAIGN MEDIA REGISTRY ---
+        // 3. TARGET THE REMOTE FILE
+        // Explicitly use the gitHubBase variable here to avoid any site_baseurl contamination
+        const mediaRegistryPath = `${gitHubBase}media-registry.json`;
+
+        console.log("Attempting remote fetch at:", mediaRegistryPath); // Debug this!
+
         try {
-            // We add { cache: "no-store" } to ensure we get the latest registry updates
             const mediaResp = await fetch(mediaRegistryPath, { cache: "no-store" });
             if (mediaResp.ok) {
                 const mediaData = await mediaResp.json();
                 window.GC_STATE.mediaRegistry = mediaData.nsfw_files || [];
                 window.GC_STATE.contentWarnings = mediaData.content_warnings || {};
-                console.log(`>>> Media Registry Loaded from Remote: ${campaign.name}`);
+                console.log(`>>> Success: Media Registry loaded from GitHub.`);
             } else {
-                console.warn("Media Registry not found on remote repository.");
+                console.warn(`>>> Remote 404: No media-registry.json found at ${mediaRegistryPath}`);
                 window.GC_STATE.mediaRegistry = [];
             }
         } catch (e) {
