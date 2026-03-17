@@ -403,7 +403,7 @@
           "title": "Chapter 3: The Karthon Gamble",
           "channelID": "1375296954300366910",
           "fileName": "wv_ch3_the-karthon-gamble.json",
-          "isActive": false,
+          "isActive": true,
           "isNSFW": false,
           "preview": "",
           "order": 3,
