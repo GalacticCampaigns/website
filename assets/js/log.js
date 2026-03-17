@@ -147,6 +147,7 @@ async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
         });
 
         mainChannelId = Object.keys(parentCounts).reduce((a, b) => parentCounts[a] > parentCounts[b] ? a : b, null) || channelID;
+        window.GC_STATE.currentMainChannelId = mainChannelId;
         buildFrequencyBar();
         renderFeed(autoFilter || 'all');
 
@@ -324,19 +325,34 @@ function resolveInternalLinkData(id) {
 function updateBreadcrumb(chapterTitle, threadTitle = null) {
     const chapEl = document.getElementById('active-chapter-name');
     const threadEl = document.getElementById('thread-indicator');
-    
-    // Safety check for mobile: Truncate very long chapter names
+    if (!chapEl) return;
+
+    // --- DYNAMIC TRUNCATION ---
     let displayChapter = chapterTitle;
-    if (window.innerWidth < 600 && displayChapter.length > 25) {
-        displayChapter = displayChapter.substring(0, 22) + "...";
+    let limit = 100; // Default for Desktop
+
+    if (window.innerWidth < 600) {
+        limit = 22; // Portrait Mobile (Stacked)
+    } else if (window.innerWidth < 950) {
+        limit = 35; // Landscape Mobile / Tablet (Inline)
     }
 
-    if (chapEl) chapEl.innerHTML = `${displayChapter.toUpperCase()} <span style="font-size: 0.7em; opacity: 0.5; margin-left: 5px;">▼</span>`;
+    if (displayChapter.length > limit) {
+        displayChapter = displayChapter.substring(0, limit - 3) + "...";
+    }
+
+    // Update Chapter
+    chapEl.innerHTML = `${displayChapter.toUpperCase()} <span style="font-size: 0.7em; opacity: 0.5; margin-left: 5px;">▼</span>`;
     
+    // Update Thread
     if (threadEl) {
         if (threadTitle) {
+            let displayThread = threadTitle;
+            if (window.innerWidth < 600 && displayThread.length > 20) {
+                displayThread = displayThread.substring(0, 17) + "...";
+            }
             threadEl.style.display = 'flex';
-            threadEl.innerHTML = `<span class="nav-arrow">❯</span><span>${threadTitle.toUpperCase()}</span>`;
+            threadEl.innerHTML = `<span class="nav-arrow">❯</span><span>${displayThread.toUpperCase()}</span>`;
         } else {
             threadEl.style.display = 'none';
         }

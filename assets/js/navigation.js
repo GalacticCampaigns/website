@@ -155,6 +155,7 @@ async function updateGlobalNav() {
 
     window.GC_STATE.isReady = true;
     document.dispatchEvent(new CustomEvent('GCStateReady'));
+    triggerLayoutReflow()
 }
 
 /**
@@ -292,5 +293,46 @@ window.onclick = (e) => {
         if (d) d.style.display = 'none';
     }
 };
+
+function triggerLayoutReflow() {
+    const { slug } = getUrlContext();
+    if (!slug) return;
+
+    // Handle Global Nav (Logo/Brand truncation)
+    if (window.GC_STATE.currentCampaign) {
+        const brandText = document.getElementById('nav-brand-text');
+        if (brandText) {
+            let name = window.GC_STATE.currentCampaign.name;
+            // Truncate brand name if screen is tiny
+            if (window.innerWidth < 400 && name.length > 15) {
+                brandText.textContent = name.substring(0, 12) + "...";
+            } else {
+                brandText.textContent = name;
+            }
+        }
+    }
+
+    // Handle Log Viewer specifically (if the function exists)
+    if (typeof updateBreadcrumb === 'function' && window.GC_STATE.currentCampaign) {
+        const activeLog = window.GC_STATE.currentCampaign.logs.find(
+            l => l.channelID === window.GC_STATE.campaignSlug // or your mainChannelId logic
+        );
+        
+        if (activeLog) {
+            const currentHash = window.location.hash.substring(1).split(':')[0] || 'all';
+            const threadName = (currentHash !== 'all' && currentHash !== activeLog.channelID) 
+                               ? window.channelMap[currentHash] 
+                               : null;
+            updateBreadcrumb(activeLog.title, threadName);
+        }
+    }
+}
+
+// 2. Attach the Listener
+window.addEventListener('resize', () => {
+    // We use a small debounce so it doesn't fire 100 times during a rotation
+    clearTimeout(window.GC_STATE.resizeTimer);
+    window.GC_STATE.resizeTimer = setTimeout(triggerLayoutReflow, 150);
+});
 
 document.addEventListener("DOMContentLoaded", updateGlobalNav);

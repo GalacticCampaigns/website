@@ -80,6 +80,7 @@ a:hover {
     display: flex; 
     align-items: center;
     padding: 5px 0;
+    transition: height 0.3s ease-in-out, min-height 0.3s ease-in-out;
 }
 
 .nav-inner {
@@ -90,6 +91,7 @@ a:hover {
     gap: 10px; 
     padding: 0 15px;
     align-items: center; 
+    align-content: center;
     flex-wrap: wrap; /* Allows wrapping on small screens */
 }
 
