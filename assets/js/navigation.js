@@ -19,6 +19,7 @@ window.GC_STATE = {
 async function getRegistry() {
     if (window.GC_STATE.registry) return window.GC_STATE.registry;
     try {
+        // Added ?t= timestamp to bust cache
         const res = await fetch(`${window.site_baseurl}/assets/campaign-registry.json?t=${Date.now()}`);
         if (!res.ok) throw new Error("Registry network response was not ok");
         window.GC_STATE.registry = await res.json();
@@ -174,7 +175,7 @@ function getMediaRegistryPath(campaign) {
     const gitHubUrl = `https://raw.githubusercontent.com/${campaign.repository}/${campaign.branch}/${cleanDataPath}`;
     
     // 4. Return the full path to the registry file
-    return `${gitHubUrl}${campaign.paths.mediaRegistry}`;
+    return `${gitHubUrl}${campaign.paths.mediaRegistry}?t=${Date.now()}`;
 }
 
 /**
