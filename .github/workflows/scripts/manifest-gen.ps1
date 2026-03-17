@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Campaign Registry Hydrator V2.1.0
+    Campaign Registry Hydrator V2.2.1
 .DESCRIPTION
     Hydrates campaign-registry.json via GitHub API. 
     Strict Parent 1 / Majority Rule / Locked 8 logic.
@@ -23,9 +23,7 @@ $TargetCampaignObj = $RegistryData.campaigns.$ActiveCampaignKey
 
 if ($null -eq $TargetCampaignObj) { Write-Error "Campaign '${ActiveCampaignKey}' not found."; exit 1 }
 
-# LOGIC: Check for your high-clearance PAT first, then fallback to the default token
 $Token = if ($env:GH_TOKEN) { $env:GH_TOKEN } else { $env:GITHUB_TOKEN }
-
 $RequestHeaders = @{ "Accept" = "application/vnd.github.v3+json" }
 
 if ($Token) { 
@@ -36,16 +34,12 @@ if ($Token) {
     }
 }
 
-# --- PATH LOGIC FIX START ---
-# We must combine dataPath (e.g., "swWhispers-Void/") with paths.json (e.g., "json/")
+# --- PATH LOGIC ---
 $BaseFolder = $TargetCampaignObj.dataPath.Trim('./').Trim('/')
 $SubFolder = $TargetCampaignObj.paths.json.Trim('/')
-
-# Joins them safely: "swWhispers-Void/json"
 $FullRemotePath = if ([string]::IsNullOrWhiteSpace($BaseFolder)) { $SubFolder } else { "$BaseFolder/$SubFolder" }
 
-# --- NEW: MEDIA REGISTRY DETECTION ---
-# We check the root of the dataPath for the registry file
+# Media Registry Detection
 $MediaRegistryFileName = "media-registry.json"
 $MediaRegistryRemotePath = if ([string]::IsNullOrWhiteSpace($BaseFolder)) { $MediaRegistryFileName } else { "$BaseFolder/$MediaRegistryFileName" }
 $MediaApiUrl = "https://api.github.com/repos/$($TargetCampaignObj.repository)/contents/$($MediaRegistryRemotePath)?ref=$($TargetCampaignObj.branch)"
@@ -53,16 +47,14 @@ $MediaApiUrl = "https://api.github.com/repos/$($TargetCampaignObj.repository)/co
 try {
     $MediaCheck = Invoke-RestMethod -Uri $MediaApiUrl -Method Get -Headers $RequestHeaders
     $TargetCampaignObj.paths.mediaRegistry = $MediaRegistryFileName
-    if ($EnableDebugMode) { Write-Host "[DEBUG] Media Registry detected and linked." -ForegroundColor Green }
+    if ($EnableDebugMode) { Write-Host "[DEBUG] Media Registry detected at $MediaRegistryRemotePath" -ForegroundColor Green }
 } catch {
     $TargetCampaignObj.paths.mediaRegistry = $null
-    if ($EnableDebugMode) { Write-Host "[DEBUG] No Media Registry found at $MediaRegistryRemotePath" -ForegroundColor Gray }
+    if ($EnableDebugMode) { Write-Host "[DEBUG] No Media Registry found." -ForegroundColor Gray }
 }
 
 $GitHubApiUrl = "https://api.github.com/repos/$($TargetCampaignObj.repository)/contents/$($FullRemotePath)?ref=$($TargetCampaignObj.branch)"
-
 if ($EnableDebugMode) { Write-Host "[DEBUG] API Target URL: $GitHubApiUrl" -ForegroundColor Yellow }
-# --- PATH LOGIC FIX END ---
 
 Write-Host "`n>>> Initializing Hydration: $($TargetCampaignObj.name)" -ForegroundColor Cyan
 
@@ -75,12 +67,21 @@ try {
 }
 
 $GlobalProcessedIDs = New-Object 'System.Collections.Generic.HashSet[string]'
-# --- 2. Helper: Hardened Property Lookup (Null-Safe) ---
-function Get-NormalizedProperty($InputObject, $DesiredPropertyName) {
+
+# --- 2. Helper: Hardened Property Lookup (RESTORED & FIXED) ---
+function Get-NormalizedProperty {
+    param($InputObject, $DesiredPropertyName)
+    # The fix: Ensure InputObject is not null and is a PSCustomObject/Object
     if ($null -eq $InputObject) { return $null } 
-    $CurrentProperties = $InputObject.PSObject.Properties
-    $FoundMatch = $CurrentProperties | Where-Object { $_.Name -ieq $DesiredPropertyName -or $_.Name -ieq $DesiredPropertyName.Replace('_','') }
-    if ($FoundMatch) { return [string]$FoundMatch[0].Value }
+    
+    # Check if PSObject property exists to avoid the "Cannot bind" error
+    try {
+        $CurrentProperties = $InputObject.PSObject.Properties
+        $FoundMatch = $CurrentProperties | Where-Object { $_.Name -ieq $DesiredPropertyName -or $_.Name -ieq $DesiredPropertyName.Replace('_','') }
+        if ($FoundMatch) { return [string]$FoundMatch[0].Value }
+    } catch {
+        return $null
+    }
     return $null
 }
 
@@ -90,98 +91,92 @@ function Resolve-ChannelIDFromMessages($MessageCollection) {
 
     # Priority 1: The "Parent 1" Rule
     foreach ($CurrentMsg in $MessageCollection) {
-        $ThreadParentCheck = Get-NormalizedProperty $CurrentMsg.thread "parent_id"
-        if ($null -ne $ThreadParentCheck -and $ThreadParentCheck -eq "1") {
-            $TargetID = Get-NormalizedProperty $CurrentMsg "channel_id"
-            if ($EnableDebugMode) { Write-Host "[DEBUG] ID: Priority 1 (Parent 1) matched: $TargetID" -ForegroundColor Gray }
-            return $TargetID
+        $ThreadObj = Get-NormalizedProperty $CurrentMsg "thread"
+        if ($null -ne $ThreadObj) {
+            $ParentID = $CurrentMsg.thread.parent_id
+            if ($ParentID -eq "1") {
+                $TargetID = Get-NormalizedProperty $CurrentMsg "channel_id"
+                if ($EnableDebugMode) { Write-Host "[DEBUG] ID Match: Priority 1 (Parent 1) -> $TargetID" -ForegroundColor Gray }
+                return $TargetID
+            }
         }
     }
 
-    # Priority 2: Majority Rule (Most frequent channel_id)
+    # Priority 2: Majority Rule
     $ValidIDList = $MessageCollection | ForEach-Object { Get-NormalizedProperty $_ "channel_id" } | 
-                   Where-Object { $_ -ne "1" -and $_ -ne "0" -and -not [string]::IsNullOrWhiteSpace($_) }
+                   Where-Object { $_ -match '^\d{17,20}$' } # Real Snowflakes only
     if ($null -ne $ValidIDList) {
         $MajorityIDValue = ($ValidIDList | Group-Object | Sort-Object Count -Descending | Select-Object -First 1).Name
-        if ($EnableDebugMode) { Write-Host "[DEBUG] ID: Priority 2 (Majority Rule) matched: $MajorityIDValue" -ForegroundColor Gray }
+        if ($EnableDebugMode) { Write-Host "[DEBUG] ID Match: Priority 2 (Majority) -> $MajorityIDValue" -ForegroundColor Gray }
         return $MajorityIDValue
-    }
-
-    # Priority 3: Snowflake Parent Fallback
-    foreach ($CurrentMsg in $MessageCollection) {
-        $ParentSnowflake = Get-NormalizedProperty $CurrentMsg.thread "parent_id"
-        if ($null -ne $ParentSnowflake -and $ParentSnowflake.Length -gt 10 -and $ParentSnowflake -ne "1") {
-            if ($EnableDebugMode) { Write-Host "[DEBUG] ID: Priority 3 (Snowflake Parent) matched: $ParentSnowflake" -ForegroundColor Gray }
-            return $ParentSnowflake
-        }
     }
     return $null
 }
 
-# --- 4. Main Processing Loop (Updated for NSFW Detection) ---
+# --- 4. Main Processing Loop ---
 foreach ($RemoteFileRef in $ValidJsonFiles) {
     $CurrentFileName = $RemoteFileRef.name
     try {
-        # ... [BOM Stripping & JSON Parsing as before] ...
+        # Fetching content from GitHub API
+        $FileResp = Invoke-RestMethod -Uri $RemoteFileRef.url -Headers $RequestHeaders
+        $FileBytes = [System.Convert]::FromBase64String($FileResp.content)
+        $FileStringContent = [System.Text.Encoding]::UTF8.GetString($FileBytes)
         $ParsedJson = $FileStringContent | ConvertFrom-Json
+        
         $MessageList = if ($ParsedJson.PSObject.Properties.Name -contains "messages") { $ParsedJson.messages } else { $ParsedJson }
         
-        # --- NEW: PER-POST NSFW DETECTION ---
+        # --- NSFW SCANNER ---
         $GlobalNsfwCounter = 0
-        $NsfwEmojiMatch = "🔞" # Or use your custom emoji name like ":nsfw:"
+        $NsfwEmojiMatch = [char]::ConvertFromUtf32(0x1F51E) # Literal 🔞
 
         foreach ($msg in $MessageList) {
             $isPostNsfw = $false
-            
-            # Check reactions for the NSFW emoji
             if ($msg.reactions) {
                 foreach ($reaction in $msg.reactions) {
-                    if ($reaction.emoji.name -eq $NsfwEmojiMatch) {
-                        $isPostNsfw = $true
-                        break
+                    if ($reaction.emoji.name -eq $NsfwEmojiMatch -or $reaction.emoji.name -eq "underage") {
+                        $isPostNsfw = $true; break
                     }
                 }
             }
-
             if ($isPostNsfw) {
-                $msg | Add-Member -MemberType NoteProperty -Name "isNSFW" -Value $true -Force
+                # Injects key if missing
+                if (-not ($msg.PSObject.Properties.Name -contains "isNSFW")) {
+                    $msg | Add-Member -MemberType NoteProperty -Name "isNSFW" -Value $true -Force
+                }
                 $GlobalNsfwCounter++
             }
         }
 
-        # Calculate Percentages
-        $NsfwPercentage = if ($MessageList.Count -gt 0) { $GlobalNsfwCounter / $MessageList.Count } else { 0 }
-        $AutoFlagLog = $NsfwPercentage -ge 0.9
-
-        # ... [ResolvedTargetChannelID & ExistingRecord Logic as before] ...
-
-        if ($null -eq $ExistingRecord) {
-            # ... [Initialization as before] ...
-            $ExistingRecord = [PSCustomObject]@{
-                # ...
-                isNSFW = $AutoFlagLog; # AUTO-FLAGGED IF > 90%
-                # ...
-            }
-        } else {
-            # Locked 8 Logic: We only auto-flag if it wasn't already manually set
-            if ($ExistingRecord.isNSFW -eq $false) { $ExistingRecord.isNSFW = $AutoFlagLog }
+        $NsfwRatio = if ($MessageList.Count -gt 0) { $GlobalNsfwCounter / $MessageList.Count } else { 0 }
+        $AutoFlagLog = $NsfwRatio -ge 0.9
+        
+        if ($EnableDebugMode -and $GlobalNsfwCounter -gt 0) {
+            Write-Host "[DEBUG] NSFW Check: $GlobalNsfwCounter posts found ($([Math]::Round($NsfwRatio*100, 2))%). AutoFlag: $AutoFlagLog" -ForegroundColor Magenta
         }
 
-        # --- THREAD-LEVEL AUTO-FLAGGING ---
-        foreach ($CurrentGroup in $DiscoveredThreadGroups) {
-            $ThreadMsgs = $CurrentGroup.Group
-            $ThreadNsfwCount = ($ThreadMsgs | Where-Object { $_.isNSFW -eq $true }).Count
-            $ThreadPercent = if ($ThreadMsgs.Count -gt 0) { $ThreadNsfwCount / $ThreadMsgs.Count } else { 0 }
+        # Resolve ID
+        $ResolvedID = Resolve-ChannelIDFromMessages $MessageList
+        if ($null -eq $ResolvedID) { 
+            Write-Warning "!! Could not resolve ID for $CurrentFileName. Skipping."
+            continue 
+        }
+        $GlobalProcessedIDs.Add($ResolvedID) | Out-Null
+
+        # Match to Manifest
+        $ExistingRecord = $TargetCampaignObj.logs | Where-Object { $_.channelID -eq $ResolvedID }
+
+        if ($null -ne $ExistingRecord) {
+            $ExistingRecord.isActive = $true
+            $ExistingRecord.fileName = $CurrentFileName
             
-            # Update/Create thread entry
-            # ...
-            $StoredThreadEntry.isNSFW = ($ThreadPercent -ge 0.9)
+            # Locked 8 / Majority Rule Logic
+            if ($null -eq $ExistingRecord.isNSFW -or $ExistingRecord.isNSFW -eq $false) {
+                $ExistingRecord.isNSFW = $AutoFlagLog
+            }
+            Write-Host "  [OK] Hydrated: $($ExistingRecord.title)" -ForegroundColor Gray
+        } else {
+            if ($EnableDebugMode) { Write-Host "  [DEBUG] $CurrentFileName ($ResolvedID) not in manifest." -ForegroundColor DarkYellow }
         }
-
-        # --- IMPORTANT: RESAVE THE SOURCE JSON ---
-        # Since we added 'isNSFW' to individual messages, we must save this back to the file
-        # or ensure the website render logic handles the missing key as 'false'.
-        # Note: If you want the website to see the per-post tag, you must re-upload these JSONs.
         
     } catch { 
         Write-Warning "!! Critical error in ${CurrentFileName}: $($_.Exception.Message)" 
@@ -189,20 +184,15 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
 }
 
 # --- 5. Orphan Deactivation ---
-foreach ($ManifestLogEntry in $TargetCampaignObj.logs) {
-    if (-not $GlobalProcessedIDs.Contains($ManifestLogEntry.channelID) -and -not [string]::IsNullOrWhiteSpace($ManifestLogEntry.channelID)) {
-        Write-Warning "Orphaned record found: '$($ManifestLogEntry.title)' ($($ManifestLogEntry.fileName)). Setting to inactive."
-        $ManifestLogEntry.isActive = $false
+foreach ($LogEntry in $TargetCampaignObj.logs) {
+    if (-not $GlobalProcessedIDs.Contains($LogEntry.channelID) -and -not [string]::IsNullOrWhiteSpace($LogEntry.channelID)) {
+        Write-Warning "Orphaned record found: '$($LogEntry.title)' ($($LogEntry.fileName)). Setting to inactive."
+        $LogEntry.isActive = $false
     }
 }
 
-# --- 6. Export (Web-Standard UTF-8 No BOM) ---
-$FinalJsonPayload = $RegistryData | ConvertTo-Json -Depth 10 -Compress:($false)
+# --- 6. Export ---
+$FinalJsonPayload = $RegistryData | ConvertTo-Json -Depth 10
+[System.IO.File]::WriteAllText($ManifestFilePath, $FinalJsonPayload, (New-Object System.Text.UTF8Encoding($false)))
 
-# Create a UTF8 encoding object that explicitly disables the BOM (Byte Order Mark)
-$Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($false)
-
-# Write directly to the file to ensure no "Position 3" characters are added
-[System.IO.File]::WriteAllText($ManifestFilePath, $FinalJsonPayload, $Utf8NoBomEncoding)
-
-Write-Host "`n>>> Success: Registry Hydration V2.1.0 Complete." -ForegroundColor Green
+Write-Host "`n>>> Success: Hydration V2.2.1 Complete." -ForegroundColor Green
