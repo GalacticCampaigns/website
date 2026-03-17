@@ -262,13 +262,13 @@ function renderFeed(filterId) {
         const isThreadStarter = (msg.thread && msg.thread.id === mainChannelId);
         const actualChannel = isThreadStarter ? msg.thread.id : msg.channel_id;
         const threadRef = logEntry.threads ? logEntry.threads.find(t => t.threadID === msg.channel_id) : null;
-        
-        // --- UPDATED: Per-Post Check ---
-        const isCurrentMsgNSFW = isChannelNSFW || (threadRef && threadRef.isNSFW) || msg.isNSFW;
+    
+        // --- DYNAMIC CHECK ---
+        const isPostNSFW = detectNSFW(msg);
+        const isCurrentMsgNSFW = isChannelNSFW || (threadRef && threadRef.isNSFW) || isPostNSFW;
         
         const isCurrentlyBlurred = isCurrentMsgNSFW && !window.GC_STATE.nsfwEnabled;
-        const nsfwClass = isCurrentlyBlurred ? 'nsfw-blur' : (isCurrentMsgNSFW ? 'nsfw-blur off' : '');
-        const nsfwBadge = isCurrentMsgNSFW 
+        const nsfwClass = isCurrentlyBlurred ? 'nsfw-blur' : (isCurrentMsgNSFW ? 'nsfw-blur off' : '');const nsfwBadge = isCurrentMsgNSFW 
             ? `<span class="nsfw-badge" style="cursor:pointer; margin-left:8px;" onclick="handleNSFWClick()">NSFW</span>` 
             : '';
 
@@ -402,6 +402,7 @@ function renderAttachments(msg, logRef) {
     
     const folder = logRef.fileName.replace('.json', '');
     const mediaReg = window.GC_STATE.mediaRegistry || [];
+    const isPostNSFW = detectNSFW(msg); // Check the message reactions
     let html = '<div class="msg-attachments">';
     
     msg.attachments.forEach(att => {
@@ -410,7 +411,7 @@ function renderAttachments(msg, logRef) {
         
         // --- FUZZY MATCH + MESSAGE OVERRIDE ---
         const isFileInRegistry = mediaReg.some(entry => entry.endsWith(registryMatchPath));
-        const isFileNSFW = isFileInRegistry || msg.isNSFW;
+        const isFileNSFW = mediaReg.some(entry => entry.endsWith(registryMatchPath)) || isPostNSFW;
 
         if (att.content_type && att.content_type.startsWith('image/')) {
             if (isFileNSFW && !window.GC_STATE.nsfwEnabled) {

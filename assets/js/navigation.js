@@ -213,6 +213,18 @@ function syncNSFWUI() {
     }
 }
 
+function detectNSFW(msg) {
+    // 1. Check for the manual override key from the script
+    if (msg.isNSFW === true) return true;
+
+    // 2. Check for the 🔞 reaction dynamically
+    if (msg.reactions && msg.reactions.length > 0) {
+        return msg.reactions.some(r => r.emoji.name === '🔞' || r.emoji.name === 'underage');
+    }
+
+    return false;
+}
+
 function showProtocolOverride() {
     let modal = document.getElementById('nsfw-gateway');
     if (!modal) {

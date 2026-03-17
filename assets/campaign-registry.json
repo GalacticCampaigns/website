@@ -368,7 +368,7 @@
           "channelID": "1200635186119979019",
           "fileName": "bluebook-wes_1.json",
           "isActive": true,
-          "isNSFW": true,
+          "isNSFW": false,
           "preview": "",
           "order": 0,
           "messageCount": 644,
