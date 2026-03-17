@@ -216,19 +216,17 @@ function renderFeed(filterId) {
             transition.className = 'channel-transition';
             transition.innerHTML = `📡 FREQUENCY SHIFT >> ${shiftName}`;
             
-            // THE FIX: Switch feed AND jump to the specific message
+            // THE FIX: Always switch the feed, then jump, even if currently in 'all'
             transition.onclick = () => {
-                if (filterId === 'all') {
-                    // Already in combined, just scroll to the post
-                    jumpToMessage(msg.id);
-                } else {
-                    // Switch to the target feed
-                    renderFeed(actualChannel);
-                    // Wait for the render to complete, then jump
-                    requestAnimationFrame(() => {
-                        setTimeout(() => jumpToMessage(msg.id), 100);
-                    });
-                }
+                // 1. Change the filter to the target channel/thread
+                renderFeed(actualChannel);
+                
+                // 2. Queue the jump for after the DOM is rebuilt
+                requestAnimationFrame(() => {
+                    // A small timeout ensures the browser has rendered the 
+                    // specific message element before we try to scroll to it.
+                    setTimeout(() => jumpToMessage(msg.id), 150);
+                });
             };
             output.appendChild(transition);
         }
