@@ -45,13 +45,21 @@
           "title": "PRELUDE: THE STRAY FORTUNE (KRYNN)",
           "channelID": "1382803271185469562",
           "fileName": "FO_BB_Prelude-Krynn.json",
-          "isActive": true,
+          "isActive": false,
           "isNSFW": false,
           "preview": "",
           "order": 0,
           "messageCount": 1,
           "lastMessageTimestamp": "2025-06-12T19:27:19.913+00:00",
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1382803271185469562",
+              "displayName": "Prelude: The Stray Fortune (Krynn)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 0
+            }
+          ]
         },
         {
           "title": "PRELUDE: Ghost of the <i>Devastation<i> (Vearos)",
@@ -81,13 +89,21 @@
           "title": "PRELUDE: THE ECHO IN THE STONE (VENA)",
           "channelID": "1381783926871298098",
           "fileName": "FO_BB_Prelude-Vena.json",
-          "isActive": true,
+          "isActive": false,
           "isNSFW": false,
           "preview": "",
           "order": 0,
           "messageCount": 1,
           "lastMessageTimestamp": "2025-06-12T01:37:02.532+00:00",
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1381783926871298098",
+              "displayName": "Prelude: The Echo in the Stone (Vena)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 0
+            }
+          ]
         },
         {
           "title": "CHAPTER 1: AWAKENING",
