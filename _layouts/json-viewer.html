@@ -70,7 +70,7 @@ layout: default
     <div id="viewer-output">{{ content }}</div>
 </div>
 
-<script src="{{ '/assets/js/navigation.js' | relative_url }}"></script>
+<script src="{{ '/assets/js/navigation.js' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}"></script>
 <script>
 // --- 1. GLOBAL STATE ---
 let fullData = [];

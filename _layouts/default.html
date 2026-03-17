@@ -103,7 +103,7 @@
 <script>
     window.site_baseurl = "{{ '' | relative_url }}";
 </script>
-<script src="{{ '/assets/js/navigation.js' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M' }}"></script>
+<script src="{{ '/assets/js/navigation.js' | relative_url }}?v={{ site.time | date: '%Y%m%d%H%M%S' }}"></script>
 <script>
 function switchCampaign(slug) {
     const url = (slug === "hub" || !slug) ? window.site_baseurl + "/" : window.site_baseurl + "/?c=" + slug;
