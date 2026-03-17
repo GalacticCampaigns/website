@@ -69,18 +69,30 @@ a:hover {
 }
 
 .frozen-nav {
-    position: sticky; top: var(--site-nav-height);
-    z-index: 8000; background-color: var(--secondary-bg); 
+    position: sticky; 
+    top: var(--site-nav-height);
+    z-index: 8000; 
+    background-color: var(--secondary-bg); 
     border-bottom: 1px solid var(--gh-border);
-    height: var(--log-nav-height); width: 100%;
-    display: flex; align-items: center;
+    min-height: var(--log-nav-height); /* Changed from height to min-height */
+    height: auto; /* Allows expansion on mobile */
+    width: 100%;
+    display: flex; 
+    align-items: center;
+    padding: 5px 0;
 }
 
 .nav-inner {
-    display: flex; width: 100%; max-width: 900px;
-    margin: 0 auto; gap: 10px; padding: 0 15px;
-    align-items: center; flex-direction: row; flex-wrap: nowrap;
+    display: flex; 
+    width: 100%; 
+    max-width: 900px;
+    margin: 0 auto; 
+    gap: 10px; 
+    padding: 0 15px;
+    align-items: center; 
+    flex-wrap: wrap; /* Allows wrapping on small screens */
 }
+
 .nav-links {
     margin-left: auto;
     display: flex;
@@ -121,7 +133,7 @@ a:hover {
     align-items: center; 
     flex-grow: 1;
     min-width: 0; 
-    overflow: visible; /* Changed from hidden to allow dropdown to show */
+    flex-wrap: wrap; /* Critical for multi-line */
     font-family: 'Terminus', monospace; 
     font-size: 0.95rem;
     color: var(--sw-yellow); 
@@ -136,11 +148,19 @@ a:hover {
     min-width: 0; /* Critical for truncation to work in flexbox */
 }
 
-#thread-indicator {
-    max-width: 250px; /* Adjust this based on preference */
+#active-chapter-name {
+    display: block;
+    max-width: 100%;
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
+#thread-indicator {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
 #thread-indicator span:last-child {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -313,6 +333,16 @@ code {
 }
 
 @media (max-width: 600px) {
+    .frozen-nav {         padding: 8px 0;    }
+    
+    .log-breadcrumb {        flex-direction: column; /* Stacks Chapter above Thread */        align-items: flex-start;        gap: 2px;    }
+
+    #active-chapter-name {        font-size: 0.85rem;        max-width: calc(100vw - 120px); /* Leave room for buttons */    }
+
+    #thread-indicator {        font-size: 0.75rem;        padding-left: 0;        width: 100%;    }
+    
+    /* Remove the arrow on mobile or replace it with a smaller indentation */
+    #thread-indicator .nav-arrow {        margin: 0 8px 0 0;        font-size: 0.6rem;    }
     .timestamp { display: none; } /* Hide time on very small screens to keep rows single-line */
     .username { display: block; width: 100%; margin-bottom: 2px; }
     .nav-inner { gap: 4px; }    
@@ -320,19 +350,10 @@ code {
     .hud-btn {        width: 40px;        height: 40px;        font-size: 1rem;    }
 }
 /* --- 10. FLOATING COMMS HUD --- */
-.comms-hud {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 9999;
-}
+.comms-hud {    position: fixed;    bottom: 30px;    right: 30px;    display: flex;    flex-direction: column;    gap: 10px;    z-index: 9999;}
 
 .hud-btn {
-    width: 45px;
-    height: 45px;
+    width: 45px;    height: 45px;
     border-radius: 50%;
     background: var(--secondary-bg);
     border: 1px solid var(--accent-blue);
@@ -354,15 +375,9 @@ code {
     box-shadow: 0 0 15px rgba(97, 218, 251, 0.4);
 }
 
-#hud-return {
-    border-color: var(--sw-yellow);
-    color: var(--sw-yellow);
-}
+#hud-return {    border-color: var(--sw-yellow);    color: var(--sw-yellow);}
 
-#hud-return:hover {
-    background: var(--sw-yellow);
-    color: var(--primary-bg);
-}
+#hud-return:hover {    background: var(--sw-yellow);    color: var(--primary-bg);}
 
 /* --- 11. NSFW & CONTENT SHIELDING --- */
 
@@ -378,12 +393,7 @@ code {
 }
 
 /* Removal of blur via Global Toggle or Individual '.off' class */
-body.nsfw-unlocked .nsfw-blur, 
-.nsfw-blur.off { 
-    filter: blur(0) !important;
-    pointer-events: auto;
-    user-select: auto;
-}
+body.nsfw-unlocked .nsfw-blur, .nsfw-blur.off {     filter: blur(0) !important;    pointer-events: auto;    user-select: auto;}
 
 /* Media Shielding */
 .media-shield {

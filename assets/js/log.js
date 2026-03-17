@@ -324,14 +324,21 @@ function resolveInternalLinkData(id) {
 function updateBreadcrumb(chapterTitle, threadTitle = null) {
     const chapEl = document.getElementById('active-chapter-name');
     const threadEl = document.getElementById('thread-indicator');
-    if (chapEl) chapEl.innerHTML = `${chapterTitle.toUpperCase()} <span style="font-size: 0.7em; opacity: 0.5; margin-left: 5px;">▼</span>`;
+    
+    // Safety check for mobile: Truncate very long chapter names
+    let displayChapter = chapterTitle;
+    if (window.innerWidth < 600 && displayChapter.length > 25) {
+        displayChapter = displayChapter.substring(0, 22) + "...";
+    }
+
+    if (chapEl) chapEl.innerHTML = `${displayChapter.toUpperCase()} <span style="font-size: 0.7em; opacity: 0.5; margin-left: 5px;">▼</span>`;
+    
     if (threadEl) {
         if (threadTitle) {
             threadEl.style.display = 'flex';
             threadEl.innerHTML = `<span class="nav-arrow">❯</span><span>${threadTitle.toUpperCase()}</span>`;
         } else {
             threadEl.style.display = 'none';
-            threadEl.innerHTML = '';
         }
     }
 }
