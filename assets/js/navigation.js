@@ -29,18 +29,6 @@ async function getRegistry() {
     }
 }
 
-/**
- * NEW: Fetches the optional media-registry.json from the campaign repository
- */
-async function getMediaRegistry(remoteBase) {
-    try {
-        const res = await fetch(`${remoteBase}media-registry.json?t=${Date.now()}`);
-        if (!res.ok) return null; // Graceful exit if file doesn't exist
-        return await res.json();
-    } catch (e) {
-        return null; 
-    }
-}
 
 /**
  * Standardizes how we extract campaign and channel info from the URL
