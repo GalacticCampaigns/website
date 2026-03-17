@@ -3,12 +3,6 @@ layout: default
 title: Terms of Service
 ---
 
-To stay compliant with **Discord’s Developer Terms** and **Google’s Generative AI Additional Terms of Service**, your TOS needs to move beyond simple "bot architecture" and address the responsibilities that come with **User-Generated Content (Character Sheets)** and **AI-Generated Content (GM App)**.
-
-Here is the updated, "future-proofed" Terms of Service for the March 2026 rollout.
-
----
-
 # Terms of Service for Galactic Campaigns
 
 **Last Updated:** March 17, 2026
