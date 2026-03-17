@@ -241,6 +241,8 @@ function renderFeed(filterId) {
         // --- Message Rendering ---
         if (shouldShowContent) {
             const threadRef = logEntry.threads ? logEntry.threads.find(t => t.threadID === msg.channel_id) : null;
+
+            // Rendering conditions for NSFW
             const isPostNSFW = detectNSFW(msg);
             const isCurrentMsgNSFW = isChannelNSFW || (threadRef && threadRef.isNSFW) || isPostNSFW;
             

@@ -226,6 +226,18 @@ function detectNSFW(msg) {
     return false;
 }
 
+function detectWarningContent(msg) {  //This features is to be added later
+    // 1. Check for the manual override key from the script
+    if (msg.isContentWarning === true) return true;
+
+    // 2. Check for the ⚠️ reaction dynamically
+    if (msg.reactions && msg.reactions.length > 0) {
+        return msg.reactions.some(r => r.emoji.name === '⚠️' || r.emoji.name === 'warning');
+    }
+
+    return false;
+}
+
 function showProtocolOverride() {
     let modal = document.getElementById('nsfw-gateway');
     if (!modal) {
