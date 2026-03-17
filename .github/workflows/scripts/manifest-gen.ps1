@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Campaign Registry Hydrator V2.2.3
+    Campaign Registry Hydrator V2.2.4
 .DESCRIPTION
     Hydrates campaign-registry.json via GitHub API. 
-    Includes Low-Level BOM Stripping, ID Resolution Hierarchy, and NSFW Density Logic.
+    Includes Low-Level BOM Stripping, Variable Delimiting, and NSFW Density Logic.
 #>
 param (
     [string]$RequestedCampaignSlug,
@@ -119,7 +119,6 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
         $FileBytes = [System.Convert]::FromBase64String($FileResp.content)
         
         # --- THE BOM STRIPPER ---
-        # Using a MemoryStream and StreamReader with detection allows us to bypass the UTF-8 BOM automatically
         $ms = [System.IO.MemoryStream]::new($FileBytes)
         $sr = [System.IO.StreamReader]::new($ms, [System.Text.Encoding]::UTF8, $true)
         $FileStringContent = $sr.ReadToEnd()
@@ -152,8 +151,9 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
         $NsfwRatio = if ($MessageList.Count -gt 0) { $GlobalNsfwCounter / $MessageList.Count } else { 0 }
         $AutoFlagLog = $NsfwRatio -ge 0.9
 
+        # FIXED DEBUG LINE (Using ${} to delimit variable)
         if ($EnableDebugMode -and $GlobalNsfwCounter -gt 0) {
-            Write-Host "[DEBUG] NSFW for $CurrentFileName: $GlobalNsfwCounter posts ($([Math]::Round($NsfwRatio*100, 2))%)" -ForegroundColor Magenta
+            Write-Host "[DEBUG] NSFW for ${CurrentFileName}: $GlobalNsfwCounter posts ($([Math]::Round($NsfwRatio*100, 2))%)" -ForegroundColor Magenta
         }
 
         # Resolve ID
@@ -176,7 +176,7 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
             }
             Write-Host "  [OK] Hydrated: $($ExistingRecord.title)" -ForegroundColor Gray
         } else {
-            if ($EnableDebugMode) { Write-Host "  [DEBUG] ID $ResolvedID ($CurrentFileName) not in manifest." -ForegroundColor DarkYellow }
+            if ($EnableDebugMode) { Write-Host "  [DEBUG] ID ${ResolvedID} (${CurrentFileName}) not in manifest." -ForegroundColor DarkYellow }
         }
 
     } catch { 
@@ -196,4 +196,4 @@ foreach ($LogEntry in $TargetCampaignObj.logs) {
 $FinalJsonPayload = $RegistryData | ConvertTo-Json -Depth 10
 [System.IO.File]::WriteAllText($ManifestFilePath, $FinalJsonPayload, (New-Object System.Text.UTF8Encoding($false)))
 
-Write-Host "`n>>> Success: Hydration V2.2.3 Complete." -ForegroundColor Green
+Write-Host "`n>>> Success: Hydration V2.2.4 Complete." -ForegroundColor Green
