@@ -1,9 +1,10 @@
 <#
 .SYNOPSIS
-    Campaign Registry Hydrator V2.3.1
+    Campaign Registry Hydrator V2.3.3
 .DESCRIPTION
-    Updated to aggregate thread counts into main channel tally and 
-    list processed threads during execution.
+    - Restores Thread-level NSFW auto-calculation.
+    - Adds detailed narrative breakdown logging (Main vs Threads).
+    - Prevents property-missing crashes on campaigns without media registries.
 #>
 param (
     [string]$RequestedCampaignSlug,
@@ -25,45 +26,50 @@ if ($null -eq $TargetCampaignObj) { Write-Error "Campaign '${ActiveCampaignKey}'
 
 $Token = if ($env:GH_TOKEN) { $env:GH_TOKEN } else { $env:GITHUB_TOKEN }
 $RequestHeaders = @{ "Accept" = "application/vnd.github.v3+json" }
-
-if ($Token) { 
-    $RequestHeaders.Add("Authorization", "Bearer $Token") 
-    if ($EnableDebugMode) { Write-Host "[DEBUG] Authenticating via GitHub Token." -ForegroundColor Gray }
-}
+if ($Token) { $RequestHeaders.Add("Authorization", "Bearer $Token") }
 
 # --- Path Logic ---
 $BaseFolder = $TargetCampaignObj.dataPath.Trim('./').Trim('/')
 $SubFolder = $TargetCampaignObj.paths.json.Trim('/')
 $FullRemotePath = if ([string]::IsNullOrWhiteSpace($BaseFolder)) { $SubFolder } else { "$BaseFolder/$SubFolder" }
 
-# Media Registry Auto-Detection
+# --- MEDIA REGISTRY DETECTION (ROBUST) ---
 $MediaRegistryFileName = "media-registry.json"
 $MediaRegistryRemotePath = if ([string]::IsNullOrWhiteSpace($BaseFolder)) { $MediaRegistryFileName } else { "$BaseFolder/$MediaRegistryFileName" }
 $MediaApiUrl = "https://api.github.com/repos/$($TargetCampaignObj.repository)/contents/${MediaRegistryRemotePath}?ref=$($TargetCampaignObj.branch)"
 
+$FoundRegistry = $null
 try {
     $MediaCheck = Invoke-RestMethod -Uri $MediaApiUrl -Method Get -Headers $RequestHeaders
-    $TargetCampaignObj.paths.mediaRegistry = $MediaRegistryFileName
-    if ($EnableDebugMode) { Write-Host "[DEBUG] Media Registry detected." -ForegroundColor Green }
+    $FoundRegistry = $MediaRegistryFileName
+    if ($EnableDebugMode) { Write-Host "[DEBUG] Media Registry active: $MediaRegistryFileName" -ForegroundColor Green }
 } catch {
-    $TargetCampaignObj.paths.mediaRegistry = $null
+    if ($EnableDebugMode) { Write-Host "[DEBUG] No Media Registry found for this campaign." -ForegroundColor Gray }
+}
+
+# Inject property safely if missing
+if ($null -eq $TargetCampaignObj.paths.PSObject.Properties['mediaRegistry']) {
+    $TargetCampaignObj.paths | Add-Member -MemberType NoteProperty -Name "mediaRegistry" -Value $FoundRegistry -Force
+} else {
+    $TargetCampaignObj.paths.mediaRegistry = $FoundRegistry
 }
 
 $GitHubApiUrl = "https://api.github.com/repos/$($TargetCampaignObj.repository)/contents/${FullRemotePath}?ref=$($TargetCampaignObj.branch)"
 
 Write-Host "`n>>> Initializing Hydration: $($TargetCampaignObj.name)" -ForegroundColor Cyan
+Write-Host ">>> Data Path: ${FullRemotePath}" -ForegroundColor Gray
 
 try {
     $RemoteDirectoryListing = Invoke-RestMethod -Uri $GitHubApiUrl -Method Get -Headers $RequestHeaders
     $ValidJsonFiles = $RemoteDirectoryListing | Where-Object { $_.name -like "*.json" }
-    Write-Host ">>> Found $($ValidJsonFiles.Count) files to process." -ForegroundColor Green
+    Write-Host ">>> Found $($ValidJsonFiles.Count) files in remote repository." -ForegroundColor Green
 } catch {
     Write-Error "GitHub API Access Failed: $($_.Exception.Message)"; exit 1
 }
 
 $GlobalProcessedIDs = New-Object 'System.Collections.Generic.HashSet[string]'
 
-# --- 2. Helper: Hardened Property Lookup ---
+# --- 2. Helpers ---
 function Get-NormalizedProperty($InputObject, $DesiredPropertyName) {
     if ($null -eq $InputObject) { return $null } 
     try {
@@ -74,54 +80,36 @@ function Get-NormalizedProperty($InputObject, $DesiredPropertyName) {
     return $null
 }
 
-# --- 3. ID Resolver Hierarchy ---
 function Resolve-ChannelIDFromMessages($MessageCollection) {
     if ($null -eq $MessageCollection -or $MessageCollection.Count -eq 0) { return $null }
-
     foreach ($CurrentMsg in $MessageCollection) {
-        $ThreadParentCheck = Get-NormalizedProperty $CurrentMsg.thread "parent_id"
-        if ($null -ne $ThreadParentCheck -and $ThreadParentCheck -eq "1") {
+        if ($CurrentMsg.thread -and $CurrentMsg.thread.parent_id -eq "1") {
             return Get-NormalizedProperty $CurrentMsg "channel_id"
         }
     }
-
     $ValidIDList = $MessageCollection | ForEach-Object { Get-NormalizedProperty $_ "channel_id" } | 
-                   Where-Object { $_ -ne "1" -and $_ -ne "0" -and -not [string]::IsNullOrWhiteSpace($_) }
+                   Where-Object { $_ -match '^\d{17,20}$' }
     if ($null -ne $ValidIDList) {
         return ($ValidIDList | Group-Object | Sort-Object Count -Descending | Select-Object -First 1).Name
-    }
-
-    foreach ($CurrentMsg in $MessageCollection) {
-        $ParentSnowflake = Get-NormalizedProperty $CurrentMsg.thread "parent_id"
-        if ($null -ne $ParentSnowflake -and $ParentSnowflake.Length -gt 10 -and $ParentSnowflake -ne "1") {
-            return $ParentSnowflake
-        }
     }
     return $null
 }
 
-# --- 4. Main Processing Loop ---
+# --- 3. Main Processing Loop ---
 foreach ($RemoteFileRef in $ValidJsonFiles) {
     $CurrentFileName = $RemoteFileRef.name
     try {
-        if ($EnableDebugMode) { Write-Host "`n[DEBUG] --- Processing: ${CurrentFileName} ---" -ForegroundColor Cyan }
-        
         $FileWebResponse = Invoke-WebRequest -Uri $RemoteFileRef.download_url -Headers $RequestHeaders -UseBasicParsing
         $FileStringContent = $FileWebResponse.Content
-
-        if ($FileStringContent.StartsWith([char]0xfeff)) {
-            $FileStringContent = $FileStringContent.Substring(1)
-            if ($EnableDebugMode) { Write-Host "[DEBUG] BOM stripped." -ForegroundColor Yellow }
-        }
+        if ($FileStringContent.StartsWith([char]0xfeff)) { $FileStringContent = $FileStringContent.Substring(1) }
 
         $ParsedJson = $FileStringContent | ConvertFrom-Json
         $MessageList = if ($ParsedJson.PSObject.Properties.Name -contains "messages") { $ParsedJson.messages } else { $ParsedJson }
         if ($MessageList -isnot [array]) { $MessageList = @($MessageList) }
 
-        # --- NSFW SCANNER ---
+        # NSFW Scanning (Injects isNSFW key where reactions match)
         $GlobalNsfwCounter = 0
-        $NsfwEmojiMatch = [char]::ConvertFromUtf32(0x1F51E) 
-
+        $NsfwEmojiMatch = [char]::ConvertFromUtf32(0x1F51E)
         foreach ($msg in $MessageList) {
             $isPostNsfw = $false
             if ($msg.reactions) {
@@ -139,45 +127,52 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
             }
         }
 
-        $NsfwRatio = if ($MessageList.Count -gt 0) { $GlobalNsfwCounter / $MessageList.Count } else { 0 }
-        $AutoFlagLog = $NsfwRatio -ge 0.9
-
-        $ResolvedTargetChannelID = Resolve-ChannelIDFromMessages $MessageList
-        if ($null -eq $ResolvedTargetChannelID) {
-            Write-Warning "!! Skipping ${CurrentFileName}: Could not resolve ID."
-            continue
+        # Resolve ID
+        $ResolvedID = Resolve-ChannelIDFromMessages $MessageList
+        if ($null -eq $ResolvedID) { 
+            Write-Warning "!! Skipping ${CurrentFileName}: Could not resolve Snowflake ID."
+            continue 
         }
+        [void]$GlobalProcessedIDs.Add($ResolvedID)
 
-        # --- REVISED TALLY LOGIC ---
-        # We count ALL narrative messages in the file (Channel + Threads)
+        # Narrative Tally Breakdown
         $NarrativeTypeRegex = "^(0|19|Default|Reply)$"
-        $AllNarrativeMessages = $MessageList | Where-Object { 
-            [string]$_.type -match $NarrativeTypeRegex
-        }
-        $NarrativeTally = if ($null -ne $AllNarrativeMessages) { $AllNarrativeMessages.Count } else { 0 }
+        $AllNarrative = $MessageList | Where-Object { [string]$_.type -match $NarrativeTypeRegex }
         
+        # Sub-breakdown for logging
+        $MainChannelMsgs = $AllNarrative | Where-Object { $_.channel_id -eq $ResolvedID -and $null -eq $_.thread }
+        $ThreadMsgs = $AllNarrative | Where-Object { $null -ne $_.thread }
+        
+        $NarrativeTally = if ($null -ne $AllNarrative) { $AllNarrative.Count } else { 0 }
         $NewestTimestamp = ($MessageList | Sort-Object timestamp -Descending | Select-Object -First 1).timestamp
 
         # Thread Discovery
         $DiscoveredThreadGroups = $MessageList | Where-Object { 
             $tId = Get-NormalizedProperty $_.thread "id"
-            return (-not [string]::IsNullOrWhiteSpace($tId) -and $tId -ne $ResolvedTargetChannelID)
+            return (-not [string]::IsNullOrWhiteSpace($tId) -and $tId -ne $ResolvedID)
         } | Group-Object { [string]$_.thread.id }
 
-        # Match to Manifest
-        $ExistingRecord = $TargetCampaignObj.logs | Where-Object { [string]$_.channelID -eq $ResolvedTargetChannelID }
-        if ($null -eq $ExistingRecord) {
-            $ExistingRecord = $TargetCampaignObj.logs | Where-Object { $_.fileName -ieq $CurrentFileName }
-        }
+        # Match Manifest Record
+        $ExistingRecord = $TargetCampaignObj.logs | Where-Object { [string]$_.channelID -eq $ResolvedID }
+        if ($null -eq $ExistingRecord) { $ExistingRecord = $TargetCampaignObj.logs | Where-Object { $_.fileName -ieq $CurrentFileName } }
+
+        # Flag for Log-Level NSFW (90% Rule)
+        $AutoFlagLog = ($GlobalNsfwCounter / $MessageList.Count -ge 0.9)
 
         if ($null -eq $ExistingRecord) {
-            $HighestOrder = if ($TargetCampaignObj.logs.Count -gt 0) { ($TargetCampaignObj.logs | Measure-Object -Property order -Maximum).Maximum } else { -1 }
+            if ($EnableDebugMode) { Write-Host "  [NEW] $CurrentFileName detected. Adding to registry." -ForegroundColor Yellow }
+            $MaxOrder = if ($TargetCampaignObj.logs.Count -gt 0) { ($TargetCampaignObj.logs | Measure-Object -Property order -Maximum).Maximum } else { -1 }
             $ExistingRecord = [PSCustomObject]@{
                 title = $CurrentFileName.Split('.')[0].Replace("_", " "); 
-                channelID = [string]$ResolvedTargetChannelID; 
-                fileName = $CurrentFileName;
-                isActive = $true; isNSFW = $AutoFlagLog; preview = ""; order = $HighestOrder + 1;
-                messageCount = $NarrativeTally; lastMessageTimestamp = $NewestTimestamp; threads = @()
+                channelID = [string]$ResolvedID; 
+                fileName = $CurrentFileName; 
+                isActive = $true; 
+                isNSFW = $AutoFlagLog; 
+                preview = ""; 
+                order = $MaxOrder + 1;
+                messageCount = $NarrativeTally; 
+                lastMessageTimestamp = $NewestTimestamp; 
+                threads = @()
             }
             $TargetCampaignObj.logs += $ExistingRecord
         } else {
@@ -185,54 +180,70 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
             $ExistingRecord.messageCount = $NarrativeTally
             $ExistingRecord.lastMessageTimestamp = $NewestTimestamp
             $ExistingRecord.isActive = $true
+            # Locked 8: Only update isNSFW if it's currently false
             if ($ExistingRecord.isNSFW -eq $false) { $ExistingRecord.isNSFW = $AutoFlagLog }
         }
 
-        # --- THREAD PROCESSING & DEBUGGING ---
-        $UpdatedThreadList = New-Object System.Collections.Generic.List[PSObject]
-        foreach ($CurrentGroup in $DiscoveredThreadGroups) {
-            $tID = [string]$CurrentGroup.Name
-            $tName = $CurrentGroup.Group[0].thread.name
+        # Thread Updates & NSFW Density Calculation
+        $UpdatedThreads = New-Object System.Collections.Generic.List[PSObject]
+        foreach ($Group in $DiscoveredThreadGroups) {
+            $tID = [string]$Group.Name
+            $tName = $Group.Group[0].thread.name
             
-            if ($EnableDebugMode) { Write-Host "  [THREAD] Found: $tName ($tID)" -ForegroundColor DarkGray }
-
             $StoredT = $ExistingRecord.threads | Where-Object { [string]$_.threadID -eq $tID }
-            $TCount = ($CurrentGroup.Group | Where-Object { [string]$_.type -match $NarrativeTypeRegex }).Count
-            $TNsfwCount = ($CurrentGroup.Group | Where-Object { $_.isNSFW -eq $true }).Count
-            $TIsNsfw = if ($CurrentGroup.Group.Count -gt 0) { ($TNsfwCount / $CurrentGroup.Group.Count) -ge 0.9 } else { $false }
+            
+            # Feature Logic: Calculate Thread-Specific NSFW Density
+            $TNarrative = $Group.Group | Where-Object { [string]$_.type -match $NarrativeTypeRegex }
+            $TCount = if ($null -ne $TNarrative) { $TNarrative.Count } else { 0 }
+            $TNsfwCount = ($Group.Group | Where-Object { $_.isNSFW -eq $true }).Count
+            $TIsNsfw = if ($TCount -gt 0) { ($TNsfwCount / $TCount) -ge 0.9 } else { $false }
+
+            if ($EnableDebugMode) { 
+                $nsfwFlag = if ($TIsNsfw) { "[NSFW]" } else { "" }
+                Write-Host "  [THREAD] Found: $tName ($tID) - Posts: $TCount $nsfwFlag" -ForegroundColor DarkGray 
+            }
 
             if ($null -ne $StoredT) {
                 $StoredT.messageCount = $TCount
                 if ($StoredT.isNSFW -eq $false) { $StoredT.isNSFW = $TIsNsfw }
-                $UpdatedThreadList.Add($StoredT)
+                $UpdatedThreads.Add($StoredT)
             } else {
-                $UpdatedThreadList.Add([PSCustomObject]@{ 
-                    threadID = $tID; displayName = $tName; 
-                    isActive = $true; isNSFW = $TIsNsfw; messageCount = $TCount 
+                $UpdatedThreads.Add([PSCustomObject]@{ 
+                    threadID = $tID; 
+                    displayName = $tName; 
+                    isActive = $true; 
+                    isNSFW = $TIsNsfw; 
+                    messageCount = $TCount 
                 })
             }
-
         }
+        $ExistingRecord.threads = $UpdatedThreads.ToArray()
         
-        $ExistingRecord.threads = $UpdatedThreadList.ToArray()
-        [void]$GlobalProcessedIDs.Add($ResolvedTargetChannelID)
-
-        Write-Host "  [OK] Processed: ${CurrentFileName} | Total Narrative: $NarrativeTally | NSFW: $([Math]::Round($NsfwRatio*100,1))%" -ForegroundColor Gray
+        # FINAL PER-FILE LOG LINE
+        $logStatus = "Main: $($MainChannelMsgs.Count) | Threads: $($ThreadMsgs.Count)"
+        Write-Host "  [OK] Processed: ${CurrentFileName} ($logStatus) | NSFW: $([Math]::Round($NsfwRatio*100,1))%" -ForegroundColor Gray
 
     } catch { 
-        Write-Warning "!! Critical error in ${CurrentFileName}: $($_.Exception.Message)" 
+        Write-Warning "!! Error in ${CurrentFileName}: $($_.Exception.Message)" 
     }
 }
 
-# --- 5. Orphan Deactivation ---
+# --- 4. Orphan Deactivation ---
+$ActiveCount = 0
 foreach ($Log in $TargetCampaignObj.logs) {
-    if (-not $GlobalProcessedIDs.Contains($Log.channelID) -and -not [string]::IsNullOrWhiteSpace($Log.channelID)) {
-        Write-Warning "Orphaned record: '$($Log.title)'. Deactivating."
-        $Log.isActive = $false
+    if ($GlobalProcessedIDs.Contains($Log.channelID)) {
+        $ActiveCount++
+    } elseif (-not [string]::IsNullOrWhiteSpace($Log.channelID)) {
+        if ($Log.isActive -ne $false) {
+            Write-Warning "  [ORPHAN] $($Log.title) not found in repo. Deactivating."
+            $Log.isActive = $false
+        }
     }
 }
 
-# --- 6. Export ---
+# --- 5. Export ---
 $FinalJson = $RegistryData | ConvertTo-Json -Depth 10
 [System.IO.File]::WriteAllText($ManifestFilePath, $FinalJson, (New-Object System.Text.UTF8Encoding($false)))
-Write-Host "`n>>> Hydration Complete." -ForegroundColor Green
+
+Write-Host "`n>>> Hydration V2.3.3 Complete." -ForegroundColor Green
+Write-Host ">>> Summary: $ActiveCount Active Logs | $($ValidJsonFiles.Count) Files Scanned." -ForegroundColor Cyan
