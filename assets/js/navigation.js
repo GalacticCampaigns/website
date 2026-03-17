@@ -296,33 +296,40 @@ window.onclick = (e) => {
 
 function triggerLayoutReflow() {
     const { slug } = getUrlContext();
-    if (!slug) return;
+    if (!slug || !window.GC_STATE.currentCampaign) return;
 
-    // Handle Global Nav (Logo/Brand truncation)
-    if (window.GC_STATE.currentCampaign) {
-        const brandText = document.getElementById('nav-brand-text');
-        if (brandText) {
-            let name = window.GC_STATE.currentCampaign.name;
-            // Truncate brand name if screen is tiny
-            if (window.innerWidth < 400 && name.length > 15) {
-                brandText.textContent = name.substring(0, 12) + "...";
-            } else {
-                brandText.textContent = name;
-            }
+    // 1. Handle Global Nav Truncation
+    const brandText = document.getElementById('nav-brand-text');
+    if (brandText) {
+        let name = window.GC_STATE.currentCampaign.name;
+        if (window.innerWidth < 450 && name.length > 20) {
+            brandText.textContent = name.substring(0, 17) + "...";
+        } else {
+            brandText.textContent = name;
         }
     }
 
-    // Handle Log Viewer specifically (if the function exists)
-    if (typeof updateBreadcrumb === 'function' && window.GC_STATE.currentCampaign) {
+    // 2. Handle Log Viewer Breadcrumbs
+    // Look for the function and the ID we stored in log.js
+    if (typeof updateBreadcrumb === 'function' && window.GC_STATE.currentMainChannelId) {
         const activeLog = window.GC_STATE.currentCampaign.logs.find(
-            l => l.channelID === window.GC_STATE.campaignSlug // or your mainChannelId logic
+            l => l.channelID === window.GC_STATE.currentMainChannelId
         );
         
         if (activeLog) {
             const currentHash = window.location.hash.substring(1).split(':')[0] || 'all';
-            const threadName = (currentHash !== 'all' && currentHash !== activeLog.channelID) 
-                               ? window.channelMap[currentHash] 
-                               : null;
+            
+            // Resolve the thread name from the global map
+            let threadName = null;
+            if (currentHash === 'all') {
+                threadName = "COMBINED FEED";
+            } else if (currentHash === window.GC_STATE.currentMainChannelId) {
+                threadName = "PRIMARY FEED";
+            } else {
+                threadName = window.channelMap[currentHash] || null;
+            }
+
+            // Trigger the re-draw with current window width logic
             updateBreadcrumb(activeLog.title, threadName);
         }
     }

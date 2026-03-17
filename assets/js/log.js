@@ -1,6 +1,8 @@
+// assets/js/log.js
+
 // --- 1. GLOBAL STATE ---
 let fullData = [];
-let channelMap = {}; 
+window.channelMap = {}; // CHANGE: Attach to window
 let mainChannelId = null;
 
 // --- 2. INITIALIZATION ---
@@ -137,11 +139,11 @@ async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
 
         updateBreadcrumb(logEntry.title);
 
-        channelMap = {};
+        window.channelMap = {}; 
         let parentCounts = {};
         fullData.forEach(m => {
             if (m.thread) {
-                channelMap[m.thread.id] = m.thread.name.toUpperCase();
+                window.channelMap[m.thread.id] = m.thread.name.toUpperCase();
                 if (m.thread.parent_id) parentCounts[m.thread.parent_id] = (parentCounts[m.thread.parent_id] || 0) + 1;
             }
         });
