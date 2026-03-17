@@ -13,7 +13,8 @@
         "media": "Chapter_Logs/media/",
         "avatars": "Chapter_Logs/avatars/",
         "logo": "Image_Resources/fo_logo.png",
-        "wiki": "https://github.com/alicia86/SW_ForgottenOnes/wiki/"
+        "wiki": "https://github.com/alicia86/SW_ForgottenOnes/wiki/",
+        "mediaRegistry": null
       },
       "logs": [
         {
@@ -112,7 +113,7 @@
           "isNSFW": false,
           "preview": "",
           "order": 1,
-          "messageCount": 296,
+          "messageCount": 301,
           "lastMessageTimestamp": "2025-08-01T12:39:15.84+00:00",
           "threads": [
             {
@@ -177,7 +178,7 @@
           "title": "CHAPTER 2: SILENT-DRIFT",
           "channelID": "140081666527671102",
           "fileName": "FO_Ch2_Silent-Drift.json",
-          "isActive": true,
+          "isActive": false,
           "isNSFW": false,
           "preview": "",
           "order": 2,
