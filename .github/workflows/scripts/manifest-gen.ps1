@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Campaign Registry Hydrator V2.2.5
+    Campaign Registry Hydrator V2.2.6
 .DESCRIPTION
     Hydrates campaign-registry.json via GitHub API. 
-    Includes Low-Level BOM Stripping and hardened variable delimiters for CI/CD runners.
+    Fixed double-token error and maintained hardened variable delimiters.
 #>
 param (
     [string]$RequestedCampaignSlug,
@@ -24,13 +24,15 @@ $TargetCampaignObj = $RegistryData.campaigns.$ActiveCampaignKey
 if ($null -eq $TargetCampaignObj) { Write-Error "Campaign '${ActiveCampaignKey}' not found."; exit 1 }
 
 $Token = if ($env:GH_TOKEN) { $env:GH_TOKEN } else { $env:GITHUB_TOKEN }
-$RequestHeaders = @@{ "Accept" = "application/vnd.github.v3+json" }
+
+# FIXED: Changed @@{ to @{
+$RequestHeaders = @{ "Accept" = "application/vnd.github.v3+json" }
 
 if ($Token) { 
     $RequestHeaders.Add("Authorization", "Bearer $Token") 
     if ($EnableDebugMode) { 
         $Source = if ($env:GH_TOKEN) { "GH_TOKEN (PAT)" } else { "GITHUB_TOKEN (Default)" }
-        Write-Host "[DEBUG] Authenticated via $Source." -ForegroundColor Gray 
+        Write-Host "[DEBUG] Authenticated via ${Source}." -ForegroundColor Gray 
     }
 }
 
@@ -159,7 +161,6 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
         $ResolvedID = Resolve-ChannelIDFromMessages $MessageList $ParsedJson
         
         if ($null -eq $ResolvedID) { 
-            # DELIMITED FIX FOR LINE 163
             Write-Warning "!! Skipping ${CurrentFileName}: Could not resolve Channel ID."
             continue
         }
@@ -196,4 +197,4 @@ foreach ($LogEntry in $TargetCampaignObj.logs) {
 $FinalJsonPayload = $RegistryData | ConvertTo-Json -Depth 10
 [System.IO.File]::WriteAllText($ManifestFilePath, $FinalJsonPayload, (New-Object System.Text.UTF8Encoding($false)))
 
-Write-Host "`n>>> Success: Hydration V2.2.5 Complete." -ForegroundColor Green
+Write-Host "`n>>> Success: Hydration V2.2.6 Complete." -ForegroundColor Green
