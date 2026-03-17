@@ -43,15 +43,23 @@
         },
         {
           "title": "PRELUDE: THE STRAY FORTUNE (KRYNN)",
-          "channelID": "1382803271185469562",
+          "channelID": "1380700164175696062",
           "fileName": "FO_BB_Prelude-Krynn.json",
-          "isActive": false,
+          "isActive": true,
           "isNSFW": false,
           "preview": "",
           "order": 0,
           "messageCount": 1,
           "lastMessageTimestamp": "2025-06-12T19:27:19.913+00:00",
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1382803271185469562",
+              "displayName": "Prelude: The Stray Fortune (Krynn)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 0
+            }
+          ]
         },
         {
           "title": "PRELUDE: Ghost of the <i>Devastation<i> (Vearos)",
@@ -160,7 +168,7 @@
         },
         {
           "title": "CHAPTER 2: SILENT-DRIFT",
-          "channelID": "140081666527671102",
+          "channelID": "1400816665276711024",
           "fileName": "FO_Ch2_Silent-Drift.json",
           "isActive": true,
           "isNSFW": false,
