@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Campaign Registry Hydrator V2.2.4
+    Campaign Registry Hydrator V2.2.5
 .DESCRIPTION
     Hydrates campaign-registry.json via GitHub API. 
-    Includes Low-Level BOM Stripping, Variable Delimiting, and NSFW Density Logic.
+    Includes Low-Level BOM Stripping and hardened variable delimiters for CI/CD runners.
 #>
 param (
     [string]$RequestedCampaignSlug,
@@ -24,7 +24,7 @@ $TargetCampaignObj = $RegistryData.campaigns.$ActiveCampaignKey
 if ($null -eq $TargetCampaignObj) { Write-Error "Campaign '${ActiveCampaignKey}' not found."; exit 1 }
 
 $Token = if ($env:GH_TOKEN) { $env:GH_TOKEN } else { $env:GITHUB_TOKEN }
-$RequestHeaders = @{ "Accept" = "application/vnd.github.v3+json" }
+$RequestHeaders = @@{ "Accept" = "application/vnd.github.v3+json" }
 
 if ($Token) { 
     $RequestHeaders.Add("Authorization", "Bearer $Token") 
@@ -47,13 +47,13 @@ $MediaApiUrl = "https://api.github.com/repos/$($TargetCampaignObj.repository)/co
 try {
     $MediaCheck = Invoke-RestMethod -Uri $MediaApiUrl -Method Get -Headers $RequestHeaders
     $TargetCampaignObj.paths.mediaRegistry = $MediaRegistryFileName
-    if ($EnableDebugMode) { Write-Host "[DEBUG] Media Registry detected: $MediaRegistryFileName" -ForegroundColor Green }
+    if ($EnableDebugMode) { Write-Host "[DEBUG] Media Registry detected: ${MediaRegistryFileName}" -ForegroundColor Green }
 } catch {
     $TargetCampaignObj.paths.mediaRegistry = $null
 }
 
 $GitHubApiUrl = "https://api.github.com/repos/$($TargetCampaignObj.repository)/contents/$($FullRemotePath)?ref=$($TargetCampaignObj.branch)"
-if ($EnableDebugMode) { Write-Host "[DEBUG] API Target URL: $GitHubApiUrl" -ForegroundColor Yellow }
+if ($EnableDebugMode) { Write-Host "[DEBUG] API Target URL: ${GitHubApiUrl}" -ForegroundColor Yellow }
 
 Write-Host "`n>>> Initializing Hydration: $($TargetCampaignObj.name)" -ForegroundColor Cyan
 
@@ -87,7 +87,7 @@ function Resolve-ChannelIDFromMessages($MessageCollection, $RootJsonObj) {
     foreach ($CurrentMsg in $MessageCollection) {
         if ($CurrentMsg.thread -and $CurrentMsg.thread.parent_id -eq "1") {
             $TargetID = Get-NormalizedProperty $CurrentMsg "channel_id"
-            if ($EnableDebugMode) { Write-Host "[DEBUG] ID Resolved (Parent 1): $TargetID" -ForegroundColor Gray }
+            if ($EnableDebugMode) { Write-Host "[DEBUG] ID Resolved (Parent 1): ${TargetID}" -ForegroundColor Gray }
             return $TargetID
         }
     }
@@ -97,7 +97,7 @@ function Resolve-ChannelIDFromMessages($MessageCollection, $RootJsonObj) {
                 Where-Object { $_ -match '^\d{17,20}$' }
     if ($ValidIDs) {
         $MajorityID = ($ValidIDs | Group-Object | Sort-Object Count -Descending | Select-Object -First 1).Name
-        if ($EnableDebugMode) { Write-Host "[DEBUG] ID Resolved (Majority): $MajorityID" -ForegroundColor Gray }
+        if ($EnableDebugMode) { Write-Host "[DEBUG] ID Resolved (Majority): ${MajorityID}" -ForegroundColor Gray }
         return $MajorityID
     }
 
@@ -151,7 +151,6 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
         $NsfwRatio = if ($MessageList.Count -gt 0) { $GlobalNsfwCounter / $MessageList.Count } else { 0 }
         $AutoFlagLog = $NsfwRatio -ge 0.9
 
-        # FIXED DEBUG LINE (Using ${} to delimit variable)
         if ($EnableDebugMode -and $GlobalNsfwCounter -gt 0) {
             Write-Host "[DEBUG] NSFW for ${CurrentFileName}: $GlobalNsfwCounter posts ($([Math]::Round($NsfwRatio*100, 2))%)" -ForegroundColor Magenta
         }
@@ -160,7 +159,8 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
         $ResolvedID = Resolve-ChannelIDFromMessages $MessageList $ParsedJson
         
         if ($null -eq $ResolvedID) { 
-            Write-Warning "!! Skipping $CurrentFileName: Could not resolve Channel ID."
+            # DELIMITED FIX FOR LINE 163
+            Write-Warning "!! Skipping ${CurrentFileName}: Could not resolve Channel ID."
             continue
         }
         $GlobalProcessedIDs.Add($ResolvedID) | Out-Null
@@ -196,4 +196,4 @@ foreach ($LogEntry in $TargetCampaignObj.logs) {
 $FinalJsonPayload = $RegistryData | ConvertTo-Json -Depth 10
 [System.IO.File]::WriteAllText($ManifestFilePath, $FinalJsonPayload, (New-Object System.Text.UTF8Encoding($false)))
 
-Write-Host "`n>>> Success: Hydration V2.2.4 Complete." -ForegroundColor Green
+Write-Host "`n>>> Success: Hydration V2.2.5 Complete." -ForegroundColor Green
