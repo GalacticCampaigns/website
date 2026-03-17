@@ -95,23 +95,24 @@ async function updateGlobalNav() {
         window.GC_STATE.remoteBase = `https://raw.githubusercontent.com/${campaign.repository}/${campaign.branch}/${cleanDataPath}`;
 
         // 3. Set Local Media Registry Path (relative to the site root)
-        const mediaRegistryPath = `${window.site_baseurl}/${cleanDataPath}media-registry.json`;
+        const mediaRegistryPath = `${window.GC_STATE.remoteBase}media-registry.json`;
         
         // --- FETCH CAMPAIGN MEDIA REGISTRY ---
         try {
-            const mediaResp = await fetch(mediaRegistryPath);
+            // We add { cache: "no-store" } to ensure we get the latest registry updates
+            const mediaResp = await fetch(mediaRegistryPath, { cache: "no-store" });
             if (mediaResp.ok) {
                 const mediaData = await mediaResp.json();
                 window.GC_STATE.mediaRegistry = mediaData.nsfw_files || [];
                 window.GC_STATE.contentWarnings = mediaData.content_warnings || {};
+                console.log(`>>> Media Registry Loaded from Remote: ${campaign.name}`);
             } else {
+                console.warn("Media Registry not found on remote repository.");
                 window.GC_STATE.mediaRegistry = [];
-                window.GC_STATE.contentWarnings = {};
             }
         } catch (e) {
-            console.warn("No media registry found at:", mediaRegistryPath);
+            console.error("Failed to fetch remote media registry:", e);
             window.GC_STATE.mediaRegistry = [];
-            window.GC_STATE.contentWarnings = {};
         }
 
         // --- UI UPDATES ---

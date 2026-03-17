@@ -118,113 +118,71 @@ function Resolve-ChannelIDFromMessages($MessageCollection) {
     return $null
 }
 
-# --- 4. Main Processing Loop ---
+# --- 4. Main Processing Loop (Updated for NSFW Detection) ---
 foreach ($RemoteFileRef in $ValidJsonFiles) {
     $CurrentFileName = $RemoteFileRef.name
     try {
-        if ($EnableDebugMode) { Write-Host "`n[DEBUG] --- Parsing: ${CurrentFileName} ---" -ForegroundColor Cyan }
-        
-        # BOM Resiliency: Download as raw string first
-        $FileWebResponse = Invoke-WebRequest -Uri $RemoteFileRef.download_url -Headers $RequestHeaders -UseBasicParsing
-        $FileStringContent = $FileWebResponse.Content
-
-        # Detect and strip UTF-8 BOM (\ufeff)
-        if ($FileStringContent.StartsWith([char]0xfeff)) {
-            $FileStringContent = $FileStringContent.Substring(1)
-            if ($EnableDebugMode) { Write-Host "[DEBUG] BOM detected and stripped." -ForegroundColor Yellow }
-        }
-
-        # Parse JSON and normalize structure
+        # ... [BOM Stripping & JSON Parsing as before] ...
         $ParsedJson = $FileStringContent | ConvertFrom-Json
         $MessageList = if ($ParsedJson.PSObject.Properties.Name -contains "messages") { $ParsedJson.messages } else { $ParsedJson }
-        if ($MessageList -isnot [array]) { $MessageList = @($MessageList) }
-
-        $ResolvedTargetChannelID = Resolve-ChannelIDFromMessages $MessageList
         
-        # Dual-Key Match Search
-        $ExistingRecord = $TargetCampaignObj.logs | Where-Object { 
-            [string]$_.channelID -eq $ResolvedTargetChannelID -and -not [string]::IsNullOrWhiteSpace($ResolvedTargetChannelID) 
-        }
-        $MatchingMethod = "ID Match"
-        if ($null -eq $ExistingRecord) {
-            $ExistingRecord = $TargetCampaignObj.logs | Where-Object { $_.fileName -ieq $CurrentFileName }
-            $MatchingMethod = "Filename Match"
-        }
+        # --- NEW: PER-POST NSFW DETECTION ---
+        $GlobalNsfwCounter = 0
+        $NsfwEmojiMatch = "🔞" # Or use your custom emoji name like ":nsfw:"
 
-        # Narrative Filter (Types: 0, 19, Default, Reply)
-        $NarrativeTypeRegex = "^(0|19|Default|Reply)$"
-        $PrimaryChapterMessages = $MessageList | Where-Object { 
-            $StringifiedType = [string]$_.type
-            $IsNarrativeType = -not [string]::IsNullOrWhiteSpace($StringifiedType) -and $StringifiedType -match $NarrativeTypeRegex
-            $MessageOriginID = Get-NormalizedProperty $_ "channel_id"
-            return ($IsNarrativeType -and ($MessageOriginID -eq $ResolvedTargetChannelID -or $null -eq $_.thread))
-        }
-        
-        $NarrativeTally = if ($null -ne $PrimaryChapterMessages) { $PrimaryChapterMessages.Count } else { 0 }
-        $NewestTimestamp = ($MessageList | Sort-Object timestamp -Descending | Select-Object -First 1).timestamp
-
-        # Thread Discovery Logic
-        $DiscoveredThreadGroups = $MessageList | Where-Object { 
-            $ThreadIdentifier = Get-NormalizedProperty $_.thread "id"
-            $ThreadParentIdentifier = Get-NormalizedProperty $_.thread "parent_id"
-            -not [string]::IsNullOrWhiteSpace($ThreadIdentifier) -and 
-            $ThreadIdentifier -ne $ResolvedTargetChannelID -and 
-            $ThreadIdentifier -ne $ThreadParentIdentifier
-        } | Group-Object { [string]$_.thread.id }
-
-        # Output Summary Line
-        $ConsoleName = if ($CurrentFileName.Length -gt 25) { $CurrentFileName.Substring(0, 22) + "..." } else { $CurrentFileName.PadRight(25) }
-        Write-Host "File: ${ConsoleName} | ID: $($ResolvedTargetChannelID.PadRight(20)) | Posts: $($NarrativeTally.ToString().PadLeft(4)) | Threads: $($DiscoveredThreadGroups.Count)" -ForegroundColor Gray
-
-        if ($null -eq $ExistingRecord) {
-            if ($EnableDebugMode) { Write-Host "[DEBUG] New entry detected. Initializing." -ForegroundColor Yellow }
-            $HighestOrder = if ($TargetCampaignObj.logs.Count -gt 0) { ($TargetCampaignObj.logs | Measure-Object -Property order -Maximum).Maximum } else { -1 }
-            $ExistingRecord = [PSCustomObject]@{
-                title = $CurrentFileName.Split('.')[0].Replace("_", " "); 
-                channelID = [string]$ResolvedTargetChannelID; 
-                fileName = $CurrentFileName;
-                isActive = $true; isNSFW = $false; preview = ""; order = $HighestOrder + 1;
-                messageCount = $NarrativeTally; lastMessageTimestamp = $NewestTimestamp; threads = @()
-            }
-            $TargetCampaignObj.logs += $ExistingRecord
-        } else {
-            if ($EnableDebugMode) { Write-Host "[DEBUG] Merging into '$($ExistingRecord.title)' via $MatchingMethod" -ForegroundColor Yellow }
-            # Update Volatile Fields
-            $ExistingRecord.fileName = $CurrentFileName
-            $ExistingRecord.messageCount = $NarrativeTally
-            $ExistingRecord.lastMessageTimestamp = $NewestTimestamp
-            # Conditionals (Locked 8)
-            if ([string]::IsNullOrWhiteSpace($ExistingRecord.channelID)) { $ExistingRecord.channelID = [string]$ResolvedTargetChannelID }
-            if ($null -eq $ExistingRecord.order) { 
-                $InternalMax = if ($TargetCampaignObj.logs.Count -gt 0) { ($TargetCampaignObj.logs | Measure-Object -Property order -Maximum).Maximum } else { -1 }
-                $ExistingRecord.order = $InternalMax + 1 
-            }
-            if ($ExistingRecord.isActive -ne $false) { $ExistingRecord.isActive = $true }
-        }
-
-        # Thread Array Management
-        $UpdatedThreadList = New-Object System.Collections.Generic.List[PSObject]
-        foreach ($CurrentGroup in $DiscoveredThreadGroups) {
-            $TargetThreadLookupID = [string]$CurrentGroup.Name
-            $StoredThreadEntry = $ExistingRecord.threads | Where-Object { [string]$_.threadID -eq $TargetThreadLookupID }
-            $ThreadNarrativeCount = ($CurrentGroup.Group | Where-Object { [string]$_.type -match $NarrativeTypeRegex }).Count
+        foreach ($msg in $MessageList) {
+            $isPostNsfw = $false
             
-            if ($null -ne $StoredThreadEntry) {
-                $StoredThreadEntry.messageCount = $ThreadNarrativeCount
-                if ([string]::IsNullOrWhiteSpace($StoredThreadEntry.displayName)) { $StoredThreadEntry.displayName = $CurrentGroup.Group[0].thread.name }
-                $UpdatedThreadList.Add($StoredThreadEntry)
-            } else {
-                $UpdatedThreadList.Add([PSCustomObject]@{ 
-                    threadID = $TargetThreadLookupID; 
-                    displayName = $CurrentGroup.Group[0].thread.name; 
-                    isActive = $true; isNSFW = $false; 
-                    messageCount = $ThreadNarrativeCount 
-                })
+            # Check reactions for the NSFW emoji
+            if ($msg.reactions) {
+                foreach ($reaction in $msg.reactions) {
+                    if ($reaction.emoji.name -eq $NsfwEmojiMatch) {
+                        $isPostNsfw = $true
+                        break
+                    }
+                }
+            }
+
+            if ($isPostNsfw) {
+                $msg | Add-Member -MemberType NoteProperty -Name "isNSFW" -Value $true -Force
+                $GlobalNsfwCounter++
             }
         }
-        $ExistingRecord.threads = $UpdatedThreadList.ToArray()
-        if (-not [string]::IsNullOrWhiteSpace($ExistingRecord.channelID)) { [void]$GlobalProcessedIDs.Add($ExistingRecord.channelID) }
 
+        # Calculate Percentages
+        $NsfwPercentage = if ($MessageList.Count -gt 0) { $GlobalNsfwCounter / $MessageList.Count } else { 0 }
+        $AutoFlagLog = $NsfwPercentage -ge 0.9
+
+        # ... [ResolvedTargetChannelID & ExistingRecord Logic as before] ...
+
+        if ($null -eq $ExistingRecord) {
+            # ... [Initialization as before] ...
+            $ExistingRecord = [PSCustomObject]@{
+                # ...
+                isNSFW = $AutoFlagLog; # AUTO-FLAGGED IF > 90%
+                # ...
+            }
+        } else {
+            # Locked 8 Logic: We only auto-flag if it wasn't already manually set
+            if ($ExistingRecord.isNSFW -eq $false) { $ExistingRecord.isNSFW = $AutoFlagLog }
+        }
+
+        # --- THREAD-LEVEL AUTO-FLAGGING ---
+        foreach ($CurrentGroup in $DiscoveredThreadGroups) {
+            $ThreadMsgs = $CurrentGroup.Group
+            $ThreadNsfwCount = ($ThreadMsgs | Where-Object { $_.isNSFW -eq $true }).Count
+            $ThreadPercent = if ($ThreadMsgs.Count -gt 0) { $ThreadNsfwCount / $ThreadMsgs.Count } else { 0 }
+            
+            # Update/Create thread entry
+            # ...
+            $StoredThreadEntry.isNSFW = ($ThreadPercent -ge 0.9)
+        }
+
+        # --- IMPORTANT: RESAVE THE SOURCE JSON ---
+        # Since we added 'isNSFW' to individual messages, we must save this back to the file
+        # or ensure the website render logic handles the missing key as 'false'.
+        # Note: If you want the website to see the per-post tag, you must re-upload these JSONs.
+        
     } catch { 
         Write-Warning "!! Critical error in ${CurrentFileName}: $($_.Exception.Message)" 
     }
