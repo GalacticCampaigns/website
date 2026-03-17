@@ -73,38 +73,33 @@ async function updateGlobalNav() {
         const campaign = registry.campaigns[slug];
         window.GC_STATE.campaignSlug = slug;
         window.GC_STATE.currentCampaign = campaign;
-        
-        // 1. Clean the dataPath
+
+        // Set the remoteBase for general assets (logos, avatars)
         let cleanDataPath = (campaign.dataPath || "").replace(/^\.\//, "");
-        if (cleanDataPath && !cleanDataPath.endsWith('/')) {
-            cleanDataPath += '/';
-        }
+        if (cleanDataPath && !cleanDataPath.endsWith('/')) cleanDataPath += '/';
+        window.GC_STATE.remoteBase = `https://raw.githubusercontent.com/${campaign.repository}/${campaign.branch}/${cleanDataPath}`;
 
-        // 2. Build the GitHub Raw URL base
-        // This creates: https://raw.githubusercontent.com/user/repo/branch/folder/
-        const gitHubBase = `https://raw.githubusercontent.com/${campaign.repository}/${campaign.branch}/${cleanDataPath}`;
-        window.GC_STATE.remoteBase = gitHubBase;
+        // --- REUSABLE REGISTRY FETCH ---
+        const mediaRegistryPath = getMediaRegistryPath(campaign);
 
-        // 3. TARGET THE REMOTE FILE
-        // Explicitly use the gitHubBase variable here to avoid any site_baseurl contamination
-        const mediaRegistryPath = `${gitHubBase}media-registry.json`;
-
-        console.log("Attempting remote fetch at:", mediaRegistryPath); // Debug this!
-
-        try {
-            const mediaResp = await fetch(mediaRegistryPath, { cache: "no-store" });
-            if (mediaResp.ok) {
-                const mediaData = await mediaResp.json();
-                window.GC_STATE.mediaRegistry = mediaData.nsfw_files || [];
-                window.GC_STATE.contentWarnings = mediaData.content_warnings || {};
-                console.log(`>>> Success: Media Registry loaded from GitHub.`);
-            } else {
-                console.warn(`>>> Remote 404: No media-registry.json found at ${mediaRegistryPath}`);
-                window.GC_STATE.mediaRegistry = [];
+        if (mediaRegistryPath) {
+            console.log(`📡 Link Established: Fetching registry from ${mediaRegistryPath}`);
+            try {
+                // Append cache buster to the specific fetch
+                const mediaResp = await fetch(`${mediaRegistryPath}?t=${Date.now()}`, { cache: "no-cache" });
+                if (mediaResp.ok) {
+                    const mediaData = await mediaResp.json();
+                    window.GC_STATE.mediaRegistry = mediaData.nsfw_files || [];
+                    window.GC_STATE.contentWarnings = mediaData.content_warnings || {};
+                }
+            } catch (e) {
+                console.error("Failed to fetch remote media registry:", e);
             }
-        } catch (e) {
-            console.error("Failed to fetch remote media registry:", e);
+        } else {
+            // Fallback if no registry is defined for this campaign
+            console.log("ℹ️ No media registry defined for this frequency.");
             window.GC_STATE.mediaRegistry = [];
+            window.GC_STATE.contentWarnings = {};
         }
 
         // --- UI UPDATES ---
@@ -159,6 +154,27 @@ async function updateGlobalNav() {
 
     window.GC_STATE.isReady = true;
     document.dispatchEvent(new CustomEvent('GCStateReady'));
+}
+
+/**
+ * Resolves the remote path for a campaign-specific media registry.
+ * Returns null if the registry isn't defined in the manifest.
+ */
+function getMediaRegistryPath(campaign) {
+    // 1. Check if the key exists and has a value
+    if (!campaign.paths || !campaign.paths.mediaRegistry) {
+        return null;
+    }
+
+    // 2. Normalize the dataPath (handles './' or 'subfolder/')
+    let cleanDataPath = (campaign.dataPath || "").replace(/^\.\//, "");
+    if (cleanDataPath && !cleanDataPath.endsWith('/')) cleanDataPath += '/';
+
+    // 3. Construct the GitHub Raw URL
+    const gitHubUrl = `https://raw.githubusercontent.com/${campaign.repository}/${campaign.branch}/${cleanDataPath}`;
+    
+    // 4. Return the full path to the registry file
+    return `${gitHubUrl}${campaign.paths.mediaRegistry}`;
 }
 
 /**

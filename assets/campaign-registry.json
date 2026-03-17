@@ -359,7 +359,8 @@
         "media": "media/",
         "avatars": "avatars/",
         "logo": "",
-        "wiki": ""
+        "wiki": "",
+        "mediaRegistry": "media-registry.json" 
       },
       "logs": [
         {
