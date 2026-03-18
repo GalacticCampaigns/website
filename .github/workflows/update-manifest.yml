@@ -37,22 +37,27 @@ jobs:
           GH_TOKEN: ${{ secrets.CAMPAIGN_SYNC_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # 1. Resolve Campaign ID (Check payload first, then manual input)
+          # Resolve Campaign ID (Check payload first, then manual input)
           $id = "${{ github.event.client_payload.campaign_id }}"
           if ([string]::IsNullOrWhiteSpace($id)) { $id = "${{ github.event.inputs.campaign_id }}" }
 
-          # 2. Resolve Debug Mode (Check manual toggle first, then payload)
+          # Resolve Debug Mode (Check manual toggle first, then payload)
           $debug = "${{ github.event.inputs.debug_mode }}" -eq "true"
           if (-not $debug) { $debug = "${{ github.event.client_payload.debug_mode }}" -eq "true" }
 
-          # 3. Build Parameter Hash (Splatting)
+          # Resolve Dry Run Mode (Check manual toggle first, then payload)
+          $dryRun = "${{ github.event.inputs.dryRun_mode }}" -eq "true"
+          if (-not $dryRun) { $dryRun = "${{ github.event.client_payload.dryRun_mode }}" -eq "true" }
+
+          # Build Parameter Hash (Splatting)
           $params = @{}
           if (-not [string]::IsNullOrWhiteSpace($id)) { $params["RequestedCampaignSlug"] = $id }
-          if ($debug) { $params["EnableDebugMode"] = $true }
+          if ($debug) { $params["EnableDebugMode"] = $true }          
+          if ($dryRun) { $params["DryRun"] = $true }
 
-          Write-Host "Running hydrator with CampaignId: $($id) | Debug: $($debug)"
+          Write-Host "Running hydrator with CampaignId: $($id) | Debug: $($debug) | Dry Run: $($DryRun)"
           
-          # 4. Execute Script
+          # Execute Script
           ./.github/workflows/scripts/manifest-gen.ps1 @params
 
       - name: Commit and Push

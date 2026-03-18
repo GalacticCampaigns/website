@@ -1,11 +1,10 @@
 <#
 .SYNOPSIS
-    Campaign Registry Hydrator V2.4.7
+    Campaign Registry Hydrator V2.4.8
 .DESCRIPTION
-    - Aggregated Counting: Total messageCount now strictly equals (Main + All Threads).
-    - Type Expansion: Added 18 (Thread Starter) and 21 (Thread Starter Variant) to Narrative Regex.
-    - Pivot-First Logic: Maintained majority-based ID resolution.
-    - Full Feature Preservation: NSFW, Media Registry, Dry Run, and Deep Trace intact.
+    - Aggregated Sync: Synchronizes Total, Main, and Thread counts using "Total-Down" math.
+    - Pivot Integrity: Retains majority-based ID resolution for Krynn/Vena support.
+    - Full Feature Lock: NSFW, Media Registry, Dry Run, and Deep Trace intact.
 #>
 param (
     [string]$RequestedCampaignSlug,
@@ -129,28 +128,44 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
         }
         $AutoFlagLog = ($GlobalNsfwCounter / $MessageList.Count -ge 0.9)
 
-        # --- REFACTORED TALLY LOGIC (Aggregated) ---
-        # Include 18 and 21 for Thread Starter visibility
+        # --- SYNCED TALLY LOGIC ---
         $NarrativeTypeRegex = "^(0|18|19|21|Default|Reply)$"
         $AllNarrative = $MessageList | Where-Object { [string]$_.type -match $NarrativeTypeRegex }
         
-        # This is the total count for the Log entry in manifest
+        # 1. Total Narrative count for the Chapter
         $NarrativeTally = if ($null -ne $AllNarrative) { $AllNarrative.Count } else { 0 }
         $NewestTimestamp = ($MessageList | Sort-Object timestamp -Descending | Select-Object -First 1).timestamp
 
-        # Sub-breakdown for console telemetry only
-        $MainChannelCount = ($AllNarrative | Where-Object { 
-            $tId = Get-NormalizedProperty $_.thread "id"
-            ($_.channel_id -eq $ResolvedID -and $null -eq $_.thread) -or ($tId -eq $ResolvedID)
-        }).Count
-
-        # Discovery (Threads NOT matching the Pivot ID)
-        $Groups = $MessageList | Where-Object { 
+        # 2. Identify Sub-Threads (Threads NOT matching the Pivot ID)
+        $SubThreadGroups = $AllNarrative | Where-Object { 
             $tId = Get-NormalizedProperty $_.thread "id"
             return (-not [string]::IsNullOrWhiteSpace($tId) -and $tId -ne $ResolvedID)
         } | Group-Object { [string]$_.thread.id }
 
-        # Check for Self-Thread Meta (Thread ID matches Pivot ID)
+        # 3. Calculate True Thread Total
+        $ThreadNarrativeTotal = 0
+        $UpdatedThreads = New-Object System.Collections.Generic.List[PSObject]
+
+        foreach ($Group in $SubThreadGroups) {
+            $tID = [string]$Group.Name
+            $tName = $Group.Group[0].thread.name
+            $TCount = $Group.Count # Count of narrative posts in this group
+            $ThreadNarrativeTotal += $TCount
+
+            $StoredT = $ExistingRecord.threads | Where-Object { [string]$_.threadID -eq $tID }
+            if ($null -ne $StoredT) {
+                $StoredT.messageCount = $TCount; $StoredT.isActive = $true
+                $UpdatedThreads.Add($StoredT)
+            } else {
+                $UpdatedThreads.Add([PSCustomObject]@{ threadID = $tID; displayName = $tName; isActive = $true; isNSFW = $false; messageCount = $TCount })
+            }
+            if ($EnableDebugMode) { Write-Host "    [THREAD] $tName ($tID) -> $TCount posts" -ForegroundColor DarkGray }
+        }
+
+        # 4. Define Main Channel as the Remainder
+        $MainChannelCount = $NarrativeTally - $ThreadNarrativeTotal
+
+        # Check for Self-Thread Meta (Debug Only)
         if ($EnableDebugMode) {
             $SelfThread = $MessageList | Where-Object { Get-NormalizedProperty $_.thread "id" -eq $ResolvedID }
             if ($null -ne $SelfThread) { Write-Host "    [DEBUG] Self-Thread meta detected for $ResolvedID. Merged into Main." -ForegroundColor DarkGreen }
@@ -176,26 +191,9 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
             if ($ExistingRecord.isNSFW -eq $false) { $ExistingRecord.isNSFW = $AutoFlagLog }
         }
 
-        # --- Thread Update Loop ---
-        $UpdatedThreads = New-Object System.Collections.Generic.List[PSObject]
-        foreach ($Group in $Groups) {
-            $tID = [string]$Group.Name
-            $tName = $Group.Group[0].thread.name
-            $TNarrative = $Group.Group | Where-Object { [string]$_.type -match $NarrativeTypeRegex }
-            $TCount = if ($null -ne $TNarrative) { $TNarrative.Count } else { 0 }
-
-            $StoredT = $ExistingRecord.threads | Where-Object { [string]$_.threadID -eq $tID }
-            if ($null -ne $StoredT) {
-                $StoredT.messageCount = $TCount; $StoredT.isActive = $true
-                $UpdatedThreads.Add($StoredT)
-            } else {
-                $UpdatedThreads.Add([PSCustomObject]@{ threadID = $tID; displayName = $tName; isActive = $true; isNSFW = $false; messageCount = $TCount })
-            }
-            if ($EnableDebugMode) { Write-Host "    [THREAD] $tName ($tID) -> $TCount posts" -ForegroundColor DarkGray }
-        }
         $ExistingRecord.threads = $UpdatedThreads.ToArray()
 
-        Write-Host "  [OK] ${CurrentFileName} | Total: $NarrativeTally (Main: $MainChannelCount | Threads: $($NarrativeTally - $MainChannelCount))" -ForegroundColor Green
+        Write-Host "  [OK] ${CurrentFileName} | Total: $NarrativeTally (Main: $MainChannelCount | Threads: $ThreadNarrativeTotal)" -ForegroundColor Green
 
     } catch { Write-Warning "!! Error in ${CurrentFileName}: $($_.Exception.Message)" }
 }
@@ -209,7 +207,7 @@ foreach ($Log in $TargetCampaignObj.logs) {
         $ActiveCount++; $Log.isActive = $true 
     } else { 
         if ($Log.isActive -eq $true) {
-            Write-Warning "    [ORPHAN] $($Log.title) ($idStr) - No matching file found in this sweep. Deactivating." 
+            Write-Warning "    [ORPHAN] $($Log.title) ($idStr) - No matching file found. Deactivating." 
             $Log.isActive = $false 
         }
     }
@@ -218,7 +216,7 @@ foreach ($Log in $TargetCampaignObj.logs) {
 if (-not $DryRun) {
     $FinalJson = $RegistryData | ConvertTo-Json -Depth 10
     [System.IO.File]::WriteAllText($ManifestFilePath, $FinalJson, (New-Object System.Text.UTF8Encoding($false)))
-    Write-Host "`n>>> Success V2.4.7: Registry Overwritten." -ForegroundColor Green
+    Write-Host "`n>>> Success: Registry Overwritten." -ForegroundColor Green
 } else { Write-Host "`n>>> DRY RUN COMPLETE: Manifest Protected." -ForegroundColor Yellow }
 
-Write-Host ">>> Summary: $ActiveCount Active Logs | $($ValidJsonFiles.Count) Scanned." -ForegroundColor Cyan
+Write-Host ">>> Summary  V2.4.8: $ActiveCount Active Logs | $($ValidJsonFiles.Count) Scanned." -ForegroundColor Cyan
