@@ -27,15 +27,7 @@
           "order": 0,
           "messageCount": 177,
           "lastMessageTimestamp": "2025-07-25T01:02:40.602+00:00",
-          "threads": [
-            {
-              "threadID": "1380700164175696062",
-              "displayName": "Unknown Thread (1380700164175696062)",
-              "isActive": true,
-              "isNSFW": false,
-              "messageCount": 1
-            }
-          ]
+          "threads": []
         },
         {
           "title": "PRELUDE: The Sunken Star of Xylos (Iyola)",
@@ -47,15 +39,7 @@
           "order": 0,
           "messageCount": 108,
           "lastMessageTimestamp": "2025-07-25T00:03:06.396+00:00",
-          "threads": [
-            {
-              "threadID": "1380700164175696062",
-              "displayName": "Unknown Thread (1380700164175696062)",
-              "isActive": true,
-              "isNSFW": false,
-              "messageCount": 1
-            }
-          ]
+          "threads": []
         },
         {
           "title": "PRELUDE: THE STRAY FORTUNE (KRYNN)",
@@ -79,15 +63,7 @@
           "order": 0,
           "messageCount": 131,
           "lastMessageTimestamp": "2025-07-01T02:47:54.153+00:00",
-          "threads": [
-            {
-              "threadID": "1380700164175696062",
-              "displayName": "Unknown Thread (1380700164175696062)",
-              "isActive": true,
-              "isNSFW": false,
-              "messageCount": 1
-            }
-          ]
+          "threads": []
         },
         {
           "title": "PRELUDE: The Price of a Vision (Varda)",
@@ -99,15 +75,7 @@
           "order": 0,
           "messageCount": 136,
           "lastMessageTimestamp": "2025-06-18T23:49:12.754+00:00",
-          "threads": [
-            {
-              "threadID": "1380700164175696062",
-              "displayName": "Unknown Thread (1380700164175696062)",
-              "isActive": true,
-              "isNSFW": false,
-              "messageCount": 1
-            }
-          ]
+          "threads": []
         },
         {
           "title": "PRELUDE: THE ECHO IN THE STONE (VENA)",
