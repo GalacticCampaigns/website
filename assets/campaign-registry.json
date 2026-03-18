@@ -27,7 +27,15 @@
           "order": 0,
           "messageCount": 177,
           "lastMessageTimestamp": "2025-07-25T01:02:40.602+00:00",
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1380700164175696062",
+              "displayName": "Unknown Thread (1380700164175696062)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            }
+          ]
         },
         {
           "title": "PRELUDE: The Sunken Star of Xylos (Iyola)",
@@ -39,7 +47,15 @@
           "order": 0,
           "messageCount": 108,
           "lastMessageTimestamp": "2025-07-25T00:03:06.396+00:00",
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1380700164175696062",
+              "displayName": "Unknown Thread (1380700164175696062)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            }
+          ]
         },
         {
           "title": "PRELUDE: THE STRAY FORTUNE (KRYNN)",
@@ -63,7 +79,15 @@
           "order": 0,
           "messageCount": 131,
           "lastMessageTimestamp": "2025-07-01T02:47:54.153+00:00",
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1380700164175696062",
+              "displayName": "Unknown Thread (1380700164175696062)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            }
+          ]
         },
         {
           "title": "PRELUDE: The Price of a Vision (Varda)",
@@ -75,7 +99,15 @@
           "order": 0,
           "messageCount": 136,
           "lastMessageTimestamp": "2025-06-18T23:49:12.754+00:00",
-          "threads": []
+          "threads": [
+            {
+              "threadID": "1380700164175696062",
+              "displayName": "Unknown Thread (1380700164175696062)",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 1
+            }
+          ]
         },
         {
           "title": "PRELUDE: THE ECHO IN THE STONE (VENA)",
@@ -105,56 +137,56 @@
               "displayName": "Intro: The Cold Shell (Wes)",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 6
             },
             {
               "threadID": "1387912482172964989",
               "displayName": "Intro: Rude Awakening (Dryzan)",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 5
             },
             {
               "threadID": "1387912831697158184",
               "displayName": "Intro: A Cage of Glass (Iyola)",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 5
             },
             {
               "threadID": "1387913268730794056",
               "displayName": "Intro: The Static Within (Vaeros)",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 5
             },
             {
               "threadID": "1387916926667460722",
               "displayName": "Intro: A Cracked Lens (Varda)",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 6
             },
             {
               "threadID": "1397604779227615402",
               "displayName": "Galley ☆ Post Escape",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 19
             },
             {
               "threadID": "1397620423914684427",
               "displayName": "In Medbay ☆ Post Escape",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 4
             },
             {
               "threadID": "1397997211576438784",
               "displayName": "Bridge ☆ Post Escape",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 14
             }
           ]
         },
@@ -174,63 +206,63 @@
               "displayName": "Workshop / Recreation",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 76
             },
             {
               "threadID": "1403550882012074084",
               "displayName": "Medbay",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 88
             },
             {
               "threadID": "1410311118030901268",
               "displayName": "Exploring the Ghost Ship",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 30
             },
             {
               "threadID": "1410313405197451405",
               "displayName": "The Echo and the Oracle",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 8
             },
             {
               "threadID": "1412211178981032037",
               "displayName": "Mess Hall",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 29
             },
             {
               "threadID": "1418930804574392412",
-              "displayName": "Varda Vision",
+              "displayName": "Varda lowers herself into the chair with",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 3
             },
             {
               "threadID": "1423451795291639831",
-              "displayName": "Back to the <i>Venture<i>",
+              "displayName": "Back to the *Venture*",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 37
             },
             {
               "threadID": "1424361258995417250",
               "displayName": "Atin Oya'ka",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 72
             },
             {
               "threadID": "1430238393102630953",
               "displayName": "Iyola's Cabin",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 8
             }
           ]
         },
@@ -250,21 +282,21 @@
               "displayName": "Echoes of the Past",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 44
             },
             {
               "threadID": "1458169536749633690",
               "displayName": "Nanite Mysteries",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 23
             },
             {
               "threadID": "1462985529439031461",
               "displayName": "Epilogue: Iyola",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 14
             }
           ]
         },
@@ -284,49 +316,49 @@
               "displayName": "Awakening: The Wayward Vigil",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 44
             },
             {
               "threadID": "1463321256370634967",
               "displayName": "Intro: The Static Heart (Lis)",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 5
             },
             {
               "threadID": "1463328960468357184",
               "displayName": "Intro: The Muted Echo (Ciara)",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 6
             },
             {
               "threadID": "1463337940141867232",
               "displayName": "Intro: The Hollow Vigil (Cajar)",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 6
             },
             {
               "threadID": "1466947514015023268",
               "displayName": "Venture - Medbay",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 29
             },
             {
               "threadID": "1467270244383854787",
               "displayName": "Search for the Wrangler",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 11
             },
             {
               "threadID": "1472757955500970066",
               "displayName": "Venture - Bridge",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 1
+              "messageCount": 61
             }
           ]
         }
