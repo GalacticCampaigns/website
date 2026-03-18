@@ -13,6 +13,11 @@ on:
         required: false
         type: boolean
         default: false
+      dryRun_mode:
+        description: 'Run in Dry Run Mode'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   update-registry:
