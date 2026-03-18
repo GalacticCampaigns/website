@@ -1,11 +1,11 @@
 <#
 .SYNOPSIS
-    Campaign Registry Hydrator V2.4.6
+    Campaign Registry Hydrator V2.4.7
 .DESCRIPTION
-    - Deep Trace Logging: Color-coded execution flow for debugging Pivot ID resolution.
-    - Pivot-First Logic: Strictly determines Channel ID by majority frequency.
-    - Self-Thread Recognition: Merges threads matching Pivot ID into Main Channel meta.
-    - Dry Run & NSFW: All previous feature logic preserved.
+    - Aggregated Counting: Total messageCount now strictly equals (Main + All Threads).
+    - Type Expansion: Added 18 (Thread Starter) and 21 (Thread Starter Variant) to Narrative Regex.
+    - Pivot-First Logic: Maintained majority-based ID resolution.
+    - Full Feature Preservation: NSFW, Media Registry, Dry Run, and Deep Trace intact.
 #>
 param (
     [string]$RequestedCampaignSlug,
@@ -44,13 +44,11 @@ function Get-NormalizedProperty($InputObject, $DesiredPropertyName, $DefaultValu
     return $DefaultValue
 }
 
-# --- 3. Pivot-Based ID Resolver with Logging ---
+# --- 3. Pivot-Based ID Resolver ---
 function Resolve-PrimaryChannelID($MessageCollection, $FileName) {
     if ($null -eq $MessageCollection -or $MessageCollection.Count -eq 0) { return $null }
     
-    # Majority by channel_id always wins the "Pivot"
     $IDs = $MessageCollection | ForEach-Object { Get-NormalizedProperty $_ "channel_id" } | Where-Object { $_ -match '^\d{17,20}$' }
-    
     if ($null -eq $IDs) { 
         if ($EnableDebugMode) { Write-Host "    [DEBUG] No valid Snowflake IDs found in $FileName" -ForegroundColor Red }
         return $null 
@@ -60,9 +58,8 @@ function Resolve-PrimaryChannelID($MessageCollection, $FileName) {
     $PivotID = [string]$Grouped[0].Name
     
     if ($EnableDebugMode) {
-        Write-Host "    [TRACE] ID Majority: $PivotID (found $($Grouped[0].Count) times)" -ForegroundColor Cyan
+        Write-Host "    [TRACE] ID Majority: $PivotID (Found $($Grouped[0].Count) times)" -ForegroundColor Cyan
     }
-    
     return $PivotID
 }
 
@@ -81,7 +78,6 @@ $MediaApiUrl = "https://api.github.com/repos/$($TargetCampaignObj.repository)/co
 try {
     $MediaCheck = Invoke-RestMethod -Uri $MediaApiUrl -Method Get -Headers $RequestHeaders
     $TargetCampaignObj.paths.mediaRegistry = $MediaRegistryFileName
-    if ($EnableDebugMode) { Write-Host "[DEBUG] Media Registry detected." -ForegroundColor Green }
 } catch { $TargetCampaignObj.paths.mediaRegistry = $null }
 
 $GitHubApiUrl = "https://api.github.com/repos/$($TargetCampaignObj.repository)/contents/${FullRemotePath}?ref=$($TargetCampaignObj.branch)"
@@ -90,7 +86,7 @@ Write-Host "`n>>> Initializing Hydration: $($TargetCampaignObj.name)" -Foregroun
 try {
     $RemoteListing = Invoke-RestMethod -Uri $GitHubApiUrl -Method Get -Headers $RequestHeaders
     $ValidJsonFiles = $RemoteListing | Where-Object { $_.name -like "*.json" }
-    Write-Host ">>> Remote Files Found: $($ValidJsonFiles.Count)" -ForegroundColor Green
+    Write-Host ">>> Found $($ValidJsonFiles.Count) files in target data frequency." -ForegroundColor Green
 } catch { Write-Error "API Access Failed."; exit 1 }
 
 $GlobalProcessedIDs = New-Object 'System.Collections.Generic.HashSet[string]'
@@ -99,7 +95,7 @@ $GlobalProcessedIDs = New-Object 'System.Collections.Generic.HashSet[string]'
 foreach ($RemoteFileRef in $ValidJsonFiles) {
     $CurrentFileName = $RemoteFileRef.name
     try {
-        if ($EnableDebugMode) { Write-Host "`n--- Processing File: $CurrentFileName ---" -ForegroundColor Blue }
+        if ($EnableDebugMode) { Write-Host "`n--- Scanning: $CurrentFileName ---" -ForegroundColor Blue }
         
         $Response = Invoke-WebRequest -Uri $RemoteFileRef.download_url -Headers $RequestHeaders -UseBasicParsing
         $Content = $Response.Content
@@ -107,7 +103,6 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
             if ($EnableDebugMode) { Write-Host "    [DEBUG] BOM signature stripped." -ForegroundColor Yellow }
             $Content = $Content.Substring(1) 
         }
-
         $ParsedJson = $Content | ConvertFrom-Json
         $MessageList = if ($ParsedJson.PSObject.Properties.Name -contains "messages") { $ParsedJson.messages } else { $ParsedJson }
         if ($MessageList -isnot [array]) { $MessageList = @($MessageList) }
@@ -134,13 +129,22 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
         }
         $AutoFlagLog = ($GlobalNsfwCounter / $MessageList.Count -ge 0.9)
 
-        # --- Aggregation Logic ---
-        $NarrativeTypeRegex = "^(0|19|Default|Reply)$"
+        # --- REFACTORED TALLY LOGIC (Aggregated) ---
+        # Include 18 and 21 for Thread Starter visibility
+        $NarrativeTypeRegex = "^(0|18|19|21|Default|Reply)$"
         $AllNarrative = $MessageList | Where-Object { [string]$_.type -match $NarrativeTypeRegex }
+        
+        # This is the total count for the Log entry in manifest
         $NarrativeTally = if ($null -ne $AllNarrative) { $AllNarrative.Count } else { 0 }
         $NewestTimestamp = ($MessageList | Sort-Object timestamp -Descending | Select-Object -First 1).timestamp
 
-        # Discovery (Explicitly excluding Pivot ID)
+        # Sub-breakdown for console telemetry only
+        $MainChannelCount = ($AllNarrative | Where-Object { 
+            $tId = Get-NormalizedProperty $_.thread "id"
+            ($_.channel_id -eq $ResolvedID -and $null -eq $_.thread) -or ($tId -eq $ResolvedID)
+        }).Count
+
+        # Discovery (Threads NOT matching the Pivot ID)
         $Groups = $MessageList | Where-Object { 
             $tId = Get-NormalizedProperty $_.thread "id"
             return (-not [string]::IsNullOrWhiteSpace($tId) -and $tId -ne $ResolvedID)
@@ -152,29 +156,20 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
             if ($null -ne $SelfThread) { Write-Host "    [DEBUG] Self-Thread meta detected for $ResolvedID. Merged into Main." -ForegroundColor DarkGreen }
         }
 
-        # --- Manifest Matching ---
+        # --- Manifest Sync ---
         $ExistingRecord = $TargetCampaignObj.logs | Where-Object { ([string]$_.channelID -eq $ResolvedID) -or ($_.fileName -ieq $CurrentFileName) }
 
         if ($null -eq $ExistingRecord) {
-            if ($EnableDebugMode) { Write-Host "    [INFO] Record not found. Creating New Entry." -ForegroundColor Yellow }
             $MaxOrder = if ($TargetCampaignObj.logs.Count -gt 0) { ($TargetCampaignObj.logs | Measure-Object -Property order -Maximum).Maximum } else { -1 }
             $ExistingRecord = [PSCustomObject]@{
-                title = $CurrentFileName.Split('.')[0].Replace("_", " "); 
-                channelID = [string]$ResolvedID; 
-                fileName = $CurrentFileName; 
-                isActive = $true; 
-                isNSFW = $AutoFlagLog; 
-                preview = ""; 
-                order = $MaxOrder + 1;
-                messageCount = $NarrativeTally; 
-                lastMessageTimestamp = $NewestTimestamp; 
-                threads = @()
+                title = $CurrentFileName.Split('.')[0].Replace("_", " "); channelID = [string]$ResolvedID; 
+                fileName = $CurrentFileName; isActive = $true; isNSFW = $AutoFlagLog; preview = ""; order = $MaxOrder + 1;
+                messageCount = $NarrativeTally; lastMessageTimestamp = $NewestTimestamp; threads = @()
             }
             $TargetCampaignObj.logs += $ExistingRecord
         } else {
             if ($EnableDebugMode) { Write-Host "    [INFO] Existing record matched: $($ExistingRecord.title)" -ForegroundColor Gray }
             $ExistingRecord.channelID = [string]$ResolvedID
-            $ExistingRecord.fileName = $CurrentFileName
             $ExistingRecord.messageCount = $NarrativeTally
             $ExistingRecord.lastMessageTimestamp = $NewestTimestamp
             $ExistingRecord.isActive = $true
@@ -186,9 +181,8 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
         foreach ($Group in $Groups) {
             $tID = [string]$Group.Name
             $tName = $Group.Group[0].thread.name
-            $TCount = ($Group.Group | Where-Object { [string]$_.type -match $NarrativeTypeRegex }).Count
-
-            if ($EnableDebugMode) { Write-Host "    > Sub-Thread Found: $tName ($tID) with $TCount posts" -ForegroundColor DarkGray }
+            $TNarrative = $Group.Group | Where-Object { [string]$_.type -match $NarrativeTypeRegex }
+            $TCount = if ($null -ne $TNarrative) { $TNarrative.Count } else { 0 }
 
             $StoredT = $ExistingRecord.threads | Where-Object { [string]$_.threadID -eq $tID }
             if ($null -ne $StoredT) {
@@ -197,10 +191,11 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
             } else {
                 $UpdatedThreads.Add([PSCustomObject]@{ threadID = $tID; displayName = $tName; isActive = $true; isNSFW = $false; messageCount = $TCount })
             }
+            if ($EnableDebugMode) { Write-Host "    [THREAD] $tName ($tID) -> $TCount posts" -ForegroundColor DarkGray }
         }
         $ExistingRecord.threads = $UpdatedThreads.ToArray()
 
-        Write-Host "  [OK] Processed ${CurrentFileName} | Narrative Total: $NarrativeTally" -ForegroundColor Green
+        Write-Host "  [OK] ${CurrentFileName} | Total: $NarrativeTally (Main: $MainChannelCount | Threads: $($NarrativeTally - $MainChannelCount))" -ForegroundColor Green
 
     } catch { Write-Warning "!! Error in ${CurrentFileName}: $($_.Exception.Message)" }
 }
@@ -223,7 +218,7 @@ foreach ($Log in $TargetCampaignObj.logs) {
 if (-not $DryRun) {
     $FinalJson = $RegistryData | ConvertTo-Json -Depth 10
     [System.IO.File]::WriteAllText($ManifestFilePath, $FinalJson, (New-Object System.Text.UTF8Encoding($false)))
-    Write-Host "`n>>> Success V2.4.6: $ManifestFilePath updated successfully." -ForegroundColor DarkGreen
-} else { Write-Host "`n>>> DRY RUN COMPLETE: Manifest file was not touched." -ForegroundColor Yellow }
+    Write-Host "`n>>> Success V2.4.7: Registry Overwritten." -ForegroundColor Green
+} else { Write-Host "`n>>> DRY RUN COMPLETE: Manifest Protected." -ForegroundColor Yellow }
 
-Write-Host ">>> Final Summary: $ActiveCount Active Logs | $($ValidJsonFiles.Count) Files Scanned." -ForegroundColor Cyan
+Write-Host ">>> Summary: $ActiveCount Active Logs | $($ValidJsonFiles.Count) Scanned." -ForegroundColor Cyan
