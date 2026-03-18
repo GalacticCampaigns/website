@@ -1,10 +1,11 @@
 <#
 .SYNOPSIS
-    Campaign Registry Hydrator V2.5.1
+    Campaign Registry Hydrator V2.5.2
 .DESCRIPTION
-    - Deep Meta Recovery: Uses Get-NormalizedProperty to find thread names even in sparse JSON.
+    - Global Meta Scan: Pre-scans the entire file to map Thread IDs to Names, fixing "Unknown Thread" errors.
     - Pivot-First Logic: Strictly determines Channel ID by majority frequency.
-    - Multi-Pass Scanning: Ensures thread names are recovered from any message in the group.
+    - Mathematical Accuracy: Ensures Total = Main + Threads.
+    - Full Feature Preservation: NSFW, Media Registry, Dry Run, and Deep Trace intact.
 #>
 param (
     [string]$RequestedCampaignSlug,
@@ -38,7 +39,7 @@ function Get-NormalizedProperty($InputObject, $DesiredPropertyName, $DefaultValu
     try {
         $Props = $InputObject.PSObject.Properties
         $Match = $Props | Where-Object { $_.Name -ieq $DesiredPropertyName -or $_.Name -ieq $DesiredPropertyName.Replace('_','') }
-        if ($Match) { return $Match[0].Value } # Return the actual object/value
+        if ($Match) { return $Match[0].Value } 
     } catch { return $DefaultValue }
     return $DefaultValue
 }
@@ -97,7 +98,7 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
         if ($EnableDebugMode) { Write-Host "`n--- Scanning: $CurrentFileName ---" -ForegroundColor Blue }
         $Response = Invoke-WebRequest -Uri $RemoteFileRef.download_url -Headers $RequestHeaders -UseBasicParsing
         $Content = $Response.Content
-       if ($Content.StartsWith([char]0xfeff)) { 
+        if ($Content.StartsWith([char]0xfeff)) { 
             if ($EnableDebugMode) { Write-Host "    [DEBUG] BOM signature stripped." -ForegroundColor Yellow }
             $Content = $Content.Substring(1) 
         }
@@ -109,6 +110,17 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
         $ResolvedID = Resolve-PrimaryChannelID $MessageList $CurrentFileName
         if ($null -eq $ResolvedID) { continue }
         [void]$GlobalProcessedIDs.Add($ResolvedID)
+
+        # --- GLOBAL META SCAN (Fixes Unknown Threads) ---
+        $ThreadNameMap = @{}
+        foreach ($msg in $MessageList) {
+            $tObj = Get-NormalizedProperty $msg "thread"
+            if ($null -ne $tObj) {
+                $tid = [string](Get-NormalizedProperty $tObj "id")
+                $tname = Get-NormalizedProperty $tObj "name"
+                if ($tid -and $tname) { $ThreadNameMap[$tid] = $tname }
+            }
+        }
 
         # --- NSFW SCANNER ---
         $GlobalNsfwCounter = 0
@@ -152,6 +164,7 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
             }
             $TargetCampaignObj.logs += $ExistingRecord
         } else {
+            if ($EnableDebugMode) { Write-Host "    [INFO] Existing record matched: $($ExistingRecord.title)" -ForegroundColor Gray }
             $ExistingRecord.channelID = [string]$ResolvedID; $ExistingRecord.messageCount = $NarrativeTally
             $ExistingRecord.lastMessageTimestamp = $NewestTimestamp; $ExistingRecord.isActive = $true
             if ($ExistingRecord.isNSFW -eq $false) { $ExistingRecord.isNSFW = $AutoFlagLog }
@@ -163,24 +176,19 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
             
             if ($groupId -eq $ResolvedID) {
                 $MainChannelCount = $Group.Count
+                if ($EnableDebugMode -and $ThreadNameMap.ContainsKey($groupId)) {
+                     Write-Host "    [DEBUG] Self-Thread meta detected for $ResolvedID ($($ThreadNameMap[$groupId])). Merged into Main." -ForegroundColor DarkGreen
+                }
             } else {
                 $TCount = $Group.Count
                 $ThreadNarrativeSum += $TCount
 
-                # Meta Recovery: Use helper to find the thread object anywhere in the group
-                $tName = "Unknown Thread ($groupId)"
-                foreach ($m in $Group.Group) {
-                    $tObj = Get-NormalizedProperty $m "thread"
-                    if ($null -ne $tObj) {
-                        $tName = Get-NormalizedProperty $tObj "name"
-                        if ($null -ne $tName) { break } # Found it!
-                    }
-                }
+                # Meta Recovery: Check the Global Map we built at the start
+                $tName = if ($ThreadNameMap.ContainsKey($groupId)) { $ThreadNameMap[$groupId] } else { "Unknown Thread ($groupId)" }
 
                 $StoredT = $ExistingRecord.threads | Where-Object { [string]$_.threadID -eq $groupId }
                 if ($null -ne $StoredT) {
                     $StoredT.messageCount = $TCount; $StoredT.isActive = $true
-                    # Only update name if we actually found one
                     if ($tName -notlike "Unknown*") { $StoredT.displayName = $tName }
                     $UpdatedThreads.Add($StoredT)
                 } else {
@@ -214,7 +222,7 @@ foreach ($Log in $TargetCampaignObj.logs) {
 if (-not $DryRun) {
     $FinalJson = $RegistryData | ConvertTo-Json -Depth 10
     [System.IO.File]::WriteAllText($ManifestFilePath, $FinalJson, (New-Object System.Text.UTF8Encoding($false)))
-    Write-Host "`n>>> Success: Hydration Complete." -ForegroundColor Green
+    Write-Host "`n>>> Success: Registry Overwritten." -ForegroundColor Green
 } else { Write-Host "`n>>> DRY RUN COMPLETE: Manifest was NOT updated." -ForegroundColor Yellow }
 
-Write-Host ">>> Summary v2.5.1: $ActiveCount Active Logs | $($ValidJsonFiles.Count) Scanned." -ForegroundColor Cyan
+Write-Host ">>> Summary v2.5.2: $ActiveCount Active Logs | $($ValidJsonFiles.Count) Scanned." -ForegroundColor Cyan
