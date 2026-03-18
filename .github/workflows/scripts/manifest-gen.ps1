@@ -1,11 +1,10 @@
 <#
 .SYNOPSIS
-    Campaign Registry Hydrator V2.5.0
+    Campaign Registry Hydrator V2.5.1
 .DESCRIPTION
-    - Channel-ID Grouping: Groups ALL messages by channel_id to ensure 100% tally accuracy.
-    - Pivot Priority: The majority channel_id is the Main Log; all other IDs are Threads.
-    - Meta Recovery: Scans thread groups to find the display name from the starter message.
-    - Full Feature Lock: NSFW, Media Registry, Dry Run, and Deep Trace intact.
+    - Deep Meta Recovery: Uses Get-NormalizedProperty to find thread names even in sparse JSON.
+    - Pivot-First Logic: Strictly determines Channel ID by majority frequency.
+    - Multi-Pass Scanning: Ensures thread names are recovered from any message in the group.
 #>
 param (
     [string]$RequestedCampaignSlug,
@@ -39,7 +38,7 @@ function Get-NormalizedProperty($InputObject, $DesiredPropertyName, $DefaultValu
     try {
         $Props = $InputObject.PSObject.Properties
         $Match = $Props | Where-Object { $_.Name -ieq $DesiredPropertyName -or $_.Name -ieq $DesiredPropertyName.Replace('_','') }
-        if ($Match) { return [string]$Match[0].Value }
+        if ($Match) { return $Match[0].Value } # Return the actual object/value
     } catch { return $DefaultValue }
     return $DefaultValue
 }
@@ -48,13 +47,12 @@ function Get-NormalizedProperty($InputObject, $DesiredPropertyName, $DefaultValu
 function Resolve-PrimaryChannelID($MessageCollection, $FileName) {
     if ($null -eq $MessageCollection -or $MessageCollection.Count -eq 0) { return $null }
     
-    # RULE: Majority by channel_id always wins.
     $IDs = $MessageCollection | ForEach-Object { Get-NormalizedProperty $_ "channel_id" } | Where-Object { $_ -match '^\d{17,20}$' }
     if ($null -eq $IDs) { 
         if ($EnableDebugMode) { Write-Host "    [DEBUG] No valid Snowflake IDs found in $FileName" -ForegroundColor Red }
         return $null 
     }
-    
+        
     $Grouped = $IDs | Group-Object | Sort-Object Count -Descending
     $PivotID = [string]$Grouped[0].Name
     
@@ -99,12 +97,10 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
         if ($EnableDebugMode) { Write-Host "`n--- Scanning: $CurrentFileName ---" -ForegroundColor Blue }
         $Response = Invoke-WebRequest -Uri $RemoteFileRef.download_url -Headers $RequestHeaders -UseBasicParsing
         $Content = $Response.Content
-        
-        if ($Content.StartsWith([char]0xfeff)) { 
+       if ($Content.StartsWith([char]0xfeff)) { 
             if ($EnableDebugMode) { Write-Host "    [DEBUG] BOM signature stripped." -ForegroundColor Yellow }
             $Content = $Content.Substring(1) 
         }
-
         $ParsedJson = $Content | ConvertFrom-Json
         $MessageList = if ($ParsedJson.PSObject.Properties.Name -contains "messages") { $ParsedJson.messages } else { $ParsedJson }
         if ($MessageList -isnot [array]) { $MessageList = @($MessageList) }
@@ -131,7 +127,7 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
         }
         $AutoFlagLog = ($GlobalNsfwCounter / $MessageList.Count -ge 0.9)
 
-        # --- NEW GROUPING-BASED TALLY LOGIC ---
+        # --- Grouping-Based Tally Logic ---
         $NarrativeTypeRegex = "^(0|18|19|21|Default|Reply)$"
         $AllNarrative = $MessageList | Where-Object { [string]$_.type -match $NarrativeTypeRegex }
         $NarrativeTally = if ($null -ne $AllNarrative) { $AllNarrative.Count } else { 0 }
@@ -166,20 +162,26 @@ foreach ($RemoteFileRef in $ValidJsonFiles) {
             $groupId = [string]$Group.Name
             
             if ($groupId -eq $ResolvedID) {
-                # This group is the Main Channel (The Pivot)
                 $MainChannelCount = $Group.Count
             } else {
-                # This group is a Sub-Thread
                 $TCount = $Group.Count
                 $ThreadNarrativeSum += $TCount
 
-                # Recover metadata (Thread Name) from the group
-                $metaMsg = $Group.Group | Where-Object { $null -ne $_.thread } | Select-Object -First 1
-                $tName = if ($metaMsg) { $metaMsg.thread.name } else { "Unknown Thread ($groupId)" }
+                # Meta Recovery: Use helper to find the thread object anywhere in the group
+                $tName = "Unknown Thread ($groupId)"
+                foreach ($m in $Group.Group) {
+                    $tObj = Get-NormalizedProperty $m "thread"
+                    if ($null -ne $tObj) {
+                        $tName = Get-NormalizedProperty $tObj "name"
+                        if ($null -ne $tName) { break } # Found it!
+                    }
+                }
 
                 $StoredT = $ExistingRecord.threads | Where-Object { [string]$_.threadID -eq $groupId }
                 if ($null -ne $StoredT) {
                     $StoredT.messageCount = $TCount; $StoredT.isActive = $true
+                    # Only update name if we actually found one
+                    if ($tName -notlike "Unknown*") { $StoredT.displayName = $tName }
                     $UpdatedThreads.Add($StoredT)
                 } else {
                     $UpdatedThreads.Add([PSCustomObject]@{ threadID = $groupId; displayName = $tName; isActive = $true; isNSFW = $false; messageCount = $TCount })
@@ -215,4 +217,4 @@ if (-not $DryRun) {
     Write-Host "`n>>> Success: Hydration Complete." -ForegroundColor Green
 } else { Write-Host "`n>>> DRY RUN COMPLETE: Manifest was NOT updated." -ForegroundColor Yellow }
 
-Write-Host ">>> Summary v2.5.0: $ActiveCount Active Logs | $($ValidJsonFiles.Count) Scanned." -ForegroundColor Cyan
+Write-Host ">>> Summary v2.5.1: $ActiveCount Active Logs | $($ValidJsonFiles.Count) Scanned." -ForegroundColor Cyan
