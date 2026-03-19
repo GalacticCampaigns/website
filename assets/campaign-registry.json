@@ -179,7 +179,7 @@
             {
               "threadID": "1392631728043982878",
               "displayName": "AIRLOCK BREACH",
-              "isActive": true,
+              "isActive": false,
               "isNSFW": false,
               "messageCount": 0,
               "last_synced_id": ""
@@ -196,6 +196,7 @@
           "order": 2,
           "messageCount": 674,
           "lastMessageTimestamp": "",
+          "last_synced_id": "1435991921246867580",
           "threads": [
             {
               "threadID": "1402706232732811425",
@@ -269,8 +270,7 @@
               "messageCount": 8,
               "last_synced_id": "1430379271955808477"
             }
-          ],
-          "last_synced_id": "1435991921246867580"
+          ]
         },
         {
           "title": "CHAPTER 3: BENEATH THE GLARE",
@@ -282,6 +282,7 @@
           "order": 3,
           "messageCount": 234,
           "lastMessageTimestamp": "",
+          "last_synced_id": "1464810422602432562",
           "threads": [
             {
               "threadID": "1457878207498817734",
@@ -307,8 +308,7 @@
               "messageCount": 14,
               "last_synced_id": "1463318571533992144"
             }
-          ],
-          "last_synced_id": "1464810422602432562"
+          ]
         },
         {
           "title": "CHAPTER 4: RESONANCE FREQUENCY",
