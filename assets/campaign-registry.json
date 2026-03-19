@@ -384,7 +384,7 @@
               "isActive": true,
               "isNSFW": false,
               "messageCount": 8,
-              "last_synced_id": "1484156798440312842"
+              "last_synced_id": ""
             }
           ]
         },
@@ -394,7 +394,7 @@
           "fileName": "fo_ch5-the-threaded-path.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "1482883329115291648",
+          "last_synced_id": "",
           "messageCount": 1,
           "lastMessageTimestamp": "2026-03-15T23:28:56.301+00:00",
           "threads": []
@@ -416,7 +416,7 @@
           "fileName": "prelude_fracture-point-cajar.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "1463909352946536634",
+          "last_synced_id": "",
           "messageCount": 30,
           "lastMessageTimestamp": "2026-01-22T14:53:07.863+00:00",
           "threads": []
@@ -427,7 +427,7 @@
           "fileName": "prelude_ghost-in-the-relay-lis-garah.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "1463661560198201517",
+          "last_synced_id": "",
           "messageCount": 122,
           "lastMessageTimestamp": "2026-01-21T22:28:29.468+00:00",
           "threads": []
@@ -438,7 +438,7 @@
           "fileName": "prelude_silent-ward-ciara.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "1456801530689622088",
+          "last_synced_id": "",
           "messageCount": 113,
           "lastMessageTimestamp": "2026-01-03T00:09:10.98+00:00",
           "threads": []
@@ -449,7 +449,7 @@
           "fileName": "a-visit-to-keldabe-iyola.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "1419038738864013314",
+          "last_synced_id": "",
           "messageCount": 14,
           "lastMessageTimestamp": "2025-09-20T19:13:19.81+00:00",
           "threads": []
@@ -460,7 +460,7 @@
           "fileName": "sundered-coven-varda.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "1445875108940873821",
+          "last_synced_id": "",
           "messageCount": 65,
           "lastMessageTimestamp": "2025-12-03T20:31:29.032+00:00",
           "threads": []
@@ -557,7 +557,7 @@
           "order": 4,
           "messageCount": 172,
           "lastMessageTimestamp": "2026-03-18T23:15:47.041+00:00",
-          "last_synced_id": "1483967182315458562",
+          "last_synced_id": "",
           "threads": [
             {
               "threadID": "1464634504286175232",
