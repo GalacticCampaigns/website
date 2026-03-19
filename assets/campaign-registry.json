@@ -384,7 +384,7 @@
               "isActive": true,
               "isNSFW": false,
               "messageCount": 0,
-              "last_synced_id": "1484156798440312842"
+              "last_synced_id": ""
             }
           ]
         },
@@ -394,7 +394,7 @@
           "fileName": "fo_ch5-the-threaded-path.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "1482883329115291648",
+          "last_synced_id": "",
           "messageCount": 0,
           "lastMessageTimestamp": "",
           "threads": []
@@ -557,6 +557,7 @@
           "order": 4,
           "messageCount": 165,
           "lastMessageTimestamp": "",
+          "last_synced_id": "1483967182315458562",
           "threads": [
             {
               "threadID": "1464634504286175232",
@@ -564,10 +565,9 @@
               "isActive": true,
               "isNSFW": true,
               "messageCount": 23,
-              "last_synced_id": "1466792716502306857"
+              "last_synced_id": ""
             }
-          ],
-          "last_synced_id": "1483967182315458562"
+          ]
         }
       ]
     }
