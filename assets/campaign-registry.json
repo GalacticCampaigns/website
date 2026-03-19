@@ -3,6 +3,8 @@
   "campaigns": {
     "forgotten_ones": {
       "name": "Star Wars: Forgotten Ones",
+      "category_id": "1380214185962639402",
+      "guild_id": "661388927734775859",
       "description": "A crew of outcasts awakens from cryo-stasis aboard a derelict vessel. In a galaxy that has moved on, they must find their place among the stars or be consumed by the shadows of their past. They face the challenges of a new era while uncovering the mystery of their abandonment.",
       "repository": "alicia86/SW_ForgottenOnes",
       "branch": "main",
@@ -16,6 +18,7 @@
         "wiki": "https://github.com/alicia86/SW_ForgottenOnes/wiki/",
         "mediaRegistry": null
       },
+      "forum_ids": [],
       "logs": [
         {
           "title": "PRELUDE: The Static on the Line (Dryzan)",
@@ -27,6 +30,7 @@
           "order": 0,
           "messageCount": 176,
           "lastMessageTimestamp": "2025-07-25T01:02:40.602+00:00",
+          "last_synced_id": "",
           "threads": []
         },
         {
@@ -39,6 +43,7 @@
           "order": 0,
           "messageCount": 107,
           "lastMessageTimestamp": "2025-07-25T00:03:06.396+00:00",
+          "last_synced_id": "",
           "threads": []
         },
         {
@@ -51,6 +56,7 @@
           "order": 0,
           "messageCount": 1,
           "lastMessageTimestamp": "2025-06-12T19:27:19.913+00:00",
+          "last_synced_id": "",
           "threads": []
         },
         {
@@ -63,6 +69,7 @@
           "order": 0,
           "messageCount": 130,
           "lastMessageTimestamp": "2025-07-01T02:47:54.153+00:00",
+          "last_synced_id": "",
           "threads": []
         },
         {
@@ -75,6 +82,7 @@
           "order": 0,
           "messageCount": 135,
           "lastMessageTimestamp": "2025-06-18T23:49:12.754+00:00",
+          "last_synced_id": "",
           "threads": []
         },
         {
@@ -87,6 +95,7 @@
           "order": 0,
           "messageCount": 1,
           "lastMessageTimestamp": "2025-06-12T01:37:02.532+00:00",
+          "last_synced_id": "",
           "threads": []
         },
         {
@@ -99,19 +108,22 @@
           "order": 1,
           "messageCount": 303,
           "lastMessageTimestamp": "2025-08-01T12:39:15.84+00:00",
+          "last_synced_id": "",
           "threads": [
             {
               "threadID": "1387904540778561576",
               "displayName": "Intro: The Cold Shell (Wes)",
               "isActive": true,
               "isNSFW": false,
+              "last_synced_id": "",
               "messageCount": 6
             },
             {
               "threadID": "1387912482172964989",
               "displayName": "Intro: Rude Awakening (Dryzan)",
               "isActive": true,
-              "isNSFW": false,
+              "isNSFW": false,              
+              "last_synced_id": "",
               "messageCount": 5
             },
             {
@@ -119,13 +131,15 @@
               "displayName": "Intro: A Cage of Glass (Iyola)",
               "isActive": true,
               "isNSFW": false,
+              "last_synced_id": "",
               "messageCount": 5
             },
             {
               "threadID": "1387913268730794056",
               "displayName": "Intro: The Static Within (Vaeros)",
               "isActive": true,
-              "isNSFW": false,
+              "isNSFW": false,              
+              "last_synced_id": "",
               "messageCount": 5
             },
             {
@@ -133,6 +147,7 @@
               "displayName": "Intro: A Cracked Lens (Varda)",
               "isActive": true,
               "isNSFW": false,
+              "last_synced_id": "",
               "messageCount": 6
             },
             {
@@ -140,6 +155,7 @@
               "displayName": "Galley ☆ Post Escape",
               "isActive": true,
               "isNSFW": false,
+              "last_synced_id": "",
               "messageCount": 19
             },
             {
@@ -334,6 +350,8 @@
     },
     "swWhispers-Void": {
       "name": "Star Wars: Whispers in the Void",
+      "category_id": "1347381577721581650",
+      "guild_id": "661388927734775859",
       "description": "",
       "repository": "alicia86/campaigns",
       "branch": "main",
@@ -347,6 +365,7 @@
         "wiki": "",
         "mediaRegistry": "media-registry.json"
       },
+      "forum_ids": [],
       "logs": [
         {
           "title": "PRELUDE: ADVENTURES ON FAKIR",
