@@ -18,7 +18,9 @@
         "wiki": "https://github.com/alicia86/SW_ForgottenOnes/wiki/",
         "mediaRegistry": null
       },
-      "forum_ids": ["1389791168778211370"],
+      "forum_ids": [
+        "1389791168778211370"
+      ],
       "logs": [
         {
           "title": "PRELUDE: The Static on the Line (Dryzan)",
@@ -29,8 +31,8 @@
           "preview": "",
           "order": 0,
           "messageCount": 176,
-          "lastMessageTimestamp": "2025-07-25T01:02:40.602+00:00",
-          "last_synced_id": "",
+          "lastMessageTimestamp": "",
+          "last_synced_id": "1398108158593073233",
           "threads": []
         },
         {
@@ -42,8 +44,8 @@
           "preview": "",
           "order": 0,
           "messageCount": 107,
-          "lastMessageTimestamp": "2025-07-25T00:03:06.396+00:00",
-          "last_synced_id": "",
+          "lastMessageTimestamp": "",
+          "last_synced_id": "1398093167286554755",
           "threads": []
         },
         {
@@ -55,8 +57,8 @@
           "preview": "",
           "order": 0,
           "messageCount": 1,
-          "lastMessageTimestamp": "2025-06-12T19:27:19.913+00:00",
-          "last_synced_id": "",
+          "lastMessageTimestamp": "",
+          "last_synced_id": "1382803475951517809",
           "threads": []
         },
         {
@@ -68,8 +70,8 @@
           "preview": "",
           "order": 0,
           "messageCount": 130,
-          "lastMessageTimestamp": "2025-07-01T02:47:54.153+00:00",
-          "last_synced_id": "",
+          "lastMessageTimestamp": "2025-07-01T02:48:06.760000+00:00",
+          "last_synced_id": "1389437383681769562",
           "threads": []
         },
         {
@@ -81,8 +83,8 @@
           "preview": "",
           "order": 0,
           "messageCount": 135,
-          "lastMessageTimestamp": "2025-06-18T23:49:12.754+00:00",
-          "last_synced_id": "",
+          "lastMessageTimestamp": "2025-06-19T02:23:39.261000+00:00",
+          "last_synced_id": "1385082574170493031",
           "threads": []
         },
         {
@@ -94,8 +96,8 @@
           "preview": "",
           "order": 0,
           "messageCount": 1,
-          "lastMessageTimestamp": "2025-06-12T01:37:02.532+00:00",
-          "last_synced_id": "",
+          "lastMessageTimestamp": "",
+          "last_synced_id": "1382534128733261948",
           "threads": []
         },
         {
@@ -107,23 +109,23 @@
           "preview": "",
           "order": 1,
           "messageCount": 303,
-          "lastMessageTimestamp": "2025-08-01T12:39:15.84+00:00",
-          "last_synced_id": "",
+          "lastMessageTimestamp": "",
+          "last_synced_id": "1400820175585939557",
           "threads": [
             {
               "threadID": "1387904540778561576",
               "displayName": "Intro: The Cold Shell (Wes)",
               "isActive": true,
               "isNSFW": false,
-              "last_synced_id": "",
+              "last_synced_id": "1390408975073411085",
               "messageCount": 6
             },
             {
               "threadID": "1387912482172964989",
               "displayName": "Intro: Rude Awakening (Dryzan)",
               "isActive": true,
-              "isNSFW": false,              
-              "last_synced_id": "",
+              "isNSFW": false,
+              "last_synced_id": "1390409165322584245",
               "messageCount": 5
             },
             {
@@ -131,15 +133,15 @@
               "displayName": "Intro: A Cage of Glass (Iyola)",
               "isActive": true,
               "isNSFW": false,
-              "last_synced_id": "",
+              "last_synced_id": "1390409052009267353",
               "messageCount": 5
             },
             {
               "threadID": "1387913268730794056",
               "displayName": "Intro: The Static Within (Vaeros)",
               "isActive": true,
-              "isNSFW": false,              
-              "last_synced_id": "",
+              "isNSFW": false,
+              "last_synced_id": "1390410858848587880",
               "messageCount": 5
             },
             {
@@ -147,30 +149,40 @@
               "displayName": "Intro: A Cracked Lens (Varda)",
               "isActive": true,
               "isNSFW": false,
-              "last_synced_id": "",
+              "last_synced_id": "1390408892172992563",
               "messageCount": 6
             },
             {
               "threadID": "1397604779227615402",
-              "displayName": "Galley ☆ Post Escape",
+              "displayName": "Galley \u2606 Post Escape",
               "isActive": true,
               "isNSFW": false,
-              "last_synced_id": "",
+              "last_synced_id": "1398465748833402922",
               "messageCount": 19
             },
             {
               "threadID": "1397620423914684427",
-              "displayName": "In Medbay ☆ Post Escape",
+              "displayName": "In Medbay \u2606 Post Escape",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 4
+              "messageCount": 4,
+              "last_synced_id": "1398100097685917768"
             },
             {
               "threadID": "1397997211576438784",
-              "displayName": "Bridge ☆ Post Escape",
+              "displayName": "Bridge \u2606 Post Escape",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 14
+              "messageCount": 14,
+              "last_synced_id": "1398998483402227742"
+            },
+            {
+              "threadID": "1392631728043982878",
+              "displayName": "AIRLOCK BREACH",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 0,
+              "last_synced_id": ""
             }
           ]
         },
@@ -183,72 +195,82 @@
           "preview": "",
           "order": 2,
           "messageCount": 674,
-          "lastMessageTimestamp": "2025-11-06T13:58:18.492+00:00",
+          "lastMessageTimestamp": "",
           "threads": [
             {
               "threadID": "1402706232732811425",
               "displayName": "Workshop / Recreation",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 76
+              "messageCount": 76,
+              "last_synced_id": "1412162294938341467"
             },
             {
               "threadID": "1403550882012074084",
               "displayName": "Medbay",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 88
+              "messageCount": 88,
+              "last_synced_id": "1406951930097307688"
             },
             {
               "threadID": "1410311118030901268",
               "displayName": "Exploring the Ghost Ship",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 30
+              "messageCount": 30,
+              "last_synced_id": "1412131005107671174"
             },
             {
               "threadID": "1410313405197451405",
               "displayName": "The Echo and the Oracle",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 8
+              "messageCount": 8,
+              "last_synced_id": "1412211754280419369"
             },
             {
               "threadID": "1412211178981032037",
               "displayName": "Mess Hall",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 29
+              "messageCount": 29,
+              "last_synced_id": "1414283788489326725"
             },
             {
               "threadID": "1418930804574392412",
               "displayName": "Varda lowers herself into the chair with",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 3
+              "messageCount": 3,
+              "last_synced_id": "1419026875925401846"
             },
             {
               "threadID": "1423451795291639831",
               "displayName": "Back to the *Venture*",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 37
+              "messageCount": 37,
+              "last_synced_id": "1424933020988604437"
             },
             {
               "threadID": "1424361258995417250",
               "displayName": "Atin Oya'ka",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 72
+              "messageCount": 72,
+              "last_synced_id": "1429607396594024509"
             },
             {
               "threadID": "1430238393102630953",
               "displayName": "Iyola's Cabin",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 8
+              "messageCount": 8,
+              "last_synced_id": "1430379271955808477"
             }
-          ]
+          ],
+          "last_synced_id": "1435991921246867580"
         },
         {
           "title": "CHAPTER 3: BENEATH THE GLARE",
@@ -259,30 +281,34 @@
           "preview": "",
           "order": 3,
           "messageCount": 234,
-          "lastMessageTimestamp": "2026-01-20T23:45:34.598+00:00",
+          "lastMessageTimestamp": "",
           "threads": [
             {
               "threadID": "1457878207498817734",
               "displayName": "Echoes of the Past",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 44
+              "messageCount": 44,
+              "last_synced_id": "1459909451594207464"
             },
             {
               "threadID": "1458169536749633690",
               "displayName": "Nanite Mysteries",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 23
+              "messageCount": 23,
+              "last_synced_id": "1459595663284375781"
             },
             {
               "threadID": "1462985529439031461",
               "displayName": "Epilogue: Iyola",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 14
+              "messageCount": 14,
+              "last_synced_id": "1463318571533992144"
             }
-          ]
+          ],
+          "last_synced_id": "1464810422602432562"
         },
         {
           "title": "CHAPTER 4: RESONANCE FREQUENCY",
@@ -293,58 +319,151 @@
           "preview": "",
           "order": 4,
           "messageCount": 522,
-          "lastMessageTimestamp": "2026-03-15T15:57:35.365+00:00",
+          "lastMessageTimestamp": "",
+          "last_synced_id": "",
           "threads": [
             {
               "threadID": "1463304534892871844",
               "displayName": "Awakening: The Wayward Vigil",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 44
+              "messageCount": 44,
+              "last_synced_id": "1469390946549629092"
             },
             {
               "threadID": "1463321256370634967",
               "displayName": "Intro: The Static Heart (Lis)",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 5
+              "messageCount": 5,
+              "last_synced_id": "1463831632745205772"
             },
             {
               "threadID": "1463328960468357184",
               "displayName": "Intro: The Muted Echo (Ciara)",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 6
+              "messageCount": 6,
+              "last_synced_id": "1463811672581083199"
             },
             {
               "threadID": "1463337940141867232",
               "displayName": "Intro: The Hollow Vigil (Cajar)",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 6
+              "messageCount": 6,
+              "last_synced_id": "1463726051329839209"
             },
             {
               "threadID": "1466947514015023268",
               "displayName": "Venture - Medbay",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 29
+              "messageCount": 29,
+              "last_synced_id": "1468385722062082111"
             },
             {
               "threadID": "1467270244383854787",
               "displayName": "Search for the Wrangler",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 11
+              "messageCount": 11,
+              "last_synced_id": "1468375925262651424"
             },
             {
               "threadID": "1472757955500970066",
               "displayName": "Venture - Bridge",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 61
+              "messageCount": 61,
+              "last_synced_id": "1479984225016090746"
+            },
+            {
+              "threadID": "1483596566068596756",
+              "displayName": "VENTURE - DROID BAY",
+              "isActive": true,
+              "isNSFW": false,
+              "messageCount": 0,
+              "last_synced_id": "1484156798440312842"
             }
           ]
+        },
+        {
+          "title": "CHAPTER 5: THE THREADED PATH",
+          "channelID": "1482882973266083984",
+          "fileName": "fo_ch5-the-threaded-path.json",
+          "isActive": true,
+          "isNSFW": false,
+          "last_synced_id": "1482883329115291648",
+          "messageCount": 0,
+          "lastMessageTimestamp": "",
+          "threads": []
+        },
+        {
+          "title": "\u2606READ FIRST\u2606",
+          "channelID": "1400469850408747059",
+          "fileName": "read-first.json",
+          "isActive": false,
+          "isNSFW": false,
+          "last_synced_id": "1400473778500407408",
+          "messageCount": 0,
+          "lastMessageTimestamp": "",
+          "threads": []
+        },
+        {
+          "title": "PRELUDE: FRACTURE POINT (CAJAR)",
+          "channelID": "1461061352477950124",
+          "fileName": "prelude_fracture-point-cajar.json",
+          "isActive": true,
+          "isNSFW": false,
+          "last_synced_id": "",
+          "messageCount": 0,
+          "lastMessageTimestamp": "",
+          "threads": []
+        },
+        {
+          "title": "PRELUDE: GHOST IN THE RELAY (LIS GARAH)",
+          "channelID": "1458157142421798912",
+          "fileName": "prelude_ghost-in-the-relay-lis-garah.json",
+          "isActive": true,
+          "isNSFW": false,
+          "last_synced_id": "",
+          "messageCount": 0,
+          "lastMessageTimestamp": "",
+          "threads": []
+        },
+        {
+          "title": "PRELUDE: SILENT WARD (CIARA)",
+          "channelID": "1448882053574557797",
+          "fileName": "prelude_silent-ward-ciara.json",
+          "isActive": true,
+          "isNSFW": false,
+          "last_synced_id": "",
+          "messageCount": 0,
+          "lastMessageTimestamp": "",
+          "threads": []
+        },
+        {
+          "title": "A VISIT TO KELDABE (IYOLA)",
+          "channelID": "1408223502917570732",
+          "fileName": "a-visit-to-keldabe-iyola.json",
+          "isActive": true,
+          "isNSFW": false,
+          "last_synced_id": "",
+          "messageCount": 0,
+          "lastMessageTimestamp": "",
+          "threads": []
+        },
+        {
+          "title": "SUNDERED COVEN (VARDA)",
+          "channelID": "1401239528605351967",
+          "fileName": "sundered-coven-varda.json",
+          "isActive": true,
+          "isNSFW": false,
+          "last_synced_id": "",
+          "messageCount": 0,
+          "lastMessageTimestamp": "",
+          "threads": []
         }
       ]
     },
@@ -376,8 +495,9 @@
           "preview": "",
           "order": 0,
           "messageCount": 643,
-          "lastMessageTimestamp": "2024-06-23T19:02:38.258+00:00",
-          "threads": []
+          "lastMessageTimestamp": "2024-08-15T22:28:56+00:00",
+          "threads": [],
+          "last_synced_id": "1273770433468039229"
         },
         {
           "title": "Chapter 1: Descending Into Darkness",
@@ -388,8 +508,9 @@
           "preview": "",
           "order": 1,
           "messageCount": 372,
-          "lastMessageTimestamp": "2025-04-02T21:24:58.885+00:00",
-          "threads": []
+          "lastMessageTimestamp": "",
+          "threads": [],
+          "last_synced_id": "1357103544968151131"
         },
         {
           "title": "Chapter 2: Amidst the Ashes",
@@ -400,8 +521,9 @@
           "preview": "",
           "order": 2,
           "messageCount": 466,
-          "lastMessageTimestamp": "2025-05-23T02:18:07.061+00:00",
-          "threads": []
+          "lastMessageTimestamp": "",
+          "threads": [],
+          "last_synced_id": "1375296708405231649"
         },
         {
           "title": "Chapter 3: The Karthon Gamble",
@@ -412,16 +534,18 @@
           "preview": "",
           "order": 3,
           "messageCount": 982,
-          "lastMessageTimestamp": "2026-01-23T01:36:13.812+00:00",
+          "lastMessageTimestamp": "2025-05-30T12:16:32.296000+00:00",
           "threads": [
             {
               "threadID": "1377978443060482080",
               "displayName": "Gamma Data Packet",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 5
+              "messageCount": 5,
+              "last_synced_id": "1377983880694464512"
             }
-          ]
+          ],
+          "last_synced_id": "1464230085438476410"
         },
         {
           "title": "Chapter 4: Stillness Between Storms",
@@ -432,16 +556,18 @@
           "preview": "",
           "order": 4,
           "messageCount": 165,
-          "lastMessageTimestamp": "2026-03-14T18:31:43.627+00:00",
+          "lastMessageTimestamp": "",
           "threads": [
             {
               "threadID": "1464634504286175232",
-              "displayName": "Cabin 🔞",
+              "displayName": "Cabin \ud83d\udd1e",
               "isActive": true,
               "isNSFW": true,
-              "messageCount": 23
+              "messageCount": 23,
+              "last_synced_id": "1466792716502306857"
             }
-          ]
+          ],
+          "last_synced_id": "1483967182315458562"
         }
       ]
     }
