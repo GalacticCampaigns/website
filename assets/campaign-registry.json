@@ -1,4 +1,4 @@
-{
+﻿{
   "activeCampaign": "forgotten_ones",
   "campaigns": {
     "forgotten_ones": {
@@ -318,9 +318,9 @@
           "isNSFW": false,
           "preview": "",
           "order": 4,
-          "messageCount": 522,
-          "lastMessageTimestamp": "",
-          "last_synced_id": "",
+          "messageCount": 548,
+          "lastMessageTimestamp": "2026-03-19T11:49:15.048+00:00",
+          "last_synced_id": "1484156798440312842",
           "threads": [
             {
               "threadID": "1463304534892871844",
@@ -367,7 +367,7 @@
               "displayName": "Search for the Wrangler",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 11,
+              "messageCount": 12,
               "last_synced_id": "1468375925262651424"
             },
             {
@@ -375,7 +375,7 @@
               "displayName": "Venture - Bridge",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 61,
+              "messageCount": 62,
               "last_synced_id": "1479984225016090746"
             },
             {
@@ -383,8 +383,8 @@
               "displayName": "VENTURE - DROID BAY",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 0,
-              "last_synced_id": ""
+              "messageCount": 8,
+              "last_synced_id": "1484156798440312842"
             }
           ]
         },
@@ -394,9 +394,9 @@
           "fileName": "fo_ch5-the-threaded-path.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "",
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
+          "last_synced_id": "1482883329115291648",
+          "messageCount": 1,
+          "lastMessageTimestamp": "2026-03-15T23:28:56.301+00:00",
           "threads": []
         },
         {
@@ -416,9 +416,9 @@
           "fileName": "prelude_fracture-point-cajar.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "",
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
+          "last_synced_id": "1463909352946536634",
+          "messageCount": 30,
+          "lastMessageTimestamp": "2026-01-22T14:53:07.863+00:00",
           "threads": []
         },
         {
@@ -427,9 +427,9 @@
           "fileName": "prelude_ghost-in-the-relay-lis-garah.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "",
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
+          "last_synced_id": "1463661560198201517",
+          "messageCount": 122,
+          "lastMessageTimestamp": "2026-01-21T22:28:29.468+00:00",
           "threads": []
         },
         {
@@ -438,9 +438,9 @@
           "fileName": "prelude_silent-ward-ciara.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "",
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
+          "last_synced_id": "1456801530689622088",
+          "messageCount": 113,
+          "lastMessageTimestamp": "2026-01-03T00:09:10.98+00:00",
           "threads": []
         },
         {
@@ -449,9 +449,9 @@
           "fileName": "a-visit-to-keldabe-iyola.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "",
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
+          "last_synced_id": "1419038738864013314",
+          "messageCount": 14,
+          "lastMessageTimestamp": "2025-09-20T19:13:19.81+00:00",
           "threads": []
         },
         {
@@ -460,9 +460,9 @@
           "fileName": "sundered-coven-varda.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "",
-          "messageCount": 0,
-          "lastMessageTimestamp": "",
+          "last_synced_id": "1445875108940873821",
+          "messageCount": 65,
+          "lastMessageTimestamp": "2025-12-03T20:31:29.032+00:00",
           "threads": []
         }
       ]
@@ -552,11 +552,11 @@
           "channelID": "1464072269071651051",
           "fileName": "wv_ch4_stillness-between-storms.json",
           "isActive": true,
-          "isNSFW": false,
+          "isNSFW": true,
           "preview": "",
           "order": 4,
-          "messageCount": 165,
-          "lastMessageTimestamp": "",
+          "messageCount": 172,
+          "lastMessageTimestamp": "2026-03-18T23:15:47.041+00:00",
           "last_synced_id": "1483967182315458562",
           "threads": [
             {
@@ -565,7 +565,7 @@
               "isActive": true,
               "isNSFW": true,
               "messageCount": 23,
-              "last_synced_id": ""
+              "last_synced_id": "1466792716502306857"
             }
           ]
         }
