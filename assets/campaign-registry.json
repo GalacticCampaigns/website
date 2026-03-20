@@ -70,7 +70,7 @@
           "preview": "",
           "order": 0,
           "messageCount": 130,
-          "lastMessageTimestamp": "2025-07-01T02:48:06.760000+00:00",
+          "lastMessageTimestamp": "2025-07-01T02:47:54.153+00:00",
           "last_synced_id": "1389437383681769562",
           "threads": []
         },
@@ -83,7 +83,7 @@
           "preview": "",
           "order": 0,
           "messageCount": 135,
-          "lastMessageTimestamp": "2025-06-19T02:23:39.261000+00:00",
+          "lastMessageTimestamp": "2025-06-18T23:49:12.754+00:00",
           "last_synced_id": "1385082574170493031",
           "threads": []
         },
@@ -108,7 +108,7 @@
           "isNSFW": false,
           "preview": "",
           "order": 1,
-          "messageCount": 367,
+          "messageCount": 305,
           "lastMessageTimestamp": "2025-08-01T12:39:15.84+00:00",
           "last_synced_id": "1400820175585939557",
           "threads": [
@@ -318,9 +318,9 @@
           "isNSFW": false,
           "preview": "",
           "order": 4,
-          "messageCount": 548,
-          "lastMessageTimestamp": "2026-03-19T11:49:15.048+00:00",
-          "last_synced_id": "1484156798440312842",
+          "messageCount": 550,
+          "lastMessageTimestamp": "2026-03-20T00:29:52.227+00:00",
+          "last_synced_id": "1484348214642479197",
           "threads": [
             {
               "threadID": "1463304534892871844",
@@ -491,11 +491,11 @@
           "channelID": "1200635186119979019",
           "fileName": "bluebook-wes_1.json",
           "isActive": true,
-          "isNSFW": false,
+          "isNSFW": true,
           "preview": "",
           "order": 0,
           "messageCount": 643,
-          "lastMessageTimestamp": "2024-08-15T22:28:56+00:00",
+          "lastMessageTimestamp": "2024-06-23T19:02:38.258+00:00",
           "threads": [],
           "last_synced_id": "1273770433468039229"
         },
@@ -504,11 +504,11 @@
           "channelID": "1347407802980634726",
           "fileName": "ch1_descending-into-darkness.json",
           "isActive": true,
-          "isNSFW": false,
+          "isNSFW": true,
           "preview": "",
           "order": 1,
           "messageCount": 372,
-          "lastMessageTimestamp": "",
+          "lastMessageTimestamp": "2025-04-02T21:24:58.885+00:00",
           "threads": [],
           "last_synced_id": "1357103544968151131"
         },
@@ -517,11 +517,11 @@
           "channelID": "1357106240332759070",
           "fileName": "ch2_amidst-the-ashes.json",
           "isActive": true,
-          "isNSFW": false,
+          "isNSFW": true,
           "preview": "",
           "order": 2,
           "messageCount": 466,
-          "lastMessageTimestamp": "",
+          "lastMessageTimestamp": "2025-05-23T02:18:07.061+00:00",
           "threads": [],
           "last_synced_id": "1375296708405231649"
         },
@@ -533,16 +533,16 @@
           "isNSFW": false,
           "preview": "",
           "order": 3,
-          "messageCount": 982,
-          "lastMessageTimestamp": "2025-05-30T12:16:32.296000+00:00",
+          "messageCount": 983,
+          "lastMessageTimestamp": "2026-01-23T01:36:13.812+00:00",
           "threads": [
             {
               "threadID": "1377978443060482080",
               "displayName": "Gamma Data Packet",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 5,
-              "last_synced_id": "1377983880694464512"
+              "messageCount": 6,
+              "last_synced_id": "1377983258230394890"
             }
           ],
           "last_synced_id": "1464230085438476410"
@@ -557,7 +557,7 @@
           "order": 4,
           "messageCount": 172,
           "lastMessageTimestamp": "2026-03-18T23:15:47.041+00:00",
-          "last_synced_id": "1483967182315458562",
+          "last_synced_id": "1484350810597883944",
           "threads": [
             {
               "threadID": "1464634504286175232",
