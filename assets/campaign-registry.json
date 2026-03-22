@@ -23,7 +23,7 @@
       ],
       "logs": [
         {
-          "title": "CHAPTER 1: AWAKENING",
+          "title": "Chapter 1: Awakening",
           "channelID": "1387901967317209218",
           "fileName": "FO_Ch1_Awakening.json",
           "isActive": true,
@@ -119,7 +119,7 @@
           "syncStatus": "active"
         },
         {
-          "title": "CHAPTER 2: SILENT-DRIFT",
+          "title": "Chapter 2: Silent Drift",
           "channelID": "1400816665276711024",
           "fileName": "FO_Ch2_Silent-Drift.json",
           "isActive": true,
@@ -215,7 +215,7 @@
           "syncStatus": "active"
         },
         {
-          "title": "CHAPTER 3: BENEATH THE GLARE",
+          "title": "Chapter 3: Beneath the Glare",
           "channelID": "1435992787584679936",
           "fileName": "FO_Ch3_beneath-the-glare.json",
           "isActive": true,
@@ -257,7 +257,7 @@
           "syncStatus": "active"
         },
         {
-          "title": "CHAPTER 4: RESONANCE FREQUENCY",
+          "title": "Chapter 4: Resonance Frequency",
           "channelID": "1463269257151254540",
           "fileName": "FO_Ch4-Resonance-Frequency.json",
           "isActive": true,
@@ -333,7 +333,7 @@
             },
             {
               "threadID": "1483596566068596756",
-              "displayName": "VENTURE - DROID BAY",
+              "displayName": "Venture - Droid Bay",
               "isActive": true,
               "isNSFW": false,
               "messageCount": 15,
@@ -344,7 +344,7 @@
           "syncStatus": "active"
         },
         {
-          "title": "CHAPTER 5: THE THREADED PATH",
+          "title": "Chapter 5: The Threaded Path",
           "channelID": "1482882973266083984",
           "fileName": "fo_ch5-the-threaded-path.json",
           "isActive": true,
@@ -388,7 +388,7 @@
           "syncStatus": "active"
         },
         {
-          "title": "PRELUDE: The Static on the Line (Dryzan)",
+          "title": "Prelude: The Static on the Line (Dryzan)",
           "channelID": "1381783775301734441",
           "fileName": "FO_BB_Prelude-Dryzan.json",
           "isActive": true,
@@ -402,7 +402,7 @@
           "syncStatus": "active"
         },
         {
-          "title": "PRELUDE: The Sunken Star of Xylos (Iyola)",
+          "title": "Prelude: The Sunken Star of Xylos (Iyola)",
           "channelID": "1386794250947264743",
           "fileName": "FO_BB_Prelude-Iyola.json",
           "isActive": true,
@@ -416,7 +416,7 @@
           "syncStatus": "active"
         },
         {
-          "title": "PRELUDE: THE STRAY FORTUNE (KRYNN)",
+          "title": "Prelude: The Stray Fortune (Krynn)",
           "channelID": "1382803271185469562",
           "fileName": "FO_BB_Prelude-Krynn.json",
           "isActive": true,
@@ -430,7 +430,7 @@
           "syncStatus": "active"
         },
         {
-          "title": "PRELUDE: Ghost of the <i>Devastation<i> (Vearos)",
+          "title": "Prelude: Ghost of the <i>Devastation<i> (Vearos)",
           "channelID": "1385685912834277456",
           "fileName": "FO_BB_Prelude-Vaeros.json",
           "isActive": true,
@@ -444,7 +444,7 @@
           "syncStatus": "active"
         },
         {
-          "title": "PRELUDE: The Price of a Vision (Varda)",
+          "title": "Prelude: The Price of a Vision (Varda)",
           "channelID": "1381784157688037396",
           "fileName": "FO_BB_Prelude-Varda.json",
           "isActive": true,
@@ -458,7 +458,7 @@
           "syncStatus": "active"
         },
         {
-          "title": "PRELUDE: THE ECHO IN THE STONE (VENA)",
+          "title": "Prelude: The Echo in the Stone (VENA)",
           "channelID": "1381783926871298098",
           "fileName": "FO_BB_Prelude-Vena.json",
           "isActive": true,
@@ -472,7 +472,7 @@
           "syncStatus": "active"
         },
         {
-          "title": "PRELUDE: FRACTURE POINT (CAJAR)",
+          "title": "Prelude: Fracture Point (Cajar)",
           "channelID": "1461061352477950124",
           "fileName": "prelude_fracture-point-cajar.json",
           "isActive": true,
@@ -485,7 +485,7 @@
           "syncStatus": "active"
         },
         {
-          "title": "PRELUDE: GHOST IN THE RELAY (LIS GARAH)",
+          "title": "Prelude: Ghost in the Relay (Lis)",
           "channelID": "1458157142421798912",
           "fileName": "prelude_ghost-in-the-relay-lis-garah.json",
           "isActive": true,
@@ -498,7 +498,7 @@
           "syncStatus": "active"
         },
         {
-          "title": "PRELUDE: SILENT WARD (CIARA)",
+          "title": "Prelude: Silent Ward (Ciara)",
           "channelID": "1448882053574557797",
           "fileName": "prelude_silent-ward-ciara.json",
           "isActive": true,
@@ -511,7 +511,7 @@
           "syncStatus": "active"
         },
         {
-          "title": "A VISIT TO KELDABE (IYOLA)",
+          "title": "A Visit To Keldabe (Iyola)",
           "channelID": "1408223502917570732",
           "fileName": "a-visit-to-keldabe-iyola.json",
           "isActive": true,
@@ -524,7 +524,7 @@
           "syncStatus": "active"
         },
         {
-          "title": "SUNDERED COVEN (VARDA)",
+          "title": "Sundered Coven (Varda)",
           "channelID": "1401239528605351967",
           "fileName": "sundered-coven-varda.json",
           "isActive": true,
