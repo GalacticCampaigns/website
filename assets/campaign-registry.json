@@ -349,18 +349,18 @@
           "fileName": "fo_ch5-the-threaded-path.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "1484994823524978890",
-          "messageCount": 9,
+          "last_synced_id": "1485360572773040309",
+          "messageCount": 20,
           "order": 5,
-          "lastMessageTimestamp": "2026-03-21T19:19:15.798000+00:00",
+          "lastMessageTimestamp": "2026-03-22T19:32:37.214000+00:00",
           "threads": [
             {
               "threadID": "1484919932688011507",
               "displayName": "Kando'S Coursers ● Briefing Room Beta",
               "isActive": true,
               "syncStatus": "active",
-              "last_synced_id": "",
-              "messageCount": 0,
+              "last_synced_id": "1485360572773040309",
+              "messageCount": 7,
               "isNSFW": false
             },
             {
@@ -368,8 +368,8 @@
               "displayName": "Kando'S Coursers ● Briefing Room Gamma",
               "isActive": true,
               "syncStatus": "active",
-              "last_synced_id": "1484919597592350970",
-              "messageCount": 1,
+              "last_synced_id": "1485345180122091611",
+              "messageCount": 3,
               "isNSFW": false
             }
           ],
@@ -536,7 +536,8 @@
           "threads": [],
           "syncStatus": "active"
         }
-      ]
+      ],
+      "auto_scan_pattern": "ch|chapter|prelude"
     },
     "swWhispers-Void": {
       "name": "Star Wars: Whispers in the Void",
@@ -647,7 +648,8 @@
           ],
           "syncStatus": "active"
         }
-      ]
+      ],
+      "auto_scan_pattern": "ch|chapter|prelude"
     },
     "swWoP": {
       "name": "Star Wars: War of Prophecy",
@@ -664,7 +666,11 @@
         "wiki": "",
         "mediaRegistry": ""
       },
-      "logs": []
+      "logs": [],
+      "guild_id": "",
+      "category_id": "",
+      "forum_ids": [],
+      "auto_scan_pattern": "ch|chapter|prelude"
     }
   }
 }
