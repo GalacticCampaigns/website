@@ -648,6 +648,23 @@
           "syncStatus": "active"
         }
       ]
+    },
+  "swWoP": {
+      "name": "Star Wars: War of Prophecy",
+      "description": "",
+      "repository": "alicia86/campaigns",
+      "branch": "main",
+      "dataPath": "swWoP/",
+      "paths": {
+        "json": "json/",
+        "emoji": "emojis/",
+        "media": "media/",
+        "avatars": "avatars/",
+        "logo": "",
+        "wiki": "",
+        "mediaRegistry": ""
+      },
+      "logs": []
     }
   }
 }
