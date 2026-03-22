@@ -654,6 +654,8 @@
     "swWoP": {
       "name": "Star Wars: War of Prophecy",
       "description": "",
+      "guild_id": "661388927734775859",
+      "category_id": "1280868071833337856",
       "repository": "alicia86/campaigns",
       "branch": "main",
       "dataPath": "swWoP/",
@@ -666,11 +668,9 @@
         "wiki": "",
         "mediaRegistry": ""
       },
-      "logs": [],
-      "guild_id": "",
-      "category_id": "",
       "forum_ids": [],
-      "auto_scan_pattern": "ch|chapter|prelude"
+      "auto_scan_pattern": "ch|chapter|prelude",
+      "logs": []
     }
   }
 }
