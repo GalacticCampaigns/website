@@ -576,7 +576,7 @@
           "lastMessageTimestamp": "2024-06-23T19:02:38.258000+00:00",
           "threads": [],
           "last_synced_id": "1254511957017497600",
-          "syncStatus": "active",
+          "syncStatus": "stable",
           "parentID": "1183856729432260699"
         },
         {
@@ -591,7 +591,7 @@
           "lastMessageTimestamp": "2025-04-02T21:24:58.885000+00:00",
           "threads": [],
           "last_synced_id": "1357103544968151131",
-          "syncStatus": "active",
+          "syncStatus": "stable",
           "parentID": "1347381577721581650"
         },
         {
@@ -606,7 +606,7 @@
           "lastMessageTimestamp": "2025-05-23T02:18:07.061000+00:00",
           "threads": [],
           "last_synced_id": "1375296708405231649",
-          "syncStatus": "active",
+          "syncStatus": "stable",
           "parentID": "1347381577721581650"
         },
         {
@@ -656,7 +656,7 @@
               "syncStatus": "active"
             }
           ],
-          "syncStatus": "active",
+          "syncStatus": "stable",
           "parentID": "1347381577721581650"
         }
       ],
@@ -683,72 +683,77 @@
       "auto_scan_pattern": "ch|chapter|prelude",
       "logs": [
         {
-          "title": "Wop Ch1 Child Of Prophecy",
+          "title": "Chapter 1: Child Of Prophecy",
           "channelID": "1280870668325359666",
           "parentID": "1280868071833337856",
           "fileName": "wop-ch1-child-of-prophecy.json",
           "isActive": true,
-          "syncStatus": "active",
+          "syncStatus": "stable",
           "last_synced_id": "1293239427073708132",
           "messageCount": 458,
           "lastMessageTimestamp": "2024-10-08T15:51:46.641000+00:00",
           "threads": [],
-          "isNSFW": false
+          "isNSFW": false,
+          "order": 1
         },
         {
-          "title": "Wop Ch2 Flight Of The Chimaera",
+          "title": "Chapter 2: Flight Of The Chimaera",
           "channelID": "1292597894150357053",
           "parentID": "1280868071833337856",
           "fileName": "wop-ch2-flight-of-the-chimaera.json",
           "isActive": true,
-          "syncStatus": "active",
+          "syncStatus": "stable",
           "last_synced_id": "1304805475778429010",
           "messageCount": 574,
           "lastMessageTimestamp": "2024-11-09T13:51:07.539000+00:00",
           "threads": [],
-          "isNSFW": false
+          "isNSFW": false,
+          "order": 2
         },
         {
-          "title": "Wop Ch3 A Galaxy Cursed",
+          "title": "Chapter 3: A Galaxy Cursed",
           "channelID": "1299320984293081089",
           "parentID": "1280868071833337856",
           "fileName": "wop-ch3-a-galaxy-cursed.json",
           "isActive": true,
-          "syncStatus": "active",
+          "syncStatus": "stable",
           "last_synced_id": "1306442805123616808",
           "messageCount": 1049,
           "lastMessageTimestamp": "2024-11-14T02:17:17.275000+00:00",
           "threads": [],
-          "isNSFW": false
+          "isNSFW": false,
+          "order": 3
         },
         {
-          "title": "Wop Ch4 Dantooine Legacy",
+          "title": "Chapter 4: Dantooine Legacy",
           "channelID": "1304423587632906331",
           "parentID": "1280868071833337856",
           "fileName": "wop-ch4-dantooine-legacy.json",
           "isActive": true,
-          "syncStatus": "active",
+          "syncStatus": "stable",
           "last_synced_id": "1318288571228098712",
           "messageCount": 1322,
           "lastMessageTimestamp": "2024-12-16T18:48:07.998000+00:00",
           "threads": [],
-          "isNSFW": false
+          "isNSFW": false,
+          "order": 4
         },
         {
-          "title": "Wop Ch5 Mount Tantiss",
+          "title": "Chapter 5: Mount Tantiss",
           "channelID": "1315812646523637760",
           "parentID": "1280868071833337856",
           "fileName": "wop-ch5-mount-tantiss.json",
           "isActive": true,
-          "syncStatus": "active",
+          "syncStatus": "stable",
           "last_synced_id": "1336797317092868217",
           "messageCount": 1771,
           "lastMessageTimestamp": "2025-02-05T20:35:16.888000+00:00",
           "threads": [],
-          "isNSFW": false
+          "isNSFW": false,
+          "order": 5
         },
         {
-          "title": "Wop Ch6 Securing Tantiss",
+          "title": "Chapter 6: Securing Tantiss",
           "channelID": "1336794291011588116",
           "parentID": "1280868071833337856",
           "fileName": "wop-ch6-securing-tantiss.json",
@@ -758,20 +763,22 @@
           "messageCount": 1224,
           "lastMessageTimestamp": "2025-03-08T14:44:08.500000+00:00",
           "threads": [],
-          "isNSFW": false
+          "isNSFW": false,
+          "order": 6
         },
         {
-          "title": "Wop Ch7 Unexpected Inquest",
+          "title": "Chapter 7: Unexpected Inquest",
           "channelID": "1345146827560718336",
           "parentID": "1280868071833337856",
           "fileName": "wop-ch7-unexpected-inquest.json",
           "isActive": true,
-          "syncStatus": "active",
+          "syncStatus": "stable",
           "last_synced_id": "1351978612169113641",
           "messageCount": 316,
           "lastMessageTimestamp": "2025-03-19T18:00:19.689000+00:00",
           "threads": [],
-          "isNSFW": false
+          "isNSFW": false,
+          "order": 7
         }
       ]
     }
