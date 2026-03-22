@@ -19,7 +19,8 @@
         "mediaRegistry": null
       },
       "forum_ids": [
-        "1389791168778211370", "1380700164175696062"
+        "1389791168778211370",
+        "1380700164175696062"
       ],
       "logs": [
         {
@@ -116,7 +117,8 @@
               "syncStatus": "active"
             }
           ],
-          "syncStatus": "active"
+          "syncStatus": "active",
+          "parentID": "1380214185962639402"
         },
         {
           "title": "Chapter 2: Silent Drift",
@@ -126,9 +128,9 @@
           "isNSFW": false,
           "preview": "",
           "order": 2,
-          "messageCount": 673,
-          "lastMessageTimestamp": "2025-11-06T13:58:18.492+00:00",
-          "last_synced_id": "1435991921246867580",
+          "messageCount": 674,
+          "lastMessageTimestamp": "2025-11-06T13:58:18.492000+00:00",
+          "last_synced_id": "1435991690673651793",
           "threads": [
             {
               "threadID": "1402706232732811425",
@@ -171,7 +173,7 @@
               "displayName": "Mess Hall",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 30,
+              "messageCount": 31,
               "last_synced_id": "1414283788489326725",
               "syncStatus": "active"
             },
@@ -212,7 +214,8 @@
               "syncStatus": "active"
             }
           ],
-          "syncStatus": "active"
+          "syncStatus": "active",
+          "parentID": "1380214185962639402"
         },
         {
           "title": "Chapter 3: Beneath the Glare",
@@ -223,8 +226,8 @@
           "preview": "",
           "order": 3,
           "messageCount": 235,
-          "lastMessageTimestamp": "2026-01-20T23:45:34.598+00:00",
-          "last_synced_id": "1464810422602432562",
+          "lastMessageTimestamp": "2026-01-20T23:45:34.598000+00:00",
+          "last_synced_id": "1463318571533992144",
           "threads": [
             {
               "threadID": "1457878207498817734",
@@ -254,7 +257,8 @@
               "syncStatus": "active"
             }
           ],
-          "syncStatus": "active"
+          "syncStatus": "active",
+          "parentID": "1380214185962639402"
         },
         {
           "title": "Chapter 4: Resonance Frequency",
@@ -341,7 +345,8 @@
               "syncStatus": "active"
             }
           ],
-          "syncStatus": "active"
+          "syncStatus": "active",
+          "parentID": "1380214185962639402"
         },
         {
           "title": "Chapter 5: The Threaded Path",
@@ -349,18 +354,18 @@
           "fileName": "fo_ch5-the-threaded-path.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "1485360572773040309",
-          "messageCount": 20,
+          "last_synced_id": "1485388893732999239",
+          "messageCount": 27,
           "order": 5,
-          "lastMessageTimestamp": "2026-03-22T19:32:37.214000+00:00",
+          "lastMessageTimestamp": "2026-03-22T21:25:09.457000+00:00",
           "threads": [
             {
               "threadID": "1484919932688011507",
               "displayName": "Kando'S Coursers ● Briefing Room Beta",
               "isActive": true,
               "syncStatus": "active",
-              "last_synced_id": "1485360572773040309",
-              "messageCount": 7,
+              "last_synced_id": "1485388893732999239",
+              "messageCount": 14,
               "isNSFW": false
             },
             {
@@ -373,7 +378,8 @@
               "isNSFW": false
             }
           ],
-          "syncStatus": "active"
+          "syncStatus": "active",
+          "parentID": "1380214185962639402"
         },
         {
           "title": "☆READ FIRST☆",
@@ -396,7 +402,7 @@
           "preview": "",
           "order": 0,
           "messageCount": 176,
-          "lastMessageTimestamp": "2025-07-25T01:02:40.602+00:00",
+          "lastMessageTimestamp": "2025-07-25T01:02:40.602000+00:00",
           "last_synced_id": "1398108158593073233",
           "threads": [],
           "syncStatus": "active"
@@ -410,7 +416,7 @@
           "preview": "",
           "order": 0,
           "messageCount": 107,
-          "lastMessageTimestamp": "2025-07-25T00:03:06.396+00:00",
+          "lastMessageTimestamp": "2025-07-25T00:03:06.396000+00:00",
           "last_synced_id": "1398093167286554755",
           "threads": [],
           "syncStatus": "active"
@@ -424,7 +430,7 @@
           "preview": "",
           "order": 0,
           "messageCount": 1,
-          "lastMessageTimestamp": "2025-06-12T19:27:19.913+00:00",
+          "lastMessageTimestamp": "2025-06-12T19:27:19.913000+00:00",
           "last_synced_id": "1382803475951517809",
           "threads": [],
           "syncStatus": "active"
@@ -437,9 +443,9 @@
           "isNSFW": false,
           "preview": "",
           "order": 0,
-          "messageCount": 130,
-          "lastMessageTimestamp": "2025-07-01T02:47:54.153+00:00",
-          "last_synced_id": "1389437383681769562",
+          "messageCount": 131,
+          "lastMessageTimestamp": "2025-07-01T02:47:54.153000+00:00",
+          "last_synced_id": "1389437330770886847",
           "threads": [],
           "syncStatus": "active"
         },
@@ -452,8 +458,8 @@
           "preview": "",
           "order": 0,
           "messageCount": 135,
-          "lastMessageTimestamp": "2025-06-18T23:49:12.754+00:00",
-          "last_synced_id": "1385082574170493031",
+          "lastMessageTimestamp": "2025-06-18T23:49:12.754000+00:00",
+          "last_synced_id": "1385043707576717443",
           "threads": [],
           "syncStatus": "active"
         },
@@ -466,7 +472,7 @@
           "preview": "",
           "order": 0,
           "messageCount": 1,
-          "lastMessageTimestamp": "2025-06-12T01:37:02.532+00:00",
+          "lastMessageTimestamp": "2025-06-12T01:37:02.532000+00:00",
           "last_synced_id": "1382534128733261948",
           "threads": [],
           "syncStatus": "active"
@@ -480,7 +486,7 @@
           "order": 0,
           "last_synced_id": "1463909352946536634",
           "messageCount": 30,
-          "lastMessageTimestamp": "2026-01-22T14:53:07.863+00:00",
+          "lastMessageTimestamp": "2026-01-22T14:53:07.863000+00:00",
           "threads": [],
           "syncStatus": "active"
         },
@@ -493,7 +499,7 @@
           "order": 0,
           "last_synced_id": "1463661560198201517",
           "messageCount": 122,
-          "lastMessageTimestamp": "2026-01-21T22:28:29.468+00:00",
+          "lastMessageTimestamp": "2026-01-21T22:28:29.468000+00:00",
           "threads": [],
           "syncStatus": "active"
         },
@@ -506,7 +512,7 @@
           "order": 0,
           "last_synced_id": "1456801530689622088",
           "messageCount": 113,
-          "lastMessageTimestamp": "2026-01-03T00:09:10.98+00:00",
+          "lastMessageTimestamp": "2026-01-03T00:09:10.980000+00:00",
           "threads": [],
           "syncStatus": "active"
         },
@@ -519,7 +525,7 @@
           "order": 0.5,
           "last_synced_id": "1419038738864013314",
           "messageCount": 14,
-          "lastMessageTimestamp": "2025-09-20T19:13:19.81+00:00",
+          "lastMessageTimestamp": "2025-09-20T19:13:19.810000+00:00",
           "threads": [],
           "syncStatus": "active"
         },
@@ -532,7 +538,7 @@
           "order": 0.5,
           "last_synced_id": "1445875108940873821",
           "messageCount": 65,
-          "lastMessageTimestamp": "2025-12-03T20:31:29.032+00:00",
+          "lastMessageTimestamp": "2025-12-03T20:31:29.032000+00:00",
           "threads": [],
           "syncStatus": "active"
         }
@@ -567,10 +573,11 @@
           "preview": "",
           "order": 0,
           "messageCount": 643,
-          "lastMessageTimestamp": "2024-06-23T19:02:38.258+00:00",
+          "lastMessageTimestamp": "2024-06-23T19:02:38.258000+00:00",
           "threads": [],
-          "last_synced_id": "1273770433468039229",
-          "syncStatus": "active"
+          "last_synced_id": "1254511957017497600",
+          "syncStatus": "active",
+          "parentID": "1183856729432260699"
         },
         {
           "title": "Chapter 1: Descending Into Darkness",
@@ -581,10 +588,11 @@
           "preview": "",
           "order": 1,
           "messageCount": 372,
-          "lastMessageTimestamp": "2025-04-02T21:24:58.885+00:00",
+          "lastMessageTimestamp": "2025-04-02T21:24:58.885000+00:00",
           "threads": [],
           "last_synced_id": "1357103544968151131",
-          "syncStatus": "active"
+          "syncStatus": "active",
+          "parentID": "1347381577721581650"
         },
         {
           "title": "Chapter 2: Amidst the Ashes",
@@ -595,10 +603,11 @@
           "preview": "",
           "order": 2,
           "messageCount": 466,
-          "lastMessageTimestamp": "2025-05-23T02:18:07.061+00:00",
+          "lastMessageTimestamp": "2025-05-23T02:18:07.061000+00:00",
           "threads": [],
           "last_synced_id": "1375296708405231649",
-          "syncStatus": "active"
+          "syncStatus": "active",
+          "parentID": "1347381577721581650"
         },
         {
           "title": "Chapter 3: The Karthon Gamble",
@@ -622,7 +631,8 @@
             }
           ],
           "last_synced_id": "1464071194146766890",
-          "syncStatus": "active"
+          "syncStatus": "active",
+          "parentID": "1347381577721581650"
         },
         {
           "title": "Chapter 4: Stillness Between Storms",
@@ -646,7 +656,8 @@
               "syncStatus": "active"
             }
           ],
-          "syncStatus": "active"
+          "syncStatus": "active",
+          "parentID": "1347381577721581650"
         }
       ],
       "auto_scan_pattern": "ch|chapter|prelude"
@@ -670,7 +681,99 @@
       },
       "forum_ids": [],
       "auto_scan_pattern": "ch|chapter|prelude",
-      "logs": []
+      "logs": [
+        {
+          "title": "Wop Ch1 Child Of Prophecy",
+          "channelID": "1280870668325359666",
+          "parentID": "1280868071833337856",
+          "fileName": "wop-ch1-child-of-prophecy.json",
+          "isActive": true,
+          "syncStatus": "active",
+          "last_synced_id": "1293239427073708132",
+          "messageCount": 458,
+          "lastMessageTimestamp": "2024-10-08T15:51:46.641000+00:00",
+          "threads": [],
+          "isNSFW": false
+        },
+        {
+          "title": "Wop Ch2 Flight Of The Chimaera",
+          "channelID": "1292597894150357053",
+          "parentID": "1280868071833337856",
+          "fileName": "wop-ch2-flight-of-the-chimaera.json",
+          "isActive": true,
+          "syncStatus": "active",
+          "last_synced_id": "1304805475778429010",
+          "messageCount": 574,
+          "lastMessageTimestamp": "2024-11-09T13:51:07.539000+00:00",
+          "threads": [],
+          "isNSFW": false
+        },
+        {
+          "title": "Wop Ch3 A Galaxy Cursed",
+          "channelID": "1299320984293081089",
+          "parentID": "1280868071833337856",
+          "fileName": "wop-ch3-a-galaxy-cursed.json",
+          "isActive": true,
+          "syncStatus": "active",
+          "last_synced_id": "1306442805123616808",
+          "messageCount": 1049,
+          "lastMessageTimestamp": "2024-11-14T02:17:17.275000+00:00",
+          "threads": [],
+          "isNSFW": false
+        },
+        {
+          "title": "Wop Ch4 Dantooine Legacy",
+          "channelID": "1304423587632906331",
+          "parentID": "1280868071833337856",
+          "fileName": "wop-ch4-dantooine-legacy.json",
+          "isActive": true,
+          "syncStatus": "active",
+          "last_synced_id": "1318288571228098712",
+          "messageCount": 1322,
+          "lastMessageTimestamp": "2024-12-16T18:48:07.998000+00:00",
+          "threads": [],
+          "isNSFW": false
+        },
+        {
+          "title": "Wop Ch5 Mount Tantiss",
+          "channelID": "1315812646523637760",
+          "parentID": "1280868071833337856",
+          "fileName": "wop-ch5-mount-tantiss.json",
+          "isActive": true,
+          "syncStatus": "active",
+          "last_synced_id": "1336797317092868217",
+          "messageCount": 1771,
+          "lastMessageTimestamp": "2025-02-05T20:35:16.888000+00:00",
+          "threads": [],
+          "isNSFW": false
+        },
+        {
+          "title": "Wop Ch6 Securing Tantiss",
+          "channelID": "1336794291011588116",
+          "parentID": "1280868071833337856",
+          "fileName": "wop-ch6-securing-tantiss.json",
+          "isActive": true,
+          "syncStatus": "active",
+          "last_synced_id": "1347942973702144103",
+          "messageCount": 1224,
+          "lastMessageTimestamp": "2025-03-08T14:44:08.500000+00:00",
+          "threads": [],
+          "isNSFW": false
+        },
+        {
+          "title": "Wop Ch7 Unexpected Inquest",
+          "channelID": "1345146827560718336",
+          "parentID": "1280868071833337856",
+          "fileName": "wop-ch7-unexpected-inquest.json",
+          "isActive": true,
+          "syncStatus": "active",
+          "last_synced_id": "1351978612169113641",
+          "messageCount": 316,
+          "lastMessageTimestamp": "2025-03-19T18:00:19.689000+00:00",
+          "threads": [],
+          "isNSFW": false
+        }
+      ]
     }
   }
 }
