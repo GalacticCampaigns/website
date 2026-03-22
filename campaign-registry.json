@@ -115,7 +115,7 @@
           "preview": "",
           "order": 1,
           "messageCount": 305,
-          "lastMessageTimestamp": "2025-08-01T12:39:15.84+00:00",
+          "lastMessageTimestamp": "2025-08-01T12:39:15.840000+00:00",
           "last_synced_id": "1400820175585939557",
           "threads": [
             {
@@ -195,7 +195,7 @@
               "displayName": "AIRLOCK BREACH",
               "isActive": false,
               "isNSFW": false,
-              "messageCount": 62,
+              "messageCount": 0,
               "last_synced_id": "1393618696852738170",
               "syncStatus": "active"
             }
@@ -433,10 +433,10 @@
           "fileName": "fo_ch5-the-threaded-path.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "1482883329115291648",
-          "messageCount": 1,
+          "last_synced_id": "1484994823524978890",
+          "messageCount": 9,
           "order": 5,
-          "lastMessageTimestamp": "2026-03-15T23:28:56.301+00:00",
+          "lastMessageTimestamp": "2026-03-21T19:19:15.798000+00:00",
           "threads": [
             {
               "threadID": "1484919932688011507",
@@ -444,15 +444,17 @@
               "isActive": true,
               "syncStatus": "active",
               "last_synced_id": "",
-              "messageCount": 0
+              "messageCount": 0,
+              "isNSFW": false
             },
             {
               "threadID": "1484919279555186802",
               "displayName": "Kando'S Coursers ● Briefing Room Gamma",
               "isActive": true,
               "syncStatus": "active",
-              "last_synced_id": "",
-              "messageCount": 0
+              "last_synced_id": "1484919597592350970",
+              "messageCount": 1,
+              "isNSFW": false
             }
           ],
           "syncStatus": "active"
@@ -605,20 +607,20 @@
           "isNSFW": false,
           "preview": "",
           "order": 3,
-          "messageCount": 983,
-          "lastMessageTimestamp": "2026-01-23T01:36:13.812+00:00",
+          "messageCount": 984,
+          "lastMessageTimestamp": "2026-01-23T01:36:13.812000+00:00",
           "threads": [
             {
               "threadID": "1377978443060482080",
               "displayName": "Gamma Data Packet",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 6,
-              "last_synced_id": "1377983258230394890",
+              "messageCount": 7,
+              "last_synced_id": "1377983880694464512",
               "syncStatus": "active"
             }
           ],
-          "last_synced_id": "1464230085438476410",
+          "last_synced_id": "1464071194146766890",
           "syncStatus": "active"
         },
         {
