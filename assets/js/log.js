@@ -174,7 +174,7 @@ function renderFeed(filterId) {
     const displayTitle = (filterId === 'all') ? "Combined Feed" : (filterId === mainChannelId ? "Primary Feed" : channelMap[filterId]);
     updateBreadcrumb(logEntry.title, filterId !== 'all' ? displayTitle : null);
 
-    const validTypes = [0, 19, 18];
+    const validTypes = [0, 19];
     const filteredTimeline = fullData.filter(m => validTypes.includes(m.type));
 
     // Update URL Hash
@@ -237,18 +237,6 @@ function renderFeed(filterId) {
         if (shouldShowContent || shouldShowTransition) {
             lastRenderedChannelId = actualChannel;
         }
-
-        if (msg.type === 18 && msg.thread) {
-            const anchor = document.createElement('div');
-            anchor.className = 'thread-anchor-header';
-            anchor.innerHTML = `
-                <div class="anchor-line"></div>
-                <div class="anchor-content">
-                    <span class="anchor-icon">🧵</span>
-                    <span class="anchor-title">SCENE START: ${msg.thread.name.toUpperCase()}</span>
-                    <span class="anchor-date">${new Date(msg.timestamp).toLocaleDateString()}</span>
-                </div>
-            `;
             output.appendChild(anchor);
             return; // Don't render a chat bubble for the system message
         }
@@ -288,7 +276,7 @@ function renderFeed(filterId) {
                     </div>
                     <div class="msg-content ${nsfwClass}">${parseMarkdown(msg.content)}</div>
                     ${renderAttachments(msg, logEntry)} 
-                    ${renderEmbeds(msg, logEntry)}   <-- ADD THIS LINE
+                    ${renderEmbeds(msg, logEntry)}
                 </div>
             `;
             output.appendChild(group);
