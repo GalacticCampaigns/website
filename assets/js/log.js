@@ -135,7 +135,7 @@ async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
         const response = await fetch(jsonUrl);
         const data = await response.json();
         fullData = Array.isArray(data) ? data : (data.messages || []);
-        fullData.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+        fullData.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
         updateBreadcrumb(logEntry.title);
 
@@ -174,7 +174,7 @@ function renderFeed(filterId) {
     const displayTitle = (filterId === 'all') ? "Combined Feed" : (filterId === mainChannelId ? "Primary Feed" : channelMap[filterId]);
     updateBreadcrumb(logEntry.title, filterId !== 'all' ? displayTitle : null);
 
-    const validTypes = [0, 19];
+    const validTypes = [0, 19, 18];
     const filteredTimeline = fullData.filter(m => validTypes.includes(m.type));
 
     // Update URL Hash
@@ -238,6 +238,21 @@ function renderFeed(filterId) {
             lastRenderedChannelId = actualChannel;
         }
 
+        if (msg.type === 18 && msg.thread) {
+            const anchor = document.createElement('div');
+            anchor.className = 'thread-anchor-header';
+            anchor.innerHTML = `
+                <div class="anchor-line"></div>
+                <div class="anchor-content">
+                    <span class="anchor-icon">🧵</span>
+                    <span class="anchor-title">SCENE START: ${msg.thread.name.toUpperCase()}</span>
+                    <span class="anchor-date">${new Date(msg.timestamp).toLocaleDateString()}</span>
+                </div>
+            `;
+            output.appendChild(anchor);
+            return; // Don't render a chat bubble for the system message
+        }
+
         // --- Message Rendering ---
         if (shouldShowContent) {
             const threadRef = logEntry.threads ? logEntry.threads.find(t => t.threadID === msg.channel_id) : null;
@@ -273,6 +288,7 @@ function renderFeed(filterId) {
                     </div>
                     <div class="msg-content ${nsfwClass}">${parseMarkdown(msg.content)}</div>
                     ${renderAttachments(msg, logEntry)} 
+                    ${renderEmbeds(msg, logEntry)}   <-- ADD THIS LINE
                 </div>
             `;
             output.appendChild(group);
@@ -407,38 +423,55 @@ function renderAttachments(msg, logRef) {
     
     const folder = logRef.fileName.replace('.json', '');
     const mediaReg = window.GC_STATE.mediaRegistry || [];
-    const isPostNSFW = detectNSFW(msg); // Check the message reactions
+    const isPostNSFW = detectNSFW(msg);
     let html = '<div class="msg-attachments">';
     
     msg.attachments.forEach(att => {
         const registryMatchPath = `${folder}/${att.filename}`;
         const src = `${window.GC_STATE.remoteBase}${window.GC_STATE.currentCampaign.paths.media}${folder}/${att.filename}`;
-        
-        // --- FUZZY MATCH + MESSAGE OVERRIDE ---
-        const isFileInRegistry = mediaReg.some(entry => entry.endsWith(registryMatchPath));
         const isFileNSFW = mediaReg.some(entry => entry.endsWith(registryMatchPath)) || isPostNSFW;
 
-        if (att.content_type && att.content_type.startsWith('image/')) {
-            if (isFileNSFW && !window.GC_STATE.nsfwEnabled) {
-                const warning = (window.GC_STATE.contentWarnings && window.GC_STATE.contentWarnings[registryMatchPath]) 
-                                || "RESTRICTED DATA";
+        // FIXED: Check extension if content_type is null
+        const isImage = (att.content_type && att.content_type.startsWith('image/')) || 
+                        /\.(jpg|jpeg|png|gif|webp)$/i.test(att.filename);
 
-                html += `
-                <div class="media-shield">
-                    <div class="shield-overlay">
-                        <span class="shield-icon">⚠</span>
-                        <div class="shield-info">
-                            <span class="shield-label">ENCRYPTION ACTIVE</span>
-                            <span class="shield-text">${warning.toUpperCase()}</span>
-                        </div>
-                        <button class="decrypt-btn" onclick="handleNSFWClick()">DECRYPT</button>
-                    </div>
-                </div>`;
+        if (isImage) {
+            if (isFileNSFW && !window.GC_STATE.nsfwEnabled) {
+                const warning = (window.GC_STATE.contentWarnings && window.GC_STATE.contentWarnings[registryMatchPath]) || "RESTRICTED DATA";
+                html += `<div class="media-shield"><div class="shield-overlay"><span class="shield-icon">⚠</span><div class="shield-info"><span class="shield-label">ENCRYPTION ACTIVE</span><span class="shield-text">${warning.toUpperCase()}</span></div><button class="decrypt-btn" onclick="handleNSFWClick()">DECRYPT</button></div></div>`;
             } else {
                 html += `<div class="attachment-item"><a href="${src}" target="_blank"><img src="${src}" class="log-image" loading="lazy"></a></div>`;
             }
         } else {
             html += `<div class="attachment-item"><a href="${src}" target="_blank" class="file-link">📄 ${att.filename}</a></div>`;
+        }
+    });
+    return html + '</div>';
+}
+
+function renderEmbeds(msg, logRef) {
+    if (!msg.embeds || msg.embeds.length === 0) return "";
+    
+    const folder = logRef.fileName.replace('.json', '');
+    let html = '<div class="msg-embeds">';
+    
+    msg.embeds.forEach(embed => {
+        // We primarily care about image/video embeds and those with thumbnails
+        if (embed.thumbnail && embed.thumbnail.url) {
+            let src = embed.thumbnail.url;
+            
+            // If the refinery local-pathed this, it will start with 'media/' or the relative root
+            // We need to ensure it's a full URL for the browser
+            if (!src.startsWith('http')) {
+                src = `${window.GC_STATE.remoteBase}${window.GC_STATE.currentCampaign.paths.media}${src}`;
+            }
+
+            html += `
+                <div class="embed-item">
+                    <a href="${embed.url || src}" target="_blank">
+                        <img src="${src}" class="log-image embed-img" loading="lazy">
+                    </a>
+                </div>`;
         }
     });
     return html + '</div>';
