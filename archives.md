@@ -121,7 +121,8 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
         // 2. If Order is identical, sort by Title (Alphabetical)
         return a.title.localeCompare(b.title);
-        
+        });
+
     target.innerHTML = ""; 
 
     sorted.forEach(log => {
@@ -153,5 +154,6 @@ document.addEventListener("DOMContentLoaded", async function() {
         `;
         target.appendChild(item);
     });
+    
 });
 </script>
