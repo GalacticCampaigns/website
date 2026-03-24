@@ -174,7 +174,7 @@ function renderFeed(filterId) {
     const displayTitle = (filterId === 'all') ? "Combined Feed" : (filterId === mainChannelId ? "Primary Feed" : channelMap[filterId]);
     updateBreadcrumb(logEntry.title, filterId !== 'all' ? displayTitle : null);
 
-    const validTypes = [0, 19];
+    const validTypes = [0, 19, 21];
     const filteredTimeline = fullData.filter(m => validTypes.includes(m.type));
 
     // Update URL Hash
@@ -236,9 +236,6 @@ function renderFeed(filterId) {
 
         if (shouldShowContent || shouldShowTransition) {
             lastRenderedChannelId = actualChannel;
-        }
-            output.appendChild(anchor);
-            return; // Don't render a chat bubble for the system message
         }
 
         // --- Message Rendering ---
