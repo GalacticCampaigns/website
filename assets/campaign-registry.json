@@ -32,7 +32,7 @@
           "isNSFW": false,
           "preview": "",
           "order": 1,
-          "messageCount": 307,
+          "messageCount": 305,
           "lastMessageTimestamp": "2025-08-01T12:39:15.840000+00:00",
           "last_synced_id": "1400820175585939557",
           "threads": [
@@ -129,7 +129,7 @@
           "isNSFW": false,
           "preview": "",
           "order": 2,
-          "messageCount": 681,
+          "messageCount": 673,
           "lastMessageTimestamp": "2025-11-06T13:58:18.492000+00:00",
           "last_synced_id": "1435991690673651793",
           "threads": [
@@ -174,7 +174,7 @@
               "displayName": "Mess Hall",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 31,
+              "messageCount": 30,
               "last_synced_id": "1414283788489326725",
               "syncStatus": "stable"
             },
@@ -226,7 +226,7 @@
           "isNSFW": false,
           "preview": "",
           "order": 3,
-          "messageCount": 236,
+          "messageCount": 235,
           "lastMessageTimestamp": "2026-01-20T23:45:34.598000+00:00",
           "last_synced_id": "1463318571533992144",
           "threads": [
@@ -269,7 +269,7 @@
           "isNSFW": false,
           "preview": "",
           "order": 4,
-          "messageCount": 572,
+          "messageCount": 566,
           "lastMessageTimestamp": "2026-03-21T13:39:34.682000+00:00",
           "last_synced_id": "1484909338928873594",
           "threads": [
@@ -356,7 +356,7 @@
           "isActive": true,
           "isNSFW": false,
           "last_synced_id": "1485782878154657954",
-          "messageCount": 47,
+          "messageCount": 46,
           "order": 5,
           "lastMessageTimestamp": "2026-03-23T23:30:42.663000+00:00",
           "threads": [
@@ -445,7 +445,7 @@
           "isNSFW": false,
           "preview": "",
           "order": 0,
-          "messageCount": 131,
+          "messageCount": 130,
           "lastMessageTimestamp": "2025-07-01T02:47:54.153000+00:00",
           "last_synced_id": "1389437330770886847",
           "threads": [],
@@ -619,7 +619,7 @@
           "isNSFW": false,
           "preview": "",
           "order": 3,
-          "messageCount": 984,
+          "messageCount": 983,
           "lastMessageTimestamp": "2026-01-23T01:36:13.812000+00:00",
           "threads": [
             {
@@ -627,7 +627,7 @@
               "displayName": "Gamma Data Packet",
               "isActive": true,
               "isNSFW": false,
-              "messageCount": 7,
+              "messageCount": 6,
               "last_synced_id": "1377983880694464512",
               "syncStatus": "stable"
             }
