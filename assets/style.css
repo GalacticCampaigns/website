@@ -114,7 +114,7 @@ a:hover {
     position: relative;
 }
 
-/* Added: Vertical Separators */
+/* Added: Vertical Separators 
 .nav-links a:not(:last-child)::after {
     content: "|";
     position: absolute;
@@ -122,12 +122,21 @@ a:hover {
     color: var(--gh-border);
     opacity: 0.5;
     pointer-events: none;
-}
+}*/
 
 .nav-links a:hover {
     color: var(--accent-blue);
 }
 
+#dynamic-nav-links a + a {
+    border-left: 1px solid var(--gh-border);
+}
+
+/* Ensure Home (the first child) never has a left border */
+#dynamic-nav-links a:first-child {
+    padding-left: 0;
+    border-left: none;
+}
 
 /* --- 5. BREADCRUMB CONSOLE --- */
 .log-breadcrumb {
