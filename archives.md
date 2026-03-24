@@ -110,10 +110,19 @@ document.addEventListener("DOMContentLoaded", async function() {
     titleEl.textContent = `📡 ${campaign.name} Archives`;
     statusEl.textContent = `Displaying all transmissions for ${campaign.name}...`;
 
-    const sorted = campaign.logs.sort((a, b) => b.order - a.order);
+    // 1. FILTER: Only include active logs
+    // 2. SORT: Order them by the 'order' key
+    const sorted = campaign.logs
+        .filter(log => log.isActive !== false)
+        .sort((a, b) => {
+        // 1. First, sort by Order (Descending)
+        if (b.order !== a.order) {
+            return b.order - a.order;
+        }
+        // 2. If Order is identical, sort by Title (Alphabetical)
+        return a.title.localeCompare(b.title);
+        
     target.innerHTML = ""; 
-
-    // Locate the sorted.forEach loop in archives.md and replace the item.innerHTML section:
 
     sorted.forEach(log => {
         const dateStr = log.lastMessageTimestamp ? new Date(log.lastMessageTimestamp).toLocaleDateString(undefined, {
@@ -124,18 +133,16 @@ document.addEventListener("DOMContentLoaded", async function() {
         const item = document.createElement('div');
         item.className = "archive-item";
         
-        const statusBadge = log.isActive === false 
-            ? '<span class="status-badge status-dropped">DROPPED</span>' 
-            : '<span class="status-badge status-active">ACTIVE</span>';
+        // Removed statusBadge logic (ACTIVE/DROPPED)
 
-        // NEW: Check for NSFW flag
+        // Check for NSFW flag
         const nsfwClass = log.isNSFW ? 'nsfw-blur' : '';
         const nsfwBadge = log.isNSFW ? '<span class="nsfw-badge">NSFW</span>' : '';
 
         item.innerHTML = `
             <div class="archive-header">
                 <a href="${viewerBase}?c=${slug}#${log.channelID}" class="archive-link">
-                    ${nsfwBadge}${log.title} ${statusBadge}
+                    ${nsfwBadge}${log.title}
                 </a>
                 <div class="archive-meta">TRANSMITTED: ${dateStr}</div>
             </div>
