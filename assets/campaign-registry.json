@@ -355,10 +355,10 @@
           "fileName": "fo_ch5-the-threaded-path.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "1489543294034771999",
-          "messageCount": 74,
+          "last_synced_id": "1485286270816223252",
+          "messageCount": 78,
           "order": 5,
-          "lastMessageTimestamp": "2026-04-03T08:33:15.674000+00:00",
+          "lastMessageTimestamp": "2026-04-04T17:39:37.901000+00:00",
           "threads": [
             {
               "threadID": "1484919932688011507",
@@ -374,8 +374,8 @@
               "displayName": "Kando'S Coursers ● Briefing Room Gamma",
               "isActive": true,
               "syncStatus": "active",
-              "last_synced_id": "1489543294034771999",
-              "messageCount": 28,
+              "last_synced_id": "1490043180526342314",
+              "messageCount": 32,
               "isNSFW": false
             }
           ],
