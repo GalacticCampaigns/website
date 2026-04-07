@@ -334,7 +334,7 @@
               "isNSFW": false,
               "messageCount": 62,
               "last_synced_id": "1479984225016090746",
-              "syncStatus": "active"
+              "syncStatus": "stable"
             },
             {
               "threadID": "1483596566068596756",
@@ -355,10 +355,10 @@
           "fileName": "fo_ch5-the-threaded-path.json",
           "isActive": true,
           "isNSFW": false,
-          "last_synced_id": "1485286270816223252",
-          "messageCount": 78,
+          "last_synced_id": "1490758089253851178",
+          "messageCount": 82,
           "order": 5,
-          "lastMessageTimestamp": "2026-04-04T17:39:37.901000+00:00",
+          "lastMessageTimestamp": "2026-04-06T17:00:25.424000+00:00",
           "threads": [
             {
               "threadID": "1484919932688011507",
@@ -374,8 +374,8 @@
               "displayName": "Kando'S Coursers ● Briefing Room Gamma",
               "isActive": true,
               "syncStatus": "active",
-              "last_synced_id": "1490043180526342314",
-              "messageCount": 32,
+              "last_synced_id": "1490758089253851178",
+              "messageCount": 36,
               "isNSFW": false
             }
           ],
