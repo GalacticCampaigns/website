@@ -632,7 +632,7 @@
               "syncStatus": "stable"
             }
           ],
-          "last_synced_id": "1464230085438476410",
+          "last_synced_id": "",
           "syncStatus": "active",
           "parentID": "1347381577721581650"
         },
@@ -645,8 +645,8 @@
           "preview": "",
           "order": 4,
           "messageCount": 178,
-          "lastMessageTimestamp": "2026-03-24T19:01:39.983000+00:00",
-          "last_synced_id": "1486077558712696974",
+          "lastMessageTimestamp": "",
+          "last_synced_id": "",
           "threads": [
             {
               "threadID": "1464634504286175232",
