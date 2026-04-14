@@ -97,7 +97,7 @@
               "isNSFW": false,
               "messageCount": 5,
               "last_synced_id": "1397736708555935805",
-              "syncStatus": "stable"
+              "syncStatus": "active"
             },
             {
               "threadID": "1397997211576438784",
@@ -577,8 +577,8 @@
           "messageCount": 643,
           "lastMessageTimestamp": "2024-06-23T19:02:38.258000+00:00",
           "threads": [],
-          "last_synced_id": "1254511957017497600",
-          "syncStatus": "stable",
+          "last_synced_id": "1273770433468039229",
+          "syncStatus": "active",
           "parentID": "1183856729432260699"
         },
         {
@@ -644,9 +644,9 @@
           "isNSFW": false,
           "preview": "",
           "order": 4,
-          "messageCount": 189,
-          "lastMessageTimestamp": "2026-04-08T02:18:57.537000+00:00",
-          "last_synced_id": "1491261037109055660",
+          "messageCount": 198,
+          "lastMessageTimestamp": "2026-04-13T18:03:58.956000+00:00",
+          "last_synced_id": "1493310799425441832",
           "threads": [
             {
               "threadID": "1464634504286175232",
@@ -658,7 +658,7 @@
               "syncStatus": "active"
             }
           ],
-          "syncStatus": "stable",
+          "syncStatus": "active",
           "parentID": "1347381577721581650"
         }
       ]
@@ -689,8 +689,8 @@
           "parentID": "1280868071833337856",
           "fileName": "wop-ch1-child-of-prophecy.json",
           "isActive": true,
-          "syncStatus": "stable",
-          "last_synced_id": "1293239427073708132",
+          "syncStatus": "active",
+          "last_synced_id": "1293240505727189115",
           "messageCount": 458,
           "lastMessageTimestamp": "2024-10-08T15:51:46.641000+00:00",
           "threads": [],
