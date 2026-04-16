@@ -133,37 +133,30 @@ async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
 
         updateBreadcrumb(logEntry.title);
 
-        // --- NEW: REGISTRY-DRIVEN CHANNEL MAPPING ---
-        // 1. Start with the Parent Channel
-        window.channelMap = { [channelID]: logEntry.title.toUpperCase() }; 
+        // --- FIX: Trust the registry ID as the Main Frequency ---
+        mainChannelId = channelID; 
+        window.GC_STATE.currentMainChannelId = mainChannelId;
 
-        // 2. Pre-fill from Registry (The "Gold Standard" for names)
+        // Map Names: Start with the Parent, then the Registry, then Message Meta
+        window.channelMap = { [mainChannelId]: logEntry.title.toUpperCase() }; 
+
         if (logEntry.threads) {
             logEntry.threads.forEach(t => {
                 window.channelMap[t.threadID] = t.displayName.toUpperCase();
             });
         }
 
-        // 3. Supplemental Pass: Catch any meta embedded in messages (Type 18/21)
-        // and identify the Main Channel for combined view logic
-        let parentCounts = {};
         fullData.forEach(m => {
-            const cid = m.channel_id;
-            // Identify which ID in the file is the most common "Parent"
-            if (cid) parentCounts[cid] = (parentCounts[cid] || 0) + 1;
-            
-            // If message has thread meta we don't have yet, add it
+            // Capture any thread names that might be in the JSON but not the registry
             if (m.thread && m.thread.id && !window.channelMap[m.thread.id]) {
                 window.channelMap[m.thread.id] = m.thread.name.toUpperCase();
             }
+            // Handle Type 18 (Thread Creation) where content IS the name
+            else if (m.type === 18 && m.content && !window.channelMap[m.id]) {
+                window.channelMap[m.id] = m.content.toUpperCase();
+            }
         });
 
-        // Determine mainChannelId based on message density if not explicit
-        mainChannelId = Object.keys(parentCounts).reduce((a, b) => 
-            parentCounts[a] > parentCounts[b] ? a : b, channelID
-        );
-        
-        window.GC_STATE.currentMainChannelId = mainChannelId;
         buildFrequencyBar();
         renderFeed(autoFilter || 'all');
 
@@ -177,68 +170,87 @@ async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
     }
 }
 
+/**
+ * Core rendering engine for the log viewer.
+ * Manages frequency shifts, timeline filtering, and URL state.
+ */
 function renderFeed(filterId) {
     const output = document.getElementById('viewer-output');
     if (!output) return;
     
+    // Clear the stage
     output.innerHTML = "";
-    let lastRenderedChannelId = null;
 
-    const logEntry = activeCampaign.logs.find(l => l.channelID === mainChannelId) || activeCampaign.logs[0];
-    const displayTitle = (filterId === 'all') ? "Combined Feed" : (filterId === mainChannelId ? "Primary Feed" : window.channelMap[filterId]);
+    // Establish context from the registry/state
+    const logEntry = activeCampaign.logs.find(l => l.channelID === window.GC_STATE.currentMainChannelId) || activeCampaign.logs[0];
+    const mainID = window.GC_STATE.currentMainChannelId;
+    
+    // UI Labeling
+    const displayTitle = (filterId === 'all') ? "Combined Feed" : (window.channelMap[filterId] || "PRIMARY FREQUENCY");
     updateBreadcrumb(logEntry.title, filterId !== 'all' ? displayTitle : null);
 
-    // --- 1. EXPANDED NARRATIVE TYPES ---
+    // --- 1. FREQUENCY TRACKING INITIALIZATION ---
+    // We initialize with the mainChannelId to suppress a redundant banner 
+    // at the very top of the primary narrative channel.
+    let lastRenderedChannelId = mainID;
+
+    // --- 2. TIMELINE FILTERING ---
     // 0: Default, 18: Thread Created, 19: Reply, 21: Thread Starter
     const validTypes = [0, 18, 19, 21];
     const filteredTimeline = fullData.filter(m => validTypes.includes(m.type));
 
-    // Update URL Hash
+    // --- 3. URL HASH SYNCHRONIZATION ---
     const { messageId } = getUrlContext();
     const newHash = messageId ? `${filterId}:${messageId}` : filterId;
     if (window.location.hash !== `#${newHash}`) {
         history.replaceState(null, null, `?c=${campaignSlug}#${newHash}`);
     }
 
+    // --- 4. RENDER LOOP ---
     filteredTimeline.forEach(msg => {
-        // --- 2. ENHANCED CHANNEL RESOLUTION ---
-        // If it's a Thread Starter (21) or Thread Created (18), we want to treat 
-        // its "Frequency" as the Thread itself so the transition banner fires.
+        // A. Resolve the "Actual Frequency" for this line
+        // Type 21/18 are 'Bridge' messages that exist in the parent but belong to the thread context.
         let actualChannel = msg.channel_id;
-        if ((msg.type === 21 || msg.type === 18) && msg.thread && msg.thread.id) {
+        
+        if (msg.type === 21 && msg.thread && msg.thread.id) {
             actualChannel = msg.thread.id;
+        } else if (msg.type === 18) {
+            actualChannel = msg.id; // In Type 18, the Message ID is the Thread ID
         }
         
+        // B. Determine Visibility
         let shouldShowContent = false;
         let shouldShowTransition = false;
 
-        // View Logic
         if (filterId === 'all') {
             shouldShowContent = true;
             shouldShowTransition = (actualChannel !== lastRenderedChannelId);
-        } else if (filterId === mainChannelId) {
-            // In Primary view, only show parent messages or transitions to threads
-            if (actualChannel === mainChannelId) {
+        } else if (filterId === mainID) {
+            // "Primary Only" View
+            if (actualChannel === mainID) {
                 shouldShowContent = true;
             } else {
+                // Show a transition block to indicate a thread branched off here
                 shouldShowTransition = (actualChannel !== lastRenderedChannelId);
             }
         } else {
-            // In Thread view, only show that thread's messages or transitions back to parent
+            // "Specific Frequency" View
             if (actualChannel === filterId) {
                 shouldShowContent = true;
-            } else if (actualChannel === mainChannelId) {
+            } else if (actualChannel === mainID) {
+                // Show a transition block to indicate we returned to the parent channel
                 shouldShowTransition = (actualChannel !== lastRenderedChannelId);
             }
         }
 
-        // --- 3. TRANSITION BANNER TRIGGER ---
+        // C. Render Frequency Shift Banner
         if (shouldShowTransition && lastRenderedChannelId !== null) {
             const shiftName = window.channelMap[actualChannel] || "PRIMARY FREQUENCY";
             const transition = document.createElement('div');
             transition.className = 'channel-transition';
             transition.innerHTML = `📡 FREQUENCY SHIFT >> ${shiftName}`;
             
+            // Interaction: Switch context and jump to the message that triggered the shift
             transition.onclick = () => {
                 renderFeed(actualChannel);
                 requestAnimationFrame(() => {
@@ -246,18 +258,19 @@ function renderFeed(filterId) {
                 });
             };
             output.appendChild(transition);
-        }
-
-        if (shouldShowContent || shouldShowTransition) {
             lastRenderedChannelId = actualChannel;
         }
 
-        // --- 4. MESSAGE RENDERING ---
+        // D. Render Message Object
         if (shouldShowContent) {
             const group = renderMessageObject(msg, logEntry);
             output.appendChild(group);
+            // Update tracker so we don't spam banners for consecutive messages in the same thread
+            lastRenderedChannelId = actualChannel;
         }
     });
+
+    // Finalize: Trigger lazy loader for avatars
     silentLoadAvatars();
 }
 
