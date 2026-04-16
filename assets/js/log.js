@@ -169,31 +169,43 @@ function renderFeed(filterId) {
     const displayTitle = (filterId === 'all') ? "Combined Feed" : (filterId === mainChannelId ? "Primary Feed" : window.channelMap[filterId]);
     updateBreadcrumb(logEntry.title, filterId !== 'all' ? displayTitle : null);
 
+    // --- 1. EXPANDED NARRATIVE TYPES ---
+    // 0: Default, 18: Thread Created, 19: Reply, 21: Thread Starter
+    const validTypes = [0, 18, 19, 21];
+    const filteredTimeline = fullData.filter(m => validTypes.includes(m.type));
+
+    // Update URL Hash
     const { messageId } = getUrlContext();
-    const currentHashBase = filterId; 
-    const newHash = messageId ? `${currentHashBase}:${messageId}` : currentHashBase;
+    const newHash = messageId ? `${filterId}:${messageId}` : filterId;
     if (window.location.hash !== `#${newHash}`) {
         history.replaceState(null, null, `?c=${campaignSlug}#${newHash}`);
     }
 
-    const isChannelNSFW = logEntry.isNSFW;
-
-    fullData.forEach(msg => {
-        // Surgical Fix: Use channel_id from Miner
-        const actualChannel = msg.channel_id;
+    filteredTimeline.forEach(msg => {
+        // --- 2. ENHANCED CHANNEL RESOLUTION ---
+        // If it's a Thread Starter (21) or Thread Created (18), we want to treat 
+        // its "Frequency" as the Thread itself so the transition banner fires.
+        let actualChannel = msg.channel_id;
+        if ((msg.type === 21 || msg.type === 18) && msg.thread && msg.thread.id) {
+            actualChannel = msg.thread.id;
+        }
+        
         let shouldShowContent = false;
         let shouldShowTransition = false;
 
+        // View Logic
         if (filterId === 'all') {
             shouldShowContent = true;
             shouldShowTransition = (actualChannel !== lastRenderedChannelId);
         } else if (filterId === mainChannelId) {
+            // In Primary view, only show parent messages or transitions to threads
             if (actualChannel === mainChannelId) {
                 shouldShowContent = true;
             } else {
                 shouldShowTransition = (actualChannel !== lastRenderedChannelId);
             }
         } else {
+            // In Thread view, only show that thread's messages or transitions back to parent
             if (actualChannel === filterId) {
                 shouldShowContent = true;
             } else if (actualChannel === mainChannelId) {
@@ -201,14 +213,18 @@ function renderFeed(filterId) {
             }
         }
 
+        // --- 3. TRANSITION BANNER TRIGGER ---
         if (shouldShowTransition && lastRenderedChannelId !== null) {
             const shiftName = window.channelMap[actualChannel] || "PRIMARY FREQUENCY";
             const transition = document.createElement('div');
             transition.className = 'channel-transition';
             transition.innerHTML = `📡 FREQUENCY SHIFT >> ${shiftName}`;
+            
             transition.onclick = () => {
                 renderFeed(actualChannel);
-                requestAnimationFrame(() => { setTimeout(() => jumpToMessage(msg.id), 150); });
+                requestAnimationFrame(() => {
+                    setTimeout(() => jumpToMessage(msg.id), 150);
+                });
             };
             output.appendChild(transition);
         }
@@ -217,43 +233,59 @@ function renderFeed(filterId) {
             lastRenderedChannelId = actualChannel;
         }
 
+        // --- 4. MESSAGE RENDERING ---
         if (shouldShowContent) {
-            const threadRef = logEntry.threads ? logEntry.threads.find(t => t.threadID === msg.channel_id) : null;
-            const isPostNSFW = detectNSFW(msg);
-            const isCurrentMsgNSFW = isChannelNSFW || (threadRef && threadRef.isNSFW) || isPostNSFW;
-            
-            const isCurrentlyBlurred = isCurrentMsgNSFW && !window.GC_STATE.nsfwEnabled;
-            const nsfwClass = isCurrentlyBlurred ? 'nsfw-blur' : (isCurrentMsgNSFW ? 'nsfw-blur off' : '');
-            const nsfwBadge = isCurrentMsgNSFW ? `<span class="nsfw-badge" onclick="handleNSFWClick()">NSFW</span>` : '';
-
-            const group = document.createElement('div');
-            group.className = 'message-group';
-            group.id = `msg-${msg.id}`;
-
-            const avatarUrl = msg.author.avatar 
-                ? `${remoteBase}${activeCampaign.paths.avatars}${msg.author.id}/${msg.author.avatar}.png` 
-                : `${remoteBase}${activeCampaign.paths.avatars}default.png`;
-
-            group.innerHTML = `
-                <div class="avatar-container">
-                    <img src="" data-src="${avatarUrl}" class="avatar lazy-load">
-                </div>
-                <div class="msg-body">
-                    <div class="msg-header">
-                        <span class="username">${msg.userName || msg.author.username}</span>
-                        ${nsfwBadge}
-                        <span class="timestamp">${new Date(msg.timestamp).toLocaleString()}</span>
-                        <a href="javascript:void(0)" class="copy-link-icon" onclick="copyMsgLink(event, '${msg.id}', '${actualChannel}')">🔗</a>
-                    </div>
-                    <div class="msg-content ${nsfwClass}">${parseMarkdown(msg.content)}</div>
-                    ${renderAttachments(msg, logEntry)} 
-                    ${renderEmbeds(msg, logEntry)}
-                </div>
-            `;
+            const group = renderMessageObject(msg, logEntry);
             output.appendChild(group);
         }
     });
     silentLoadAvatars();
+}
+
+/**
+ * Enhanced Object Renderer to handle System/Thread messages.
+ */
+function renderMessageObject(msg, logEntry) {
+    const isChannelNSFW = logEntry.isNSFW;
+    const isPostNSFW = detectNSFW(msg);
+    const isCurrentMsgNSFW = isChannelNSFW || isPostNSFW;
+    
+    const isCurrentlyBlurred = isCurrentMsgNSFW && !window.GC_STATE.nsfwEnabled;
+    const nsfwClass = isCurrentlyBlurred ? 'nsfw-blur' : (isCurrentMsgNSFW ? 'nsfw-blur off' : '');
+    
+    const group = document.createElement('div');
+    group.className = 'message-group';
+    group.id = `msg-${msg.id}`;
+
+    // Handle System Message Styling (Type 18)
+    if (msg.type === 18) {
+        group.classList.add('system-message');
+    }
+
+    const avatarUrl = msg.author.avatar 
+        ? `${remoteBase}${activeCampaign.paths.avatars}${msg.author.id}/${msg.author.avatar}.png` 
+        : `${remoteBase}${activeCampaign.paths.avatars}default.png`;
+
+    // Actual Channel ID for the Link Icon
+    const linkChannel = (msg.type === 21 && msg.thread) ? msg.thread.id : msg.channel_id;
+
+    group.innerHTML = `
+        <div class="avatar-container">
+            <img src="" data-src="${avatarUrl}" class="avatar lazy-load">
+        </div>
+        <div class="msg-body">
+            <div class="msg-header">
+                <span class="username">${msg.userName || msg.author.username}</span>
+                ${isCurrentMsgNSFW ? `<span class="nsfw-badge" onclick="handleNSFWClick()">NSFW</span>` : ''}
+                <span class="timestamp">${new Date(msg.timestamp).toLocaleString()}</span>
+                <a href="javascript:void(0)" class="copy-link-icon" onclick="copyMsgLink(event, '${msg.id}', '${linkChannel}')">🔗</a>
+            </div>
+            <div class="msg-content ${nsfwClass}">${parseMarkdown(msg.content)}</div>
+            ${renderAttachments(msg, logEntry)} 
+            ${renderEmbeds(msg, logEntry)}
+        </div>
+    `;
+    return group;
 }
 
 function parseMarkdown(text) {
