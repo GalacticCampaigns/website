@@ -133,17 +133,36 @@ async function loadChapter(channelID, targetMsg = null, autoFilter = null) {
 
         updateBreadcrumb(logEntry.title);
 
-        window.channelMap = {}; 
+        // --- NEW: REGISTRY-DRIVEN CHANNEL MAPPING ---
+        // 1. Start with the Parent Channel
+        window.channelMap = { [channelID]: logEntry.title.toUpperCase() }; 
+
+        // 2. Pre-fill from Registry (The "Gold Standard" for names)
+        if (logEntry.threads) {
+            logEntry.threads.forEach(t => {
+                window.channelMap[t.threadID] = t.displayName.toUpperCase();
+            });
+        }
+
+        // 3. Supplemental Pass: Catch any meta embedded in messages (Type 18/21)
+        // and identify the Main Channel for combined view logic
         let parentCounts = {};
         fullData.forEach(m => {
-            // Vault logic: Map channel_id names
-            if (m.thread) {
+            const cid = m.channel_id;
+            // Identify which ID in the file is the most common "Parent"
+            if (cid) parentCounts[cid] = (parentCounts[cid] || 0) + 1;
+            
+            // If message has thread meta we don't have yet, add it
+            if (m.thread && m.thread.id && !window.channelMap[m.thread.id]) {
                 window.channelMap[m.thread.id] = m.thread.name.toUpperCase();
-                if (m.thread.parent_id) parentCounts[m.thread.parent_id] = (parentCounts[m.thread.parent_id] || 0) + 1;
             }
         });
 
-        mainChannelId = Object.keys(parentCounts).reduce((a, b) => parentCounts[a] > parentCounts[b] ? a : b, null) || channelID;
+        // Determine mainChannelId based on message density if not explicit
+        mainChannelId = Object.keys(parentCounts).reduce((a, b) => 
+            parentCounts[a] > parentCounts[b] ? a : b, channelID
+        );
+        
         window.GC_STATE.currentMainChannelId = mainChannelId;
         buildFrequencyBar();
         renderFeed(autoFilter || 'all');
